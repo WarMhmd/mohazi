@@ -1,0 +1,5 @@
+login:
+  username:
+    rules:
+      required: true
+      error: "username is required"
