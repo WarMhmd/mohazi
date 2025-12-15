@@ -11,8 +11,7 @@ login:
     required: true
     defaultError: 'Invalid password.'
     rules:
-      min_length: 8
-      error: 'Password must be at least 8 characters long.' 
+      min_length: { "value": 8, "error": 'Password must be at least 8 characters long.' }
       pattern:
         value: "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$"
         error: 'Password must contain at least one letter and one number.'
