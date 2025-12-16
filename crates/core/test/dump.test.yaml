@@ -1,0 +1,31 @@
+login:
+  username:
+    type: string
+    required: true
+    defaultError: "Invalid username."
+    rules:
+      min_length: { value: 3, error: "Username must be at least 3 characters long." }
+      max_length:
+        value: 20
+        error: null
+  password:
+    type: string
+    required: true
+    rules:
+      min_length: 8
+      error: "Password must be at least 8 characters long." # this error is reffered to the previous rule
+      pattern:
+        value: "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$"
+        error: "Password must contain at least one letter and one number."
+  id:
+    type: string
+    defaultError: "Invalid ID."
+    rules:
+      pattern:
+        value: "^[0-9]{24}$"
+        error: "ID must be a valid number."
+    transform:
+      cast: "number"
+    rules1:
+      min_value: { value: 1, error: "ID must be at least 1." }
+      max_value: { value: 999999999999999999999999, error: "ID exceeds maximum allowed value." }
