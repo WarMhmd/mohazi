@@ -1,5 +1,5 @@
 use serde::de::Error;
-use serde::{ser, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_yaml_ng as serde_yaml;
 use std::collections::HashMap;
 
@@ -20,7 +20,7 @@ pub struct Form {
 #[serde(rename_all = "camelCase")]
 pub struct Field {
     #[serde(rename = "type")]
-    pub field_type: String,
+    pub field_type: FieldType,
     #[serde(default)]
     pub required: bool,
     #[serde(alias = "default_error")]
@@ -34,13 +34,11 @@ impl<'de> Deserialize<'de> for Field {
     where
         D: Deserializer<'de>,
     {
-        // A "Shadow" struct to capture the raw data
-        // It looks exactly like Field, but 'rules' is replaced by 'extra'
         #[derive(Deserialize)]
         #[serde(rename_all = "camelCase")]
         struct FieldShadow {
             #[serde(rename = "type")]
-            field_type: String,
+            field_type: FieldType,
             #[serde(default)]
             required: bool,
             default_error: Option<String>,
@@ -56,8 +54,6 @@ impl<'de> Deserialize<'de> for Field {
         let mut rules = Vec::new();
         let mut transform = Vec::new();
 
-        // Filter and collect keys that start with "rules"
-        // We collect them into a vector first so we can sort them (rules -> rules1 -> rules2)
         let mut all_entries: Vec<_> = Vec::new();
 
         for (key, value) in shadow.extra.into_iter() {
@@ -71,23 +67,23 @@ impl<'de> Deserialize<'de> for Field {
         // Sort by key to ensure execution order: rules, rules1, rules2...
         all_entries.sort_by(|a, b| a.0.cmp(&b.0));
 
-        let mut field_type = shadow.field_type.as_str();
+        let mut field_type = shadow.field_type;
         for (key, value) in all_entries {
             if key.starts_with("rules") {
                 let rule: Rules = match field_type {
-                    "string" => {
+                    FieldType::String => {
                         let string_rule: StringRules =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
-                        Rules::Single(string_rule)
+                        Rules::String(string_rule)
                     }
-                    "number" => {
+                    FieldType::Number => {
                         let number_rule: NumberRules =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Rules::Number(number_rule)
                     }
                     _ => {
                         return Err(D::Error::custom(format!(
-                            "Unsupported field type '{}' for rules",
+                            "Unsupported field type '{:?}' for rules",
                             field_type
                         )));
                     }
@@ -95,19 +91,19 @@ impl<'de> Deserialize<'de> for Field {
                 rules.push(rule);
             } else if key.starts_with("transform") {
                 let transform_item: Transform = match field_type {
-                    "string" => {
+                    FieldType::String => {
                         let string_transform: StringTransform =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Transform::String(string_transform)
                     }
-                    "number" => {
+                    FieldType::Number => {
                         let number_transform: NumberTransform =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Transform::Number(number_transform)
                     }
                     _ => {
                         return Err(D::Error::custom(format!(
-                            "Unsupported field type '{}' for transform",
+                            "Unsupported field type '{:?}' for transform",
                             field_type
                         )));
                     }
@@ -117,18 +113,13 @@ impl<'de> Deserialize<'de> for Field {
                     Transform::String(s) => s.cast,
                     Transform::Number(n) => n.cast,
                 } {
-                    field_type = match cast {
-                        Cast::String => "string",
-                        Cast::Number => "number",
-                        Cast::Boolean => "boolean",
-                        Cast::Array => "array",
-                    };
+                    field_type = cast;
                 }
 
                 // check if transform_item has split and current field_type is string
                 if let Transform::String(s) = &transform_item {
                     if s.split.is_some() {
-                        field_type = "array";
+                        field_type = FieldType::Array;
                     }
                 }
 
@@ -150,7 +141,7 @@ impl<'de> Deserialize<'de> for Field {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Rules {
-    Single(StringRules),
+    String(StringRules),
     Number(NumberRules),
 }
 
@@ -178,12 +169,12 @@ pub struct StringRules {
 pub struct NumberRules {
     #[serde(rename = "lt", alias = "lessThan")]
     lt: Option<RuleType<i128>>,
-    #[serde(rename = "min", alias = "lte", alias = "lessThanOrEqual")]
-    min: Option<RuleType<i128>>,
+    #[serde(rename = "max", alias = "lte", alias = "lessThanOrEqual")]
+    max: Option<RuleType<i128>>,
     #[serde(rename = "gt", alias = "greaterThan")]
     gt: Option<RuleType<i128>>,
-    #[serde(rename = "max", alias = "gte", alias = "greaterThanOrEqual")]
-    max: Option<RuleType<i128>>,
+    #[serde(rename = "min", alias = "gte", alias = "greaterThanOrEqual")]
+    min: Option<RuleType<i128>>,
     equal: Option<RuleType<i128>>,
     positive: Option<RuleType<bool>>,
     #[serde(alias = "nonPositive", alias = "non_positive")]
@@ -229,20 +220,20 @@ pub struct StringTransform {
     )]
     pub to_uppercase: Option<bool>,
     pub split: Option<String>,
-    pub cast: Option<Cast>,
+    pub cast: Option<FieldType>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NumberTransform {
-    pub cast: Option<Cast>,
+    pub cast: Option<FieldType>,
 }
 // #endregion
 
 // #region cast
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
-pub enum Cast {
+pub enum FieldType {
     String,
     Number,
     Boolean,
