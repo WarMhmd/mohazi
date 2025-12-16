@@ -1,0 +1,16 @@
+[package]
+name = "mohazi_compiler"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+core = { workspace = true }
+
+clap = { version = "4.4", features = ["derive"] }
+
+tera = "1.19" 
+
+miette = { workspace = true }
+
+# Utilities
+anyhow = "1.0"

@@ -1,6 +1,22 @@
-[package]
-name = "mohazi"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+resolver = "2"
+members = [
+    "crates/core",
+    "crates/compiler",
+    "crates/lsp",
+]
 
-[dependencies]
+# Define versions here so all sub-crates use the same versions
+[workspace.dependencies]
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml_ng = "0.10.0"
+
+# Error Handling
+thiserror = "2.0.17"
+miette = { version = "7.6.0", features = ["fancy"] } # For pretty errors
+
+tokio = { version = "1.0", features = ["full", "macros"] }
+
+# Internal Dependencies (your crates)
+core = { path = "./crates/core" }
