@@ -1,0 +1,15 @@
+[package]
+name = "mohazi_lsp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+core = { workspace = true }
+
+tower-lsp = "0.20"
+
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = "1.0"
+
+dashmap = "6.1.0" 

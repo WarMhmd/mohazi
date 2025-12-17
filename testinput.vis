@@ -4,14 +4,14 @@ login:
     required: true
     defaultError: 'Invalid username.'
     rules:
-      min_length: { value: 3, error: 'Username must be at least 3 characters long.' }
-      max_length: { value: 20, error: 'Username cannot exceed 20 characters.' }
+      minLength: { value: 3, error: 'Username must be at least 3 characters long.' }
+      maxLength: { value: 20, error: 'Username cannot exceed 20 characters.' }
   password:
     type: string
     required: true
     defaultError: 'Invalid password.'
     rules:
-      min_length: 8
+      minLength: 8
       error: 'Password must be at least 8 characters long.' 
       pattern:
         value: "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$"
