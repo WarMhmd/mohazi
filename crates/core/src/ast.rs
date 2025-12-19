@@ -3,6 +3,12 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_yaml_ng as serde_yaml;
 use std::collections::HashMap;
 
+mod number;
+mod string;
+
+pub use number::{NumberRules, NumberTransform};
+pub use string::{StringRules, StringTransform};
+
 // A simple example struct to test the build
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -146,50 +152,9 @@ pub enum Rules {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct StringRules {
-    #[serde(alias = "min", alias = "min_length")]
-    min_length: Option<RuleType<u128>>,
-    #[serde(alias = "max", alias = "max_length")]
-    max_length: Option<RuleType<u128>>,
-    length: Option<RuleType<u128>>,
-    #[serde(alias = "pattern", alias = "regex")]
-    regex: Option<RuleType<String>>,
-    #[serde(alias = "starts_with")]
-    starts_with: Option<RuleType<String>>,
-    #[serde(alias = "ends_with")]
-    ends_with: Option<RuleType<String>>,
-    includes: Option<RuleType<String>>,
-    uppercase: Option<RuleType<bool>>,
-    lowercase: Option<RuleType<bool>>,
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NumberRules {
-    #[serde(rename = "lt", alias = "lessThan")]
-    lt: Option<RuleType<i128>>,
-    #[serde(rename = "max", alias = "lte", alias = "lessThanOrEqual")]
-    max: Option<RuleType<i128>>,
-    #[serde(rename = "gt", alias = "greaterThan")]
-    gt: Option<RuleType<i128>>,
-    #[serde(rename = "min", alias = "gte", alias = "greaterThanOrEqual")]
-    min: Option<RuleType<i128>>,
-    equal: Option<RuleType<i128>>,
-    positive: Option<RuleType<bool>>,
-    #[serde(alias = "nonPositive", alias = "non_positive")]
-    nonpositive: Option<RuleType<bool>>,
-    negative: Option<RuleType<bool>>,
-    #[serde(alias = "nonNegative", alias = "non_negative")]
-    nonnegative: Option<RuleType<bool>>,
-    #[serde(alias = "divisibleBy", alias = "multipleOf", alias = "multiple_of")]
-    multiple_of: Option<RuleType<i128>>,
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct RuleType<T> {
-    value: T,
-    error: Option<String>,
+    pub value: T,
+    pub error: Option<String>,
 }
 // #endregion
 
@@ -201,33 +166,6 @@ pub enum Transform {
     Number(NumberTransform),
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct StringTransform {
-    pub trim: Option<bool>,
-    #[serde(
-        alias = "toLowerCase",
-        alias = "to_lower_case",
-        alias = "lowercase",
-        alias = "to_lowercase"
-    )]
-    pub to_lowercase: Option<bool>,
-    #[serde(
-        alias = "toUpperCase",
-        alias = "to_upper_case",
-        alias = "uppercase",
-        alias = "to_uppercase"
-    )]
-    pub to_uppercase: Option<bool>,
-    pub split: Option<String>,
-    pub cast: Option<FieldType>,
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NumberTransform {
-    pub cast: Option<FieldType>,
-}
 // #endregion
 
 // #region cast
