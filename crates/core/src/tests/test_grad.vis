@@ -3,8 +3,10 @@ login:
         type: string
         required: true
         rules:
-            maxLength: 10,
-            error: "This is maxLength error"
+            minLength: 4,
+            error: "This is minLength error"
+            regex: "^[a-zA-Z0-9_]+$",
+            error: "This is regex error"
         defaultError: "Invalid username."
         rules:
             minLength: 3

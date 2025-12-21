@@ -1,10 +1,6 @@
 use crate::ast::{Field, FieldType, Form, NumberRules, RuleType, Rules, StringRules};
 use indexmap::IndexMap;
-use serde::{Serialize, Serializer};
 use std::collections::HashMap;
-use std::iter::Peekable;
-use std::ops::Index;
-use std::{fs, io::Write, thread::current};
 
 /// Helper function
 fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
@@ -145,11 +141,11 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                             match rule {
                                 Rules::String(r) => {
                                     has_string = true;
-                                    merged_string.merge(r);
+                                    merged_string.merge(r, &mut errors);
                                 }
                                 Rules::Number(r) => {
                                     has_number = true;
-                                    merged_number.merge(r);
+                                    merged_number.merge(r, &mut errors);
                                 }
                             }
                         }
