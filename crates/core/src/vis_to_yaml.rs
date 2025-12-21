@@ -76,7 +76,20 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
     let mut parsing_type = FieldType::String;
     // through the Level enum
     let mut prev_spaces = 0;
-    let lines: Vec<&str> = input.lines().filter(|l| !l.trim().is_empty()).collect();
+    let lines: Vec<&str> = input
+        .lines()
+        .filter(|l| !l.trim().is_empty() && !l.trim().starts_with('#')) // ignores empty lines and
+        // lines starting with #
+        .map(|l| {
+            // strips comments from the line
+            if let Some(line_with_comment) = l.split_once('#') {
+                line_with_comment.0 // the part without the comment
+            } else {
+                l
+            }
+        })
+        .collect();
+
     let mut iter = lines.into_iter().peekable();
 
     let mut current_form_name = String::new();
