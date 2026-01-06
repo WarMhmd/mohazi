@@ -3,6 +3,7 @@ use serde_yaml_ng::Value;
 
 use super::parse_val;
 use super::FieldType;
+use super::Mergeable;
 use super::RuleType;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -105,8 +106,10 @@ impl NumberRules {
             _ => false,
         }
     }
+}
 
-    pub fn merge(&mut self, other: NumberRules, errors: &mut Vec<String>) {
+impl Mergeable for NumberRules {
+    fn merge(&mut self, other: NumberRules, errors: &mut Vec<String>) {
         if other.lt.is_some() {
             if self.lt.is_some() {
                 errors.push("Duplicate rule: lt".to_string());

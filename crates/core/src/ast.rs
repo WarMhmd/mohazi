@@ -9,6 +9,11 @@ mod string;
 pub use number::{NumberRules, NumberTransform};
 pub use string::{StringRules, StringTransform};
 
+pub trait Mergeable {
+    // This trait will be used for each rule to define the merge behaviour
+    fn merge(&mut self, other: Self, errors: &mut Vec<String>);
+}
+
 fn parse_val<T>(v: Value) -> Result<T, String>
 where
     T: serde::de::DeserializeOwned,

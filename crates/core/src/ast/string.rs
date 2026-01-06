@@ -3,6 +3,7 @@ use serde_yaml_ng::Value;
 
 use super::parse_val;
 use super::FieldType;
+use super::Mergeable;
 use super::RuleType;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -105,8 +106,10 @@ impl StringRules {
             _ => false,
         }
     }
+}
 
-    pub fn merge(&mut self, other: StringRules, erros: &mut Vec<String>) {
+impl Mergeable for StringRules {
+    fn merge(&mut self, other: StringRules, erros: &mut Vec<String>) {
         if other.min_length.is_some() {
             if self.min_length.is_some() {
                 erros.push("Duplicate rule: min_length".to_string());
@@ -191,6 +194,7 @@ pub struct StringTransform {
         alias = "to_uppercase"
     )]
     pub to_uppercase: Option<bool>,
+    // only these result in different type:
     pub split: Option<String>,
     pub cast: Option<FieldType>,
 }

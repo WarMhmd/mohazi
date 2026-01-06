@@ -1,4 +1,4 @@
-use crate::ast::{Field, FieldType, Form, NumberRules, RuleType, Rules, StringRules};
+use crate::ast::{Field, FieldType, Form, Mergeable, NumberRules, RuleType, Rules, StringRules};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 
@@ -121,21 +121,13 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
             if prev_level == Level::RulesAndTransformations
                 && new_level != Level::RulesAndTransformations
             {
-                // We need to borrow current_field here to save the rules
-                // (Using a separate scope or cell logic might be needed if borrow checker complains,
-                // but since we get the mutable reference fresh below, we can do it after this block if careful,
-                // or right here if we already have the reference.)
-
-                // EASIER: Just flush at the end of the previous iteration?
-                // No, we only know we finished the block NOW.
-
-                // Let's re-acquire the field to flush.
                 if let Some(form) = forms.get_mut(&current_form_name) {
                     if let Some(field) = form.fields.get_mut(&current_field_name) {
                         flush_rules(&mut active_rule_builder, field);
                     }
                 }
             }
+
             if new_level == Level::Field {
                 if let Some(form) = forms.get_mut(&current_form_name) {
                     if let Some(finished_field) = form.fields.get_mut(&current_field_name) {
