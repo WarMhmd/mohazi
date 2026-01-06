@@ -7,14 +7,32 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
     match std::mem::replace(builder, ActiveRuleBuilder::None) {
         ActiveRuleBuilder::String(r) => current_field.rules.push(Rules::String(r)),
         ActiveRuleBuilder::Number(r) => current_field.rules.push(Rules::Number(r)),
+        // TODO: handle when rules are ready
+        ActiveRuleBuilder::Boolean | ActiveRuleBuilder::Array => {}
         ActiveRuleBuilder::None => {}
     }
 }
 
+// TODO: Add new Types here
 enum ActiveRuleBuilder {
     String(StringRules),
     Number(NumberRules),
+    Boolean,
+    Array,
     None,
+}
+
+impl ActiveRuleBuilder {
+    /// get the type of this builder
+    pub fn get_type(&self) -> Option<FieldType> {
+        match self {
+            ActiveRuleBuilder::String(_) => Some(FieldType::String),
+            ActiveRuleBuilder::Number(_) => Some(FieldType::Number),
+            ActiveRuleBuilder::Boolean => Some(FieldType::Boolean),
+            ActiveRuleBuilder::Array => Some(FieldType::Array),
+            ActiveRuleBuilder::None => None,
+        }
+    }
 }
 
 // 1. Define the Level Enum
@@ -134,35 +152,24 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                         // 1. Take the rules out (empties the field's vector)
                         let raw_rules = std::mem::take(&mut finished_field.rules);
 
-                        // 2. Prepare accumulators
-                        let mut merged_string = StringRules::new();
-                        let mut has_string = false;
-
-                        let mut merged_number = NumberRules::new();
-                        let mut has_number = false;
+                        // 2. Prepare accumulator
+                        let mut accumulated_rules: Vec<Rules> = Vec::new();
 
                         // 3. Iterate and Merge
                         for rule in raw_rules {
-                            match rule {
-                                Rules::String(r) => {
-                                    has_string = true;
-                                    merged_string.merge(r, &mut errors);
-                                }
-                                Rules::Number(r) => {
-                                    has_number = true;
-                                    merged_number.merge(r, &mut errors);
-                                }
+                            if let Some(existing) =
+                                accumulated_rules.iter_mut().find(|r| r.is_same_type(&rule))
+                            {
+                                // This merges rules for the same types
+                                existing.merge(rule, &mut errors);
+                            } else {
+                                // This adds the rules for types seen for the first time
+                                accumulated_rules.push(rule);
                             }
                         }
 
                         // 4. Push back the merged results
-                        if has_string {
-                            println!("Has string");
-                            finished_field.rules.push(Rules::String(merged_string));
-                        }
-                        if has_number {
-                            finished_field.rules.push(Rules::Number(merged_number));
-                        }
+                        finished_field.rules = accumulated_rules;
                     }
                 }
             }
@@ -402,22 +409,14 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                             // 2. Update the field type immediately
                             parsing_type = cast_type;
 
-                            // 3. CRITICAL: Reset the builder if it doesn't match the new type!
-                            // If we defined some string rules, then cast to number,
-                            // we need to ensure the next rule we parse uses a NumberBuilder.
-
-                            match (&active_rule_builder, parsing_type) {
-                                (ActiveRuleBuilder::String(_), FieldType::Number) => {
-                                    // Flush existing string rules before switching?
-                                    // Or just drop them? usually flushing is safer.
+                            // 3. checking for conflict and flushing
+                            if let Some(builder_type) = active_rule_builder.get_type() {
+                                if builder_type != parsing_type {
+                                    // The builder's type doesn't match the new parsing type.
+                                    // Flush and reset.
                                     flush_rules(&mut active_rule_builder, current_field);
                                     active_rule_builder = ActiveRuleBuilder::None;
                                 }
-                                (ActiveRuleBuilder::Number(_), FieldType::String) => {
-                                    flush_rules(&mut active_rule_builder, current_field);
-                                    active_rule_builder = ActiveRuleBuilder::None;
-                                }
-                                _ => {} // No conflict or builder not started yet
                             }
                         }
                         _ => {

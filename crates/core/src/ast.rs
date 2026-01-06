@@ -175,6 +175,28 @@ pub enum Rules {
     Number(NumberRules),
 }
 
+impl Rules {
+    pub fn is_same_type(&self, other: &Rules) -> bool {
+        // std::mem::discriminant checks for enum variant regradless of the inner value
+        // (StringRules or NumberRules).
+        // in other words, this is the same as:
+        // if (self is Rules::T and other is Rules::T), where T is just any entry of the enum
+        std::mem::discriminant(self) == std::mem::discriminant(other)
+    }
+
+    /// This function merges the rules of the same type and returns an error on anything else
+    pub fn merge(&mut self, other: Rules, errors: &mut Vec<String>) {
+        match (self, other) {
+            (Rules::String(a), Rules::String(b)) => a.merge(b, errors),
+            (Rules::Number(a), Rules::Number(b)) => a.merge(b, errors),
+            // Add new types here (Boolean, Array, etc...)
+            _ => {
+                errors.push("Unknown rule type to be merged.".to_string());
+            }
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct RuleType<T> {
     pub value: T,
