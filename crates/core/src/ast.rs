@@ -3,9 +3,12 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_yaml::Value;
 use serde_yaml_ng as serde_yaml;
 use std::collections::HashMap;
+
+mod file;
 mod number;
 mod string;
 
+pub use file::{FileRules, FileTransform};
 pub use number::{NumberRules, NumberTransform};
 pub use string::{StringRules, StringTransform};
 
@@ -87,11 +90,12 @@ impl<'de> Deserialize<'de> for Field {
         let mut all_entries: Vec<_> = Vec::new();
 
         for (key, value) in shadow.extra.into_iter() {
-            if key.starts_with("rules") {
-                all_entries.push((key, value));
-            } else if key.starts_with("transform") {
-                all_entries.push((key, value));
+            if !key.starts_with("rules") && !key.starts_with("transform") {
+                // unexpected key
+                eprintln!("Warning: unexpected key '{}'", key);
+                continue;
             }
+            all_entries.push((key, value));
         }
 
         // Sort by key to ensure execution order: rules, rules1, rules2...
@@ -223,6 +227,7 @@ pub enum FieldType {
     Boolean,
     Array,
 }
+
 // #endregion
 
 #[test]
