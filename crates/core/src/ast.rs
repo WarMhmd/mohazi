@@ -12,9 +12,16 @@ pub use file::{FileRules, FileTransform};
 pub use number::{NumberRules, NumberTransform};
 pub use string::{StringRules, StringTransform};
 
+/// This trait will be used for each rule to define the merge behaviour
 pub trait Mergeable {
-    // This trait will be used for each rule to define the merge behaviour
     fn merge(&mut self, other: Self, errors: &mut Vec<String>);
+}
+
+// this trait will contain the base rule behaviour
+pub trait RuleTrait {
+    fn new() -> Self;
+    fn set_rule(&mut self, key: &str, value: Value, error: Option<String>) -> Result<(), String>;
+    fn is_valid_key(key: &str) -> bool;
 }
 
 fn parse_val<T>(v: Value) -> Result<T, String>

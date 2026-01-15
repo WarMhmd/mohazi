@@ -4,6 +4,7 @@ use serde_yaml_ng::Value;
 use super::parse_val;
 use super::FieldType;
 use super::Mergeable;
+use super::RuleTrait;
 use super::RuleType;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -28,8 +29,8 @@ pub struct NumberRules {
     pub multiple_of: Option<RuleType<i128>>,
 }
 
-impl NumberRules {
-    pub fn new() -> Self {
+impl RuleTrait for NumberRules {
+    fn new() -> Self {
         Self {
             lt: None,
             max: None,
@@ -44,12 +45,7 @@ impl NumberRules {
         }
     }
 
-    pub fn set_rule(
-        &mut self,
-        key: &str,
-        value: Value,
-        error: Option<String>,
-    ) -> Result<(), String> {
+    fn set_rule(&mut self, key: &str, value: Value, error: Option<String>) -> Result<(), String> {
         let rule_err = error;
 
         match key {
@@ -71,7 +67,7 @@ impl NumberRules {
         Ok(())
     }
 
-    pub fn is_valid_key(key: &str) -> bool {
+    fn is_valid_key(key: &str) -> bool {
         match key {
             // Field: lt (Renamed to "lt", Alias: "lessThan")
             "lt" | "lessThan" => true,

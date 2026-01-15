@@ -4,6 +4,7 @@ use serde_yaml_ng::Value;
 use super::parse_val;
 use super::FieldType;
 use super::Mergeable;
+use super::RuleTrait;
 use super::RuleType;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -25,8 +26,8 @@ pub struct StringRules {
     pub lowercase: Option<RuleType<bool>>,
 }
 
-impl StringRules {
-    pub fn new() -> Self {
+impl RuleTrait for StringRules {
+    fn new() -> Self {
         Self {
             min_length: None,
             max_length: None,
@@ -40,12 +41,7 @@ impl StringRules {
         }
     }
 
-    pub fn set_rule(
-        &mut self,
-        key: &str,
-        value: Value,
-        error: Option<String>,
-    ) -> Result<(), String> {
+    fn set_rule(&mut self, key: &str, value: Value, error: Option<String>) -> Result<(), String> {
         let rule_err = error; // alias for clarity
 
         match key {
@@ -74,7 +70,7 @@ impl StringRules {
     }
     /// Checks if a string key is a valid rule name, respecting
     /// camelCase renaming and your custom aliases.
-    pub fn is_valid_key(key: &str) -> bool {
+    fn is_valid_key(key: &str) -> bool {
         match key {
             // Field: min_length (camelCase: minLength)
             "minLength" | "min" | "min_length" => true,
