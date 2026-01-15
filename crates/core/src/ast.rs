@@ -1,14 +1,24 @@
+// Note: for adding any type, check the TODO: ...Add Types
+// TODO: ...Add Types create new file in crates\core\src\ast folder
+
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_yaml_ng as serde_yaml;
 use std::collections::HashMap;
 
+// TODO: ...Add Types add new mod here and pub use
+mod array;
+mod boolean;
+mod r#enum;
 mod file;
 mod number;
 mod string;
 
+pub use array::{ArrayRules, ArrayTransform};
+pub use boolean::{BooleanRules, BooleanTransform};
 pub use file::{FileRules, FileTransform};
 pub use number::{NumberRules, NumberTransform};
+pub use r#enum::{EnumRules, EnumTransform};
 pub use string::{StringRules, StringTransform};
 
 // A simple example struct to test the build
@@ -33,7 +43,7 @@ pub struct Field {
     pub required: bool,
     #[serde(alias = "default_error")]
     pub default_error: Option<String>,
-    pub rules: Vec<Rules>,
+    pub rules: Vec<Rule>,
     pub transform: Vec<Transform>,
 }
 
@@ -79,16 +89,16 @@ impl<'de> Deserialize<'de> for Field {
         let mut field_type = shadow.field_type;
         for (key, value) in all_entries {
             if key.starts_with("rules") {
-                let rule: Rules = match field_type {
+                let rule: Rule = match field_type {
                     FieldType::String => {
                         let string_rule: StringRules =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
-                        Rules::String(string_rule)
+                        Rule::String(string_rule)
                     }
                     FieldType::Number => {
                         let number_rule: NumberRules =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
-                        Rules::Number(number_rule)
+                        Rule::Number(number_rule)
                     }
                     _ => {
                         return Err(D::Error::custom(format!(
@@ -118,10 +128,7 @@ impl<'de> Deserialize<'de> for Field {
                     }
                 };
                 // check if transform_item has cast
-                if let Some(cast) = match &transform_item {
-                    Transform::String(s) => s.cast,
-                    Transform::Number(n) => n.cast,
-                } {
+                if let Some(cast) = transform_item.get_cast() {
                     field_type = cast;
                 }
 
@@ -149,9 +156,14 @@ impl<'de> Deserialize<'de> for Field {
 // #region Rules
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum Rules {
+pub enum Rule {
     String(StringRules),
     Number(NumberRules),
+    File(FileRules),
+    Enum(EnumRules),
+    Boolean(BooleanRules),
+    Array(ArrayRules),
+    // TODO: ...Add Types more types here
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -167,6 +179,25 @@ pub struct RuleType<T> {
 pub enum Transform {
     String(StringTransform),
     Number(NumberTransform),
+    File(FileTransform),
+    Enum(EnumTransform),
+    Boolean(BooleanTransform),
+    Array(ArrayTransform),
+    // TODO: ...Add Types more types here
+}
+
+impl Transform {
+    pub fn get_cast(&self) -> Option<FieldType> {
+        match self {
+            Transform::String(s) => s.cast,
+            Transform::Number(n) => n.cast,
+            Transform::File(f) => f.cast,
+            Transform::Enum(e) => e.cast,
+            Transform::Boolean(b) => b.cast,
+            Transform::Array(a) => a.cast,
+            // TODO: ...Add Types more types here
+        }
+    }
 }
 
 // #endregion
