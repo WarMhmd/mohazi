@@ -176,7 +176,7 @@ impl Mergeable for StringRules {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct StringTransform {
     pub trim: Option<bool>,
@@ -197,4 +197,43 @@ pub struct StringTransform {
     // only these result in different type:
     pub split: Option<String>,
     pub cast: Option<FieldType>,
+}
+
+impl StringTransform {
+    pub fn is_valid_key(key: &str) -> bool {
+        match key {
+            "trim" => true,
+            "toLowerCase" | "to_lower_case" | "lowercase" | "to_lowercase" => true,
+            "toUpperCase" | "to_upper_case" | "uppercase" | "to_uppercase" => true,
+            "split" => true,
+            "cast" => true,
+            _ => false,
+        }
+    }
+
+    // pub fn set_transform(&self, key: &str, value: &str) -> Result<StringTransform, String> {
+    //     match key {
+    //         "trim" => Ok(StringTransform {
+    //             trim: Some(value),
+    //             ..self.clone()
+    //         }),
+    //         "toLowerCase" | "to_lower_case" | "lowercase" | "to_lowercase" => Ok(StringTransform {
+    //             to_lowercase: Some(value),
+    //             ..self.clone()
+    //         }),
+    //         "toUpperCase" | "to_upper_case" | "uppercase" | "to_uppercase" => Ok(StringTransform {
+    //             to_uppercase: Some(value),
+    //             ..self.clone()
+    //         }),
+    //         "split" => Ok(StringTransform {
+    //             split: Some(value),
+    //             ..self.clone()
+    //         }),
+    //         "cast" => Ok(StringTransform {
+    //             cast: Some(value),
+    //             ..self.clone()
+    //         }),
+    //         _ => Err(format!("Unk key: {}", key)),
+    //     }
+    // }
 }

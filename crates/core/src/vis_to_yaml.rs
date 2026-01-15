@@ -1,4 +1,7 @@
-use crate::ast::{Field, FieldType, Form, Mergeable, NumberRules, RuleType, Rules, StringRules};
+use crate::ast::{
+    Field, FieldType, Form, Mergeable, NumberRules, NumberTransform, RuleType, Rules, StringRules,
+    StringTransform, Transform,
+};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 
@@ -22,6 +25,14 @@ enum ActiveRuleBuilder {
     None,
 }
 
+enum ActiveTransformBuilder {
+    String(StringTransform),
+    Number(NumberTransform),
+    Boolean,
+    Array,
+    None,
+}
+
 impl ActiveRuleBuilder {
     /// get the type of this builder
     pub fn get_type(&self) -> Option<FieldType> {
@@ -31,6 +42,19 @@ impl ActiveRuleBuilder {
             ActiveRuleBuilder::Boolean => Some(FieldType::Boolean),
             ActiveRuleBuilder::Array => Some(FieldType::Array),
             ActiveRuleBuilder::None => None,
+        }
+    }
+}
+
+impl ActiveTransformBuilder {
+    /// get the type of this builder
+    pub fn get_type(&self) -> Option<FieldType> {
+        match self {
+            ActiveTransformBuilder::String(_) => Some(FieldType::String),
+            ActiveTransformBuilder::Number(_) => Some(FieldType::Number),
+            ActiveTransformBuilder::Boolean => Some(FieldType::Boolean),
+            ActiveTransformBuilder::Array => Some(FieldType::Array),
+            ActiveTransformBuilder::None => None,
         }
     }
 }
@@ -114,6 +138,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
     let mut current_field_name = String::new();
     let mut active_context = "none"; // transform or rule
     let mut active_rule_builder = ActiveRuleBuilder::None;
+    let mut active_transform_builder = ActiveTransformBuilder::None;
     let mut prev_level = Level::Form;
 
     while let Some(line) = iter.next() {
@@ -381,6 +406,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                     let result = match &mut active_rule_builder {
                         ActiveRuleBuilder::String(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Number(r) => r.set_rule(key, final_val, final_err),
+                        // TODO: handle when rules are ready
+                        ActiveRuleBuilder::Boolean => todo!(),
+                        ActiveRuleBuilder::Array => todo!(),
                         ActiveRuleBuilder::None => Ok(()),
                     };
 
@@ -406,10 +434,19 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                                 }
                             };
 
-                            // 2. Update the field type immediately
+                            // 2. add to transform list
+                            let result = match &mut active_transform_builder {
+                                ActiveTransformBuilder::String(t) => todo!(), // t.set_transform(key, value),
+                                ActiveTransformBuilder::Number(t) => todo!(),
+                                ActiveTransformBuilder::Boolean => todo!(),
+                                ActiveTransformBuilder::Array => todo!(),
+                                ActiveTransformBuilder::None => todo!(),
+                            };
+
+                            // 3. Update the field type immediately
                             parsing_type = cast_type;
 
-                            // 3. checking for conflict and flushing
+                            // 4. checking for conflict and flushing
                             if let Some(builder_type) = active_rule_builder.get_type() {
                                 if builder_type != parsing_type {
                                     // The builder's type doesn't match the new parsing type.
@@ -419,6 +456,40 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                                 }
                             }
                         }
+                        // String only transforms
+                        "trim" => {
+                            if current_field.field_type != FieldType::String {
+                                errors.push(format!(
+                                    "Cannot lowercase non-string field {}",
+                                    current_field_name
+                                ));
+                            }
+                        }
+                        "to_lowercase" | "to_lower_case" | "toLowerCase" | "lowercase" => {
+                            if current_field.field_type != FieldType::String {
+                                errors.push(format!(
+                                    "Cannot lowercase non-string field {}",
+                                    current_field_name
+                                ));
+                            }
+                        }
+                        "to_uppercase" | "to_upper_case" | "toUpperCase" | "uppercase" => {
+                            if current_field.field_type != FieldType::String {
+                                errors.push(format!(
+                                    "Cannot uppercase non-string field {}",
+                                    current_field_name
+                                ));
+                            }
+                        }
+                        "split" => {
+                            if current_field.field_type != FieldType::String {
+                                errors.push(format!(
+                                    "Cannot split non-string field {}",
+                                    current_field_name
+                                ));
+                            }
+                        }
+                        // end of String only transforms
                         _ => {
                             errors.push(format!("Unknown transform property: {}", key));
                         }

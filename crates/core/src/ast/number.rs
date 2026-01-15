@@ -183,7 +183,7 @@ impl Mergeable for NumberRules {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct NumberTransform {
     pub cast: Option<FieldType>,
