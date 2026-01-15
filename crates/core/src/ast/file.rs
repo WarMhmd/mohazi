@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
+use serde_yaml_ng::Value;
 
 use crate::ast::parse_val;
+use crate::ast::TransformTrait;
 
 use super::FieldType;
 use super::Mergeable;
@@ -99,4 +101,37 @@ impl Mergeable for FileRules {
 #[serde(rename_all = "camelCase")]
 pub struct FileTransform {
     pub cast: Option<FieldType>,
+}
+
+impl Mergeable for FileTransform {
+    fn merge(&mut self, other: Self, errors: &mut Vec<String>) {
+        if other.cast.is_some() {
+            if self.cast.is_some() {
+                errors.push("Duplicate transform: cast".to_string());
+            } else {
+                self.cast = other.cast;
+            }
+        }
+    }
+}
+
+impl TransformTrait for FileTransform {
+    fn new() -> Self {
+        FileTransform { cast: None }
+    }
+
+    fn is_valid_key(key: &str) -> bool {
+        match key {
+            "cast" => true,
+            _ => false,
+        }
+    }
+
+    fn set_transform(&mut self, key: &str, value: Value) -> Result<(), String> {
+        match key {
+            "cast" => self.cast = Some(parse_val(value)?),
+            _ => return Err(format!("Unknown transform {}", key)),
+        };
+        Ok(())
+    }
 }

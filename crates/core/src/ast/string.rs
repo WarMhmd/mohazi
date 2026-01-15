@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_yaml_ng::Value;
 
+use crate::ast::TransformTrait;
+
 use super::parse_val;
 use super::FieldType;
 use super::Mergeable;
@@ -195,8 +197,62 @@ pub struct StringTransform {
     pub cast: Option<FieldType>,
 }
 
-impl StringTransform {
-    pub fn is_valid_key(key: &str) -> bool {
+impl Mergeable for StringTransform {
+    fn merge(&mut self, other: Self, errors: &mut Vec<String>) {
+        if other.cast.is_some() {
+            if self.cast.is_some() {
+                errors.push("Duplicate transform: cast".to_string());
+            } else {
+                self.cast = other.cast;
+            }
+        }
+
+        if other.to_uppercase.is_some() {
+            if self.to_uppercase.is_some() {
+                errors.push("Duplicate transform: to_uppercase".to_string());
+            } else {
+                self.to_uppercase = other.to_uppercase;
+            }
+        }
+
+        if other.to_lowercase.is_some() {
+            if self.to_lowercase.is_some() {
+                errors.push("Duplicate transform: to_lowercase".to_string());
+            } else {
+                self.to_lowercase = other.to_lowercase;
+            }
+        }
+
+        if other.trim.is_some() {
+            if self.trim.is_some() {
+                errors.push("Duplicate transform: trim".to_string());
+            } else {
+                self.trim = other.trim;
+            }
+        }
+
+        if other.split.is_some() {
+            if self.split.is_some() {
+                errors.push("Duplicate transform: split".to_string());
+            } else {
+                self.split = other.split;
+            }
+        }
+    }
+}
+
+impl TransformTrait for StringTransform {
+    fn new() -> Self {
+        StringTransform {
+            trim: None,
+            to_lowercase: None,
+            to_uppercase: None,
+            split: None,
+            cast: None,
+        }
+    }
+
+    fn is_valid_key(key: &str) -> bool {
         match key {
             "trim" => true,
             "toLowerCase" | "to_lower_case" | "lowercase" | "to_lowercase" => true,
@@ -207,29 +263,19 @@ impl StringTransform {
         }
     }
 
-    // pub fn set_transform(&self, key: &str, value: &str) -> Result<StringTransform, String> {
-    //     match key {
-    //         "trim" => Ok(StringTransform {
-    //             trim: Some(value),
-    //             ..self.clone()
-    //         }),
-    //         "toLowerCase" | "to_lower_case" | "lowercase" | "to_lowercase" => Ok(StringTransform {
-    //             to_lowercase: Some(value),
-    //             ..self.clone()
-    //         }),
-    //         "toUpperCase" | "to_upper_case" | "uppercase" | "to_uppercase" => Ok(StringTransform {
-    //             to_uppercase: Some(value),
-    //             ..self.clone()
-    //         }),
-    //         "split" => Ok(StringTransform {
-    //             split: Some(value),
-    //             ..self.clone()
-    //         }),
-    //         "cast" => Ok(StringTransform {
-    //             cast: Some(value),
-    //             ..self.clone()
-    //         }),
-    //         _ => Err(format!("Unk key: {}", key)),
-    //     }
-    // }
+    fn set_transform(&mut self, key: &str, value: Value) -> Result<(), String> {
+        match key {
+            "trim" => self.trim = Some(parse_val(value)?),
+            "toLowerCase" | "to_lower_case" | "lowercase" | "to_lowercase" => {
+                self.to_lowercase = Some(parse_val(value)?)
+            }
+            "toUpperCase" | "to_upper_case" | "uppercase" | "to_uppercase" => {
+                self.to_uppercase = Some(parse_val(value)?)
+            }
+            "split" => self.split = Some(parse_val(value)?),
+            "cast" => self.cast = Some(parse_val(value)?),
+            _ => return Err(format!("Unknown transform {}", key)),
+        };
+        Ok(())
+    }
 }

@@ -153,6 +153,7 @@ impl<'de> Deserialize<'de> for Field {
                 if let Some(cast) = match &transform_item {
                     Transform::String(s) => s.cast,
                     Transform::Number(n) => n.cast,
+                    Transform::File(f) => f.cast,
                 } {
                     field_type = cast;
                 }
@@ -184,6 +185,7 @@ impl<'de> Deserialize<'de> for Field {
 pub enum Rules {
     String(StringRules),
     Number(NumberRules),
+    File(FileRules),
 }
 
 impl Rules {
@@ -200,6 +202,7 @@ impl Rules {
         match (self, other) {
             (Rules::String(a), Rules::String(b)) => a.merge(b, errors),
             (Rules::Number(a), Rules::Number(b)) => a.merge(b, errors),
+            (Rules::File(a), Rules::File(b)) => a.merge(b, errors),
             // Add new types here (Boolean, Array, etc...)
             _ => {
                 errors.push("Unknown rule type to be merged.".to_string());
@@ -221,6 +224,36 @@ pub struct RuleType<T> {
 pub enum Transform {
     String(StringTransform),
     Number(NumberTransform),
+    File(FileTransform),
+}
+
+pub trait TransformTrait {
+    fn new() -> Self;
+    fn is_valid_key(key: &str) -> bool;
+    fn set_transform(&mut self, key: &str, value: Value) -> Result<(), String>;
+}
+
+impl Transform {
+    pub fn is_same_type(&self, other: &Transform) -> bool {
+        // std::mem::discriminant checks for enum variant regradless of the inner value
+        // (StringRules or NumberRules).
+        // in other words, this is the same as:
+        // if (self is Rules::T and other is Rules::T), where T is just any entry of the enum
+        std::mem::discriminant(self) == std::mem::discriminant(other)
+    }
+
+    /// This function merges the rules of the same type and returns an error on anything else
+    pub fn merge(&mut self, other: Transform, errors: &mut Vec<String>) {
+        match (self, other) {
+            (Transform::String(a), Transform::String(b)) => a.merge(b, errors),
+            (Transform::Number(a), Transform::Number(b)) => a.merge(b, errors),
+            (Transform::File(a), Transform::File(b)) => a.merge(b, errors),
+            // Add new types here (Boolean, Array, etc...)
+            _ => {
+                errors.push("Unknown rule type to be merged.".to_string());
+            }
+        }
+    }
 }
 
 // #endregion
@@ -231,6 +264,7 @@ pub enum Transform {
 pub enum FieldType {
     String,
     Number,
+    File,
     Boolean,
     Array,
 }

@@ -1,18 +1,33 @@
 use crate::ast::{
-    Field, FieldType, Form, Mergeable, NumberRules, NumberTransform, RuleType, Rules, StringRules,
-    StringTransform, Transform,
+    Field, FieldType, FileRules, FileTransform, Form, Mergeable, NumberRules, NumberTransform,
+    RuleTrait, RuleType, Rules, StringRules, StringTransform, Transform, TransformTrait,
 };
 use indexmap::IndexMap;
-use std::collections::HashMap;
+use std::{collections::HashMap, os::linux::raw};
 
-/// Helper function
+/// This function take the set of rules that is currently being built and commits it to the actual
+/// field
 fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
     match std::mem::replace(builder, ActiveRuleBuilder::None) {
         ActiveRuleBuilder::String(r) => current_field.rules.push(Rules::String(r)),
         ActiveRuleBuilder::Number(r) => current_field.rules.push(Rules::Number(r)),
+        ActiveRuleBuilder::File(r) => current_field.rules.push(Rules::File(r)),
         // TODO: handle when rules are ready
         ActiveRuleBuilder::Boolean | ActiveRuleBuilder::Array => {}
         ActiveRuleBuilder::None => {}
+    }
+}
+
+/// This function take the set of transforms that is currently being built and commits it to the actual
+/// field
+fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Field) {
+    match std::mem::replace(builder, ActiveTransformBuilder::None) {
+        ActiveTransformBuilder::String(t) => current_field.transform.push(Transform::String(t)),
+        ActiveTransformBuilder::Number(t) => current_field.transform.push(Transform::Number(t)),
+        ActiveTransformBuilder::File(t) => current_field.transform.push(Transform::File(t)),
+        // TODO: handle when rules are ready
+        ActiveTransformBuilder::Boolean | ActiveTransformBuilder::Array => {}
+        ActiveTransformBuilder::None => {}
     }
 }
 
@@ -20,6 +35,7 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
 enum ActiveRuleBuilder {
     String(StringRules),
     Number(NumberRules),
+    File(FileRules),
     Boolean,
     Array,
     None,
@@ -28,6 +44,7 @@ enum ActiveRuleBuilder {
 enum ActiveTransformBuilder {
     String(StringTransform),
     Number(NumberTransform),
+    File(FileTransform),
     Boolean,
     Array,
     None,
@@ -39,6 +56,7 @@ impl ActiveRuleBuilder {
         match self {
             ActiveRuleBuilder::String(_) => Some(FieldType::String),
             ActiveRuleBuilder::Number(_) => Some(FieldType::Number),
+            ActiveRuleBuilder::File(_) => Some(FieldType::File),
             ActiveRuleBuilder::Boolean => Some(FieldType::Boolean),
             ActiveRuleBuilder::Array => Some(FieldType::Array),
             ActiveRuleBuilder::None => None,
@@ -52,6 +70,7 @@ impl ActiveTransformBuilder {
         match self {
             ActiveTransformBuilder::String(_) => Some(FieldType::String),
             ActiveTransformBuilder::Number(_) => Some(FieldType::Number),
+            ActiveTransformBuilder::File(_) => Some(FieldType::File),
             ActiveTransformBuilder::Boolean => Some(FieldType::Boolean),
             ActiveTransformBuilder::Array => Some(FieldType::Array),
             ActiveTransformBuilder::None => None,
@@ -167,34 +186,16 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                 if let Some(form) = forms.get_mut(&current_form_name) {
                     if let Some(field) = form.fields.get_mut(&current_field_name) {
                         flush_rules(&mut active_rule_builder, field);
+                        flush_transforms(&mut active_transform_builder, field);
                     }
                 }
             }
 
-            if new_level == Level::Field {
+            if (new_level as usize) <= (Level::Field as usize) {
                 if let Some(form) = forms.get_mut(&current_form_name) {
                     if let Some(finished_field) = form.fields.get_mut(&current_field_name) {
-                        // 1. Take the rules out (empties the field's vector)
-                        let raw_rules = std::mem::take(&mut finished_field.rules);
-
-                        // 2. Prepare accumulator
-                        let mut accumulated_rules: Vec<Rules> = Vec::new();
-
-                        // 3. Iterate and Merge
-                        for rule in raw_rules {
-                            if let Some(existing) =
-                                accumulated_rules.iter_mut().find(|r| r.is_same_type(&rule))
-                            {
-                                // This merges rules for the same types
-                                existing.merge(rule, &mut errors);
-                            } else {
-                                // This adds the rules for types seen for the first time
-                                accumulated_rules.push(rule);
-                            }
-                        }
-
-                        // 4. Push back the merged results
-                        finished_field.rules = accumulated_rules;
+                        merge_rules(finished_field, &mut errors);
+                        merge_transforms(finished_field, &mut errors);
                     }
                 }
             }
@@ -330,7 +331,15 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                     if matches!(active_rule_builder, ActiveRuleBuilder::None) {
                         active_rule_builder = match parsing_type {
                             FieldType::Number => ActiveRuleBuilder::Number(NumberRules::new()),
-                            _ => ActiveRuleBuilder::String(StringRules::new()),
+                            FieldType::String => ActiveRuleBuilder::String(StringRules::new()),
+                            FieldType::File => ActiveRuleBuilder::File(FileRules::new()),
+                            //TODO: handle when rules are ready
+                            FieldType::Boolean => ActiveRuleBuilder::Boolean,
+                            FieldType::Array => ActiveRuleBuilder::Array,
+                            _ => {
+                                errors.push(format!("Unknown field type {}", value));
+                                continue;
+                            }
                         };
                     }
 
@@ -338,11 +347,15 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                     let (final_val, final_err): (serde_yaml_ng::Value, Option<String>) = {
                         if value.starts_with('{') {
                             // Variation 1: Inline JSON
+                            // <key>: { value: <value>, error: <error> }
                             let rt: RuleType<serde_yaml_ng::Value> = serde_yaml_ng::from_str(value)
                                 .map_err(|e| vec![format!("Invalid inline rule: {}", e)])?;
                             (rt.value, rt.error)
                         } else if value.is_empty() {
                             // Variation 3: Nested Block (Lookahead)
+                            // <key>:
+                            //    value: <value>
+                            //    error: <error>
                             let mut n_val = serde_yaml_ng::Value::Null;
                             let mut n_err = None;
 
@@ -377,6 +390,8 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                             (n_val, n_err)
                         } else {
                             // Variation 2: Value + Sibling Error
+                            // <key>: <value>
+                            // error: <error>
                             let clean_val_str = value.trim().trim_end_matches(',');
                             let s_val: serde_yaml_ng::Value =
                                 serde_yaml_ng::from_str(clean_val_str)
@@ -406,6 +421,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                     let result = match &mut active_rule_builder {
                         ActiveRuleBuilder::String(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Number(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::File(r) => r.set_rule(key, final_val, final_err),
                         // TODO: handle when rules are ready
                         ActiveRuleBuilder::Boolean => todo!(),
                         ActiveRuleBuilder::Array => todo!(),
@@ -414,11 +430,32 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
 
                     if let Err(msg) = result {
                         errors.push(format!("Rule Error at {}: {}", current_field_name, msg));
+                        continue;
                     }
                 }
                 "transform" => {
                     let current_form = forms.get_mut(&current_form_name).unwrap();
                     let current_field = current_form.fields.get_mut(&current_field_name).unwrap();
+
+                    // INITIALIZE BUILDER
+                    if matches!(active_transform_builder, ActiveTransformBuilder::None) {
+                        active_transform_builder = match parsing_type {
+                            FieldType::Number => {
+                                ActiveTransformBuilder::Number(NumberTransform::new())
+                            }
+                            FieldType::String => {
+                                ActiveTransformBuilder::String(StringTransform::new())
+                            }
+                            FieldType::File => ActiveTransformBuilder::File(FileTransform::new()),
+                            //TODO: handle when rules are ready
+                            FieldType::Boolean => ActiveTransformBuilder::Boolean,
+                            FieldType::Array => ActiveTransformBuilder::Array,
+                            _ => {
+                                errors.push(format!("Unknown field type {}", value));
+                                continue;
+                            }
+                        };
+                    }
 
                     match key {
                         "cast" => {
@@ -428,66 +465,54 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                                 "number" => FieldType::Number,
                                 "boolean" => FieldType::Boolean,
                                 "array" => FieldType::Array,
+                                "file" => {
+                                    errors.push(format!("Cannot convert any type to file"));
+                                    continue;
+                                }
                                 _ => {
                                     errors.push(format!("Invalid cast type '{}'", value));
                                     continue;
                                 }
                             };
 
-                            // 2. add to transform list
-                            let result = match &mut active_transform_builder {
-                                ActiveTransformBuilder::String(t) => todo!(), // t.set_transform(key, value),
-                                ActiveTransformBuilder::Number(t) => todo!(),
-                                ActiveTransformBuilder::Boolean => todo!(),
-                                ActiveTransformBuilder::Array => todo!(),
-                                ActiveTransformBuilder::None => todo!(),
-                            };
-
-                            // 3. Update the field type immediately
+                            // 2. Update the field type immediately
                             parsing_type = cast_type;
 
-                            // 4. checking for conflict and flushing
-                            if let Some(builder_type) = active_rule_builder.get_type() {
-                                if builder_type != parsing_type {
+                            // build transformation
+                            build_transform(key, value, &mut active_transform_builder, &mut errors);
+
+                            // 3. checking for conflict and flushing
+                            if let Some(rule_builder_type) = active_rule_builder.get_type() {
+                                if rule_builder_type != parsing_type {
                                     // The builder's type doesn't match the new parsing type.
-                                    // Flush and reset.
+                                    // Flush rules and reset.
                                     flush_rules(&mut active_rule_builder, current_field);
                                     active_rule_builder = ActiveRuleBuilder::None;
                                 }
                             }
+                            if let Some(transform_builder_type) =
+                                active_transform_builder.get_type()
+                            {
+                                if transform_builder_type != parsing_type {
+                                    // The builder's type doesn't match the new parsing type.
+                                    // Flush tansforms and reset.
+                                    flush_transforms(&mut active_transform_builder, current_field);
+                                    active_transform_builder = ActiveTransformBuilder::None;
+                                }
+                            }
                         }
                         // String only transforms
-                        "trim" => {
+                        "split" | "trim" | "to_lowercase" | "to_lower_case" | "toLowerCase"
+                        | "lowercase" | "to_uppercase" | "to_upper_case" | "toUpperCase"
+                        | "uppercase" => {
                             if current_field.field_type != FieldType::String {
                                 errors.push(format!(
-                                    "Cannot lowercase non-string field {}",
-                                    current_field_name
+                                    "Cannot use the {} transform non-string field {}",
+                                    key, current_field_name
                                 ));
                             }
-                        }
-                        "to_lowercase" | "to_lower_case" | "toLowerCase" | "lowercase" => {
-                            if current_field.field_type != FieldType::String {
-                                errors.push(format!(
-                                    "Cannot lowercase non-string field {}",
-                                    current_field_name
-                                ));
-                            }
-                        }
-                        "to_uppercase" | "to_upper_case" | "toUpperCase" | "uppercase" => {
-                            if current_field.field_type != FieldType::String {
-                                errors.push(format!(
-                                    "Cannot uppercase non-string field {}",
-                                    current_field_name
-                                ));
-                            }
-                        }
-                        "split" => {
-                            if current_field.field_type != FieldType::String {
-                                errors.push(format!(
-                                    "Cannot split non-string field {}",
-                                    current_field_name
-                                ));
-                            }
+
+                            build_transform(key, value, &mut active_transform_builder, &mut errors);
                         }
                         // end of String only transforms
                         _ => {
@@ -511,6 +536,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
     if let Some(form) = forms.get_mut(&current_form_name) {
         if let Some(field) = form.fields.get_mut(&current_field_name) {
             flush_rules(&mut active_rule_builder, field);
+            flush_transforms(&mut active_transform_builder, field);
+            merge_rules(field, &mut errors);
+            merge_transforms(field, &mut errors);
         }
     }
 
@@ -523,105 +551,74 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
     }
 }
 
-// /// This function handles the way we write custom rules and errors and converts them to valid yaml
-// /// Example:
-// ///     min_length: 5
-// ///     error: "Password must be at least 5 characters long"
-// ///     max_length: 10
-// ///     error: "Password must be at most 10 characters long"
-// ///
-// /// Should become like this:
-// ///     min_length: { "value": 5, "error": "Password must be at least 5 characters long" }
-// ///     max_length: { "value": 10, "error": "Password must be at most 5 characters long" }
-// ///
-// /// PAY ATTENTION TO THE SPACES
-// pub fn handle_custom_rule_format(rules: String) -> String {
-//     let mut rules = rules.lines().map(|rule| rule.to_string());
-//     let mut rule = String::new();
-//     let mut final_rules = String::new();
-//     while let Some(line) = rules.next() {
-//         if line.trim().starts_with("error") && !rule.trim().starts_with("value") {
-//             if rule.is_empty() {
-//                 // validates if the error is written without a rule before it
-//                 eprintln!("Err: No rules provided");
-//                 continue;
-//             }
-//             let number_of_spaces = line.find("error").unwrap();
-//             let (rule_name, rule_value) = rule.split_once(':').unwrap();
-//             let error_msg = &line.split_once(':').unwrap().1.trim().to_string();
-//
-//             let result = format!(
-//                 "{}{}: {{ \"value\": {}, \"error\": {} }}\n",
-//                 String::from(" ").repeat(number_of_spaces),
-//                 rule_name.trim(),
-//                 rule_value.trim(),
-//                 error_msg
-//             );
-//
-//             let mut trimmed_end = final_rules.lines().collect::<Vec<&str>>();
-//             trimmed_end.pop(); // this prevents the repetition of rules
-//             trimmed_end.push(&result);
-//             final_rules = trimmed_end.join("\n");
-//         } else {
-//             final_rules.push_str(line.as_str());
-//             final_rules.push_str("\n");
-//         }
-//         rule = line;
-//     }
-//
-//     final_rules
-// }
-//
-// /// This function is supposed to read the .vis input file, convert the custom formats into valid
-// /// yaml and then write it to the output file in yaml extension
-// pub fn read_vis_file(vis_path: &str) {
-//     let vis_file = fs::read_to_string(vis_path).unwrap();
-//     let mut output_file = fs::File::create("output.yaml").unwrap();
-//     let mut lines = vis_file.lines();
-//     let mut rules_batch = String::new();
-//     let mut writing_rules = false;
-//     let mut collecting_rules = false;
-//     let mut rules_spaces = 0;
-//     while let Some(mut line) = lines.next() {
-//         if line.trim().starts_with("rules:") {
-//             rules_spaces = line.find("rules:").unwrap();
-//             collecting_rules = true;
-//             output_file.write_all(line.as_bytes()).unwrap();
-//             output_file.write_all(b"\n").unwrap();
-//             continue;
-//         }
-//
-//         while collecting_rules {
-//             if !line.starts_with(format!("{} ", " ".repeat(rules_spaces)).as_str()) {
-//                 collecting_rules = false;
-//                 writing_rules = true;
-//             }
-//             rules_batch.push_str(line);
-//             rules_batch.push_str("\n");
-//             line = lines
-//                 .next()
-//                 .or_else(|| {
-//                     collecting_rules = false;
-//                     Some("EOF")
-//                 })
-//                 .unwrap();
-//         }
-//         if line == "EOF" {
-//             break;
-//         }
-//
-//         if writing_rules {
-//             let rules = handle_custom_rule_format(rules_batch.clone());
-//             output_file.write_all(rules.as_bytes()).unwrap();
-//             rules_batch = String::new();
-//             writing_rules = false;
-//         }
-//         output_file.write_all(line.as_bytes()).unwrap();
-//         output_file.write_all(b"\n").unwrap();
-//     }
-//
-//     if !rules_batch.is_empty() {
-//         let rules = handle_custom_rule_format(rules_batch.clone());
-//         output_file.write_all(rules.as_bytes()).unwrap();
-//     }
-// }
+fn build_transform(
+    key: &str,
+    value: &str,
+    builder: &mut ActiveTransformBuilder,
+    errors: &mut Vec<String>,
+) {
+    let clean_val_str = value.trim().trim_end_matches(',');
+    let final_val = serde_yaml_ng::from_str(clean_val_str).unwrap();
+
+    let result = match builder {
+        ActiveTransformBuilder::String(string_transform) => {
+            string_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Number(number_transform) => todo!(),
+        ActiveTransformBuilder::File(file_rules) => todo!(),
+        ActiveTransformBuilder::Boolean => todo!(),
+        ActiveTransformBuilder::Array => todo!(),
+        ActiveTransformBuilder::None => Ok(()),
+    };
+
+    if let Err(r) = result {
+        errors.push(format!("Transformation Error: {}", r).to_string());
+    }
+}
+
+fn merge_rules(field: &mut Field, errors: &mut Vec<String>) {
+    // 1. Take the rules out (empties the field's vector)
+    let raw_rules = std::mem::take(&mut field.rules);
+
+    // 2. Prepare accumulator
+    let mut accumulated_rules: Vec<Rules> = Vec::new();
+
+    // 3. Iterate and Merge
+    for rule in raw_rules {
+        if let Some(existing) = accumulated_rules.iter_mut().find(|r| r.is_same_type(&rule)) {
+            // This merges rules for the same types
+            existing.merge(rule, errors);
+        } else {
+            // This adds the rules for types seen for the first time
+            accumulated_rules.push(rule);
+        }
+    }
+
+    // 4. Push back the merged results
+    field.rules = accumulated_rules;
+}
+
+fn merge_transforms(field: &mut Field, errors: &mut Vec<String>) {
+    // 1. Take the rules out (empties the field's vector)
+    let raw_transforms = std::mem::take(&mut field.transform);
+
+    // 2. Prepare accumulator
+    let mut accumulated_transforms: Vec<Transform> = Vec::new();
+
+    // 3. Iterate and Merge
+    for transform in raw_transforms {
+        if let Some(existing) = accumulated_transforms
+            .iter_mut()
+            .find(|r| r.is_same_type(&transform))
+        {
+            // This merges rules for the same types
+            existing.merge(transform, errors);
+        } else {
+            // This adds the rules for types seen for the first time
+            accumulated_transforms.push(transform);
+        }
+    }
+
+    // 4. Push back the merged results
+    field.transform = accumulated_transforms;
+}

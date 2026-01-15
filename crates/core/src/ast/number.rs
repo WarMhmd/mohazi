@@ -1,3 +1,4 @@
+use crate::ast::TransformTrait;
 use serde::{Deserialize, Serialize};
 use serde_yaml_ng::Value;
 
@@ -69,36 +70,16 @@ impl RuleTrait for NumberRules {
 
     fn is_valid_key(key: &str) -> bool {
         match key {
-            // Field: lt (Renamed to "lt", Alias: "lessThan")
             "lt" | "lessThan" => true,
-
-            // Field: max (Renamed to "max", Aliases: "lte", "lessThanOrEqual")
             "max" | "lte" | "lessThanOrEqual" => true,
-
-            // Field: gt (Renamed to "gt", Alias: "greaterThan")
             "gt" | "greaterThan" => true,
-
-            // Field: min (Renamed to "min", Aliases: "gte", "greaterThanOrEqual")
             "min" | "gte" | "greaterThanOrEqual" => true,
-
-            // Field: equal (camelCase: equal)
             "equal" => true,
-
-            // Field: positive (camelCase: positive)
             "positive" => true,
-
-            // Field: nonpositive (camelCase: nonpositive, Aliases: "nonPositive", "non_positive")
             "nonpositive" | "nonPositive" | "non_positive" => true,
-
-            // Field: negative (camelCase: negative)
             "negative" => true,
-
-            // Field: nonnegative (camelCase: nonnegative, Aliases: "nonNegative", "non_negative")
             "nonnegative" | "nonNegative" | "non_negative" => true,
-
-            // Field: multiple_of (camelCase: multipleOf, Aliases: "divisibleBy", "multipleOf", "multiple_of")
             "multipleOf" | "divisibleBy" | "multiple_of" => true,
-
             _ => false,
         }
     }
@@ -183,4 +164,36 @@ impl Mergeable for NumberRules {
 #[serde(rename_all = "camelCase")]
 pub struct NumberTransform {
     pub cast: Option<FieldType>,
+}
+
+impl Mergeable for NumberTransform {
+    fn merge(&mut self, other: Self, errors: &mut Vec<String>) {
+        if other.cast.is_some() {
+            if self.cast.is_some() {
+                errors.push("Duplicate transform: cast".to_string());
+            } else {
+                self.cast = other.cast;
+            }
+        }
+    }
+}
+impl TransformTrait for NumberTransform {
+    fn new() -> Self {
+        NumberTransform { cast: None }
+    }
+
+    fn is_valid_key(key: &str) -> bool {
+        match key {
+            "cast" => true,
+            _ => false,
+        }
+    }
+
+    fn set_transform(&mut self, key: &str, value: Value) -> Result<(), String> {
+        match key {
+            "cast" => self.cast = Some(parse_val(value)?),
+            _ => return Err(format!("Unknown transform {}", key)),
+        };
+        Ok(())
+    }
 }
