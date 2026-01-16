@@ -19,9 +19,9 @@ pub struct StringRules {
     pub length: Option<RuleType<u128>>,
     #[serde(alias = "pattern", alias = "regex")]
     pub regex: Option<RuleType<String>>,
-    #[serde(alias = "startsWith")]
+    #[serde(alias = "starts_with")]
     pub starts_with: Option<RuleType<String>>,
-    #[serde(alias = "endsWith")]
+    #[serde(alias = "ends_with")]
     pub ends_with: Option<RuleType<String>>,
     pub includes: Option<RuleType<String>>,
     pub uppercase: Option<RuleType<bool>>,
