@@ -186,6 +186,7 @@ pub enum Rules {
     String(StringRules),
     Number(NumberRules),
     File(FileRules),
+    // todo[Add]: Type
 }
 
 impl Rules {
@@ -203,7 +204,7 @@ impl Rules {
             (Rules::String(a), Rules::String(b)) => a.merge(b, errors),
             (Rules::Number(a), Rules::Number(b)) => a.merge(b, errors),
             (Rules::File(a), Rules::File(b)) => a.merge(b, errors),
-            // Add new types here (Boolean, Array, etc...)
+            // todo[Add]: Type
             _ => {
                 errors.push("Unknown rule type to be merged.".to_string());
             }
@@ -225,6 +226,7 @@ pub enum Transform {
     String(StringTransform),
     Number(NumberTransform),
     File(FileTransform),
+    // todo[Add]: Type
 }
 
 pub trait TransformTrait {
@@ -245,10 +247,10 @@ impl Transform {
     /// This function merges the rules of the same type and returns an error on anything else
     pub fn merge(&mut self, other: Transform, errors: &mut Vec<String>) {
         match (self, other) {
+            // todo[Add]: Type
             (Transform::String(a), Transform::String(b)) => a.merge(b, errors),
             (Transform::Number(a), Transform::Number(b)) => a.merge(b, errors),
             (Transform::File(a), Transform::File(b)) => a.merge(b, errors),
-            // Add new types here (Boolean, Array, etc...)
             _ => {
                 errors.push("Unknown rule type to be merged.".to_string());
             }

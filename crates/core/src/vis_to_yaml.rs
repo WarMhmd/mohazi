@@ -1,9 +1,9 @@
 use crate::ast::{
-    Field, FieldType, FileRules, FileTransform, Form, Mergeable, NumberRules, NumberTransform,
-    RuleTrait, RuleType, Rules, StringRules, StringTransform, Transform, TransformTrait,
+    Field, FieldType, FileRules, FileTransform, Form, NumberRules, NumberTransform, RuleTrait,
+    RuleType, Rules, StringRules, StringTransform, Transform, TransformTrait,
 };
 use indexmap::IndexMap;
-use std::{collections::HashMap, os::linux::raw};
+use std::collections::HashMap;
 
 /// This function take the set of rules that is currently being built and commits it to the actual
 /// field
@@ -12,7 +12,7 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
         ActiveRuleBuilder::String(r) => current_field.rules.push(Rules::String(r)),
         ActiveRuleBuilder::Number(r) => current_field.rules.push(Rules::Number(r)),
         ActiveRuleBuilder::File(r) => current_field.rules.push(Rules::File(r)),
-        // TODO: handle when rules are ready
+        // todo[Add]: Type
         ActiveRuleBuilder::Boolean | ActiveRuleBuilder::Array => {}
         ActiveRuleBuilder::None => {}
     }
@@ -25,13 +25,13 @@ fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Fi
         ActiveTransformBuilder::String(t) => current_field.transform.push(Transform::String(t)),
         ActiveTransformBuilder::Number(t) => current_field.transform.push(Transform::Number(t)),
         ActiveTransformBuilder::File(t) => current_field.transform.push(Transform::File(t)),
-        // TODO: handle when rules are ready
+        // todo[Add]: Type
         ActiveTransformBuilder::Boolean | ActiveTransformBuilder::Array => {}
         ActiveTransformBuilder::None => {}
     }
 }
 
-// TODO: Add new Types here
+// todo[Add]: Type
 enum ActiveRuleBuilder {
     String(StringRules),
     Number(NumberRules),
@@ -41,6 +41,7 @@ enum ActiveRuleBuilder {
     None,
 }
 
+// todo[Add]: Type
 enum ActiveTransformBuilder {
     String(StringTransform),
     Number(NumberTransform),
@@ -57,6 +58,7 @@ trait BuilderTrait {
 impl BuilderTrait for ActiveRuleBuilder {
     /// get the type of this builder
     fn get_type(&self) -> Option<FieldType> {
+        // todo[Add]: Type
         match self {
             ActiveRuleBuilder::String(_) => Some(FieldType::String),
             ActiveRuleBuilder::Number(_) => Some(FieldType::Number),
@@ -71,6 +73,7 @@ impl BuilderTrait for ActiveRuleBuilder {
 impl BuilderTrait for ActiveTransformBuilder {
     /// get the type of this builder
     fn get_type(&self) -> Option<FieldType> {
+        // todo[Add]: Type
         match self {
             ActiveTransformBuilder::String(_) => Some(FieldType::String),
             ActiveTransformBuilder::Number(_) => Some(FieldType::Number),
@@ -255,7 +258,8 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                     Field::default(), // this would be filled with the appropriate data later
                 );
 
-                parsing_type = FieldType::String;
+                parsing_type = FieldType::String; // This this temporary value that will be
+                                                  // overwritten later
             }
             Level::Property => {
                 let property_name = key;
@@ -270,9 +274,11 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                             continue;
                         }
 
+                        // todo[Add]: Type
                         let field_type: FieldType = match value {
                             "string" => FieldType::String,
                             "number" => FieldType::Number,
+                            "file" => FieldType::File,
                             "boolean" => FieldType::Boolean,
                             "array" => FieldType::Array,
                             _ => {
@@ -337,7 +343,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                             FieldType::Number => ActiveRuleBuilder::Number(NumberRules::new()),
                             FieldType::String => ActiveRuleBuilder::String(StringRules::new()),
                             FieldType::File => ActiveRuleBuilder::File(FileRules::new()),
-                            //TODO: handle when rules are ready
+                            // todo[Add]: Type
                             FieldType::Boolean => ActiveRuleBuilder::Boolean,
                             FieldType::Array => ActiveRuleBuilder::Array,
                             _ => {
@@ -426,7 +432,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                         ActiveRuleBuilder::String(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Number(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::File(r) => r.set_rule(key, final_val, final_err),
-                        // TODO: handle when rules are ready
+                        // todo[Add]: Type
                         ActiveRuleBuilder::Boolean => todo!(),
                         ActiveRuleBuilder::Array => todo!(),
                         ActiveRuleBuilder::None => Ok(()),
@@ -451,7 +457,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                                 ActiveTransformBuilder::String(StringTransform::new())
                             }
                             FieldType::File => ActiveTransformBuilder::File(FileTransform::new()),
-                            //TODO: handle when rules are ready
+                            // todo[Add]: Type
                             FieldType::Boolean => ActiveTransformBuilder::Boolean,
                             FieldType::Array => ActiveTransformBuilder::Array,
                             _ => {
