@@ -19,9 +19,9 @@ pub struct StringRules {
     pub length: Option<RuleType<u128>>,
     #[serde(alias = "pattern", alias = "regex")]
     pub regex: Option<RuleType<String>>,
-    #[serde(alias = "starts_with")]
+    #[serde(alias = "startsWith")]
     pub starts_with: Option<RuleType<String>>,
-    #[serde(alias = "ends_with")]
+    #[serde(alias = "endsWith")]
     pub ends_with: Option<RuleType<String>>,
     pub includes: Option<RuleType<String>>,
     pub uppercase: Option<RuleType<bool>>,
@@ -65,7 +65,42 @@ impl RuleTrait for StringRules {
                     error: rule_err,
                 });
             }
-            // ... Add cases for starts_with, uppercase, etc.
+            "length" => {
+                self.length = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                })
+            }
+            "startsWith" | "starts_with" => {
+                self.starts_with = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                })
+            }
+            "endsWith" | "ends_with" => {
+                self.ends_with = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                })
+            }
+            "includes" => {
+                self.includes = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                })
+            }
+            "toLowerCase" | "to_lower_case" | "lowercase" | "to_lowercase" => {
+                self.lowercase = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                })
+            }
+            "toUpperCase" | "to_upper_case" | "uppercase" | "to_uppercase" => {
+                self.uppercase = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                })
+            }
             _ => return Err(format!("Unknown string rule: {}", key)),
         }
         Ok(())
@@ -74,33 +109,15 @@ impl RuleTrait for StringRules {
     /// camelCase renaming and your custom aliases.
     fn is_valid_key(key: &str) -> bool {
         match key {
-            // Field: min_length (camelCase: minLength)
             "minLength" | "min" | "min_length" => true,
-
-            // Field: max_length (camelCase: maxLength)
             "maxLength" | "max" | "max_length" => true,
-
-            // Field: length (camelCase: length)
             "length" => true,
-
-            // Field: regex (camelCase: regex)
             "regex" | "pattern" => true,
-
-            // Field: starts_with (camelCase: startsWith)
             "startsWith" | "starts_with" => true,
-
-            // Field: ends_with (camelCase: endsWith)
             "endsWith" | "ends_with" => true,
-
-            // Field: includes (camelCase: includes)
             "includes" => true,
-
-            // Field: uppercase (camelCase: uppercase)
             "uppercase" => true,
-
-            // Field: lowercase (camelCase: lowercase)
             "lowercase" => true,
-
             _ => false,
         }
     }
