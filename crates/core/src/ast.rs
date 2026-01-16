@@ -1,12 +1,12 @@
-// Note: for adding any type, check the TODO: ...Add Types
-// TODO: ...Add Types create new file in crates\core\src\ast folder
+// Note: for adding any type, check the todo[Add]: Types
+// todo[Add]: Types create new file in crates\core\src\ast folder
 
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_yaml_ng as serde_yaml;
 use std::collections::HashMap;
 
-// TODO: ...Add Types add new mod here and pub use
+// todo[Add]: Types add new mod here and pub use
 mod array;
 mod boolean;
 mod r#enum;
@@ -163,7 +163,7 @@ pub enum Rule {
     Enum(EnumRules),
     Boolean(BooleanRules),
     Array(ArrayRules),
-    // TODO: ...Add Types more types here
+    // todo[Add]: Types more types here
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -183,7 +183,7 @@ pub enum Transform {
     Enum(EnumTransform),
     Boolean(BooleanTransform),
     Array(ArrayTransform),
-    // TODO: ...Add Types more types here
+    // todo[Add]: Types more types here
 }
 
 impl Transform {
@@ -195,7 +195,7 @@ impl Transform {
             Transform::Enum(e) => e.cast,
             Transform::Boolean(b) => b.cast,
             Transform::Array(a) => a.cast,
-            // TODO: ...Add Types more types here
+            // todo[Add]: Types more types here
         }
     }
 }
