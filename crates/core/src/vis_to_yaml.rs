@@ -50,9 +50,13 @@ enum ActiveTransformBuilder {
     None,
 }
 
-impl ActiveRuleBuilder {
+trait BuilderTrait {
+    fn get_type(&self) -> Option<FieldType>;
+}
+
+impl BuilderTrait for ActiveRuleBuilder {
     /// get the type of this builder
-    pub fn get_type(&self) -> Option<FieldType> {
+    fn get_type(&self) -> Option<FieldType> {
         match self {
             ActiveRuleBuilder::String(_) => Some(FieldType::String),
             ActiveRuleBuilder::Number(_) => Some(FieldType::Number),
@@ -64,9 +68,9 @@ impl ActiveRuleBuilder {
     }
 }
 
-impl ActiveTransformBuilder {
+impl BuilderTrait for ActiveTransformBuilder {
     /// get the type of this builder
-    pub fn get_type(&self) -> Option<FieldType> {
+    fn get_type(&self) -> Option<FieldType> {
         match self {
             ActiveTransformBuilder::String(_) => Some(FieldType::String),
             ActiveTransformBuilder::Number(_) => Some(FieldType::Number),
@@ -527,12 +531,15 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                     ));
                 }
             },
-            Level::ValueAndErrorPair => todo!(),
+            Level::ValueAndErrorPair => unreachable!(), // This branch is unreachable
         }
         prev_spaces = current_spaces;
     }
 
-    // FINAL FLUSH (Important! Catch the last block if file ends with rules)
+    // EOF
+    // This happens when we reach the end of the file
+    // we flush rules and transforms,
+    // and merge possible rules and transforms
     if let Some(form) = forms.get_mut(&current_form_name) {
         if let Some(field) = form.fields.get_mut(&current_field_name) {
             flush_rules(&mut active_rule_builder, field);
@@ -543,7 +550,6 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
     }
 
     // collect rules togather
-
     if errors.is_empty() {
         Ok(forms)
     } else {
