@@ -14,7 +14,7 @@ pub struct FileRules {
     pub extension: Option<RuleType<Vec<String>>>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FileTransform {
     pub cast: Option<FieldType>,

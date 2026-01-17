@@ -10,7 +10,7 @@ pub struct BooleanRules {
     state: Option<RuleType<bool>>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct BooleanTransform {
     pub cast: Option<FieldType>,

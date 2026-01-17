@@ -25,7 +25,7 @@ pub struct NumberRules {
     pub multiple_of: Option<RuleType<i128>>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct NumberTransform {
     pub cast: Option<FieldType>,

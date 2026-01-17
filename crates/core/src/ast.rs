@@ -186,6 +186,27 @@ pub enum Transform {
     // todo[Add]: Types more types here
 }
 
+macro_rules! match_types {
+    ($val:expr, $($variant:pat),+ $(,)?) => {
+        matches!($val, $(Some($variant))|+)
+    };
+}
+
+use paste::paste;
+
+macro_rules! make_transform {
+    // $t: The type name (e.g., String, Boolean)
+    // $obj: The object containing the cast field (e.g., f)
+    ($t:ident, $obj:expr) => {
+        paste! {
+            Transform::$t([<$t Transform>] {
+                cast: $obj.cast,
+                ..Default::default()
+            })
+        }
+    };
+}
+
 impl Transform {
     pub fn get_cast(&self) -> Option<FieldType> {
         match self {
@@ -196,6 +217,44 @@ impl Transform {
             Transform::Boolean(b) => b.cast,
             Transform::Array(a) => a.cast,
             // todo[Add]: Types more types here
+        }
+    }
+
+    pub fn is_valid_cast(&self, array_type: Option<FieldType>) -> bool {
+        match self {
+            Transform::String(f) => match_types!(f.cast, FieldType::Number, FieldType::Boolean),
+            Transform::Number(f) => match_types!(
+                f.cast,
+                FieldType::Number,
+                FieldType::String,
+                FieldType::Boolean,
+                FieldType::Hex
+            ),
+            Transform::Boolean(f) => match_types!(f.cast, FieldType::Number, FieldType::String),
+            Transform::Enum(f) => match_types!(f.cast, FieldType::Number, FieldType::String,),
+            Transform::File(f) => match_types!(f.cast, FieldType::Image, FieldType::Base64,),
+            // todo[Add]: Types more types here
+            Transform::Array(f) => {
+                // create a transform from array_type
+                let transform = match array_type {
+                    Some(FieldType::String) => make_transform!(String, f),
+                    Some(FieldType::Boolean) => make_transform!(Boolean, f),
+                    Some(FieldType::Enum) => make_transform!(Enum, f),
+                    Some(FieldType::Number) => make_transform!(Number, f),
+                    Some(FieldType::File) => make_transform!(File, f),
+
+                    // todo[Add]: Types your mock transform here
+                    _ => Transform::Array(ArrayTransform {
+                        cast: f.cast,
+                        join: None,
+                        sum: None,
+                    }),
+                };
+                match transform {
+                    Transform::Array(_) => false,
+                    _ => transform.is_valid_cast(array_type),
+                }
+            }
         }
     }
 }
@@ -210,6 +269,24 @@ pub enum FieldType {
     Number,
     Boolean,
     Array,
+    File,
+    Enum,
+    Image,
+    Mail,
+    Password,
+    Username,
+    Url,
+    Uuid,
+    HttpUrl,
+    Base64,
+    Jwt,
+    Hex,
+    Cidrv4,
+    Cidrv6,
+    Ulid,
+    Cuid2,
+    Hash,
+    Date,
 }
 
 // #endregion

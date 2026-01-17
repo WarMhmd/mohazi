@@ -1,3 +1,5 @@
+use std::default;
+
 use serde::{Deserialize, Serialize};
 
 use super::FieldType;
@@ -22,7 +24,7 @@ pub struct StringRules {
     pub lowercase: Option<RuleType<bool>>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct StringTransform {
     pub trim: Option<bool>,

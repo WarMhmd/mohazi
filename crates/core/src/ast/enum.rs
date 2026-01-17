@@ -17,7 +17,7 @@ enum StringOrVec {
     Vec(Vec<String>),
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct EnumTransform {
     pub cast: Option<FieldType>,

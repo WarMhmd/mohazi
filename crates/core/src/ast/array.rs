@@ -16,7 +16,7 @@ pub struct ArrayRules {
     pub max_length: Option<RuleType<usize>>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ArrayTransform {
     pub join: Option<String>,
