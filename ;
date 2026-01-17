@@ -443,10 +443,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                         ActiveRuleBuilder::String(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Number(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::File(r) => r.set_rule(key, final_val, final_err),
+                        // todo[Add]: Type
                         ActiveRuleBuilder::Boolean(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Array(r) => r.set_rule(key, final_val, final_err),
-                        ActiveRuleBuilder::Enum(r) => r.set_rule(key, final_val, final_err),
-                        // todo[Add]: Type
                         ActiveRuleBuilder::None => Ok(()),
                     };
 
@@ -469,14 +468,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                                 ActiveTransformBuilder::String(StringTransform::new())
                             }
                             FieldType::File => ActiveTransformBuilder::File(FileTransform::new()),
-                            FieldType::Boolean => {
-                                ActiveTransformBuilder::Boolean(BooleanTransform::new())
-                            }
-                            FieldType::Array => {
-                                ActiveTransformBuilder::Array(ArrayTransform::new())
-                            }
-                            FieldType::Enum => ActiveTransformBuilder::Enum(EnumTransform::new()),
                             // todo[Add]: Type
+                            FieldType::Boolean => ActiveTransformBuilder::Boolean,
+                            FieldType::Array => ActiveTransformBuilder::Array,
                             _ => {
                                 errors.push(format!("Unknown field type {}", value));
                                 continue;
@@ -487,14 +481,15 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                     match key {
                         "cast" => {
                             // 1. Parse the target type
-                            // todo[Add]: Type
                             let cast_type = match value {
                                 "string" => FieldType::String,
                                 "number" => FieldType::Number,
                                 "boolean" => FieldType::Boolean,
                                 "array" => FieldType::Array,
-                                "enum" => FieldType::Enum,
-                                "file" => FieldType::File,
+                                "file" => {
+                                    errors.push(format!("Cannot convert any type to file"));
+                                    continue;
+                                }
                                 _ => {
                                     errors.push(format!("Invalid cast type '{}'", value));
                                     continue;
@@ -588,26 +583,14 @@ fn build_transform(
     let clean_val_str = value.trim().trim_end_matches(',');
     let final_val = serde_yaml_ng::from_str(clean_val_str).unwrap();
 
-    // todo[Add]: Type
     let result = match builder {
         ActiveTransformBuilder::String(string_transform) => {
             string_transform.set_transform(key, final_val)
         }
-        ActiveTransformBuilder::Number(number_transform) => {
-            number_transform.set_transform(key, final_val)
-        }
-        ActiveTransformBuilder::File(file_transform) => {
-            file_transform.set_transform(key, final_val)
-        }
-        ActiveTransformBuilder::Boolean(boolean_transform) => {
-            boolean_transform.set_transform(key, final_val)
-        }
-        ActiveTransformBuilder::Array(array_transform) => {
-            array_transform.set_transform(key, final_val)
-        }
-        ActiveTransformBuilder::Enum(enum_transform) => {
-            enum_transform.set_transform(key, final_val)
-        }
+        ActiveTransformBuilder::Number(number_transform) => todo!(),
+        ActiveTransformBuilder::File(file_rules) => todo!(),
+        ActiveTransformBuilder::Boolean => todo!(),
+        ActiveTransformBuilder::Array => todo!(),
         ActiveTransformBuilder::None => Ok(()),
     };
 
