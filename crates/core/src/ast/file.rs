@@ -97,7 +97,7 @@ impl Mergeable for FileRules {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FileTransform {
     pub cast: Option<FieldType>,

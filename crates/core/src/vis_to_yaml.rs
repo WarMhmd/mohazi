@@ -1,6 +1,6 @@
 use crate::ast::{
-    Field, FieldType, FileRules, FileTransform, Form, NumberRules, NumberTransform, RuleTrait,
-    RuleType, Rules, StringRules, StringTransform, Transform, TransformTrait,
+    Field, FieldType, FileRules, FileTransform, Form, NumberRules, NumberTransform, Rule,
+    RuleTrait, RuleType, StringRules, StringTransform, Transform, TransformTrait,
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -9,9 +9,9 @@ use std::collections::HashMap;
 /// field
 fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
     match std::mem::replace(builder, ActiveRuleBuilder::None) {
-        ActiveRuleBuilder::String(r) => current_field.rules.push(Rules::String(r)),
-        ActiveRuleBuilder::Number(r) => current_field.rules.push(Rules::Number(r)),
-        ActiveRuleBuilder::File(r) => current_field.rules.push(Rules::File(r)),
+        ActiveRuleBuilder::String(r) => current_field.rules.push(Rule::String(r)),
+        ActiveRuleBuilder::Number(r) => current_field.rules.push(Rule::Number(r)),
+        ActiveRuleBuilder::File(r) => current_field.rules.push(Rule::File(r)),
         // todo[Add]: Type
         ActiveRuleBuilder::Boolean | ActiveRuleBuilder::Array => {}
         ActiveRuleBuilder::None => {}
@@ -593,7 +593,7 @@ fn merge_rules(field: &mut Field, errors: &mut Vec<String>) {
     let raw_rules = std::mem::take(&mut field.rules);
 
     // 2. Prepare accumulator
-    let mut accumulated_rules: Vec<Rules> = Vec::new();
+    let mut accumulated_rules: Vec<Rule> = Vec::new();
 
     // 3. Iterate and Merge
     for rule in raw_rules {

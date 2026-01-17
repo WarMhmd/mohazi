@@ -1,15 +1,25 @@
+// Note: for adding any type, check the todo[Add]: Types
+// todo[Add]: Types create new file in crates\core\src\ast folder
+
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_yaml::Value;
 use serde_yaml_ng as serde_yaml;
 use std::collections::HashMap;
 
+// todo[Add]: Types add new mod here and pub use
+mod array;
+mod boolean;
+mod r#enum;
 mod file;
 mod number;
 mod string;
 
+pub use array::{ArrayRules, ArrayTransform};
+pub use boolean::{BooleanRules, BooleanTransform};
 pub use file::{FileRules, FileTransform};
 pub use number::{NumberRules, NumberTransform};
+pub use r#enum::{EnumRules, EnumTransform};
 pub use string::{StringRules, StringTransform};
 
 /// This trait will be used for each rule to define the merge behaviour
@@ -53,7 +63,7 @@ pub struct Field {
     pub required: bool,
     #[serde(alias = "default_error")]
     pub default_error: Option<String>,
-    pub rules: Vec<Rules>,
+    pub rules: Vec<Rule>,
     pub transform: Vec<Transform>,
 }
 
@@ -111,16 +121,16 @@ impl<'de> Deserialize<'de> for Field {
         let mut field_type = shadow.field_type;
         for (key, value) in all_entries {
             if key.starts_with("rules") {
-                let rule: Rules = match field_type {
+                let rule: Rule = match field_type {
                     FieldType::String => {
                         let string_rule: StringRules =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
-                        Rules::String(string_rule)
+                        Rule::String(string_rule)
                     }
                     FieldType::Number => {
                         let number_rule: NumberRules =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
-                        Rules::Number(number_rule)
+                        Rule::Number(number_rule)
                     }
                     _ => {
                         return Err(D::Error::custom(format!(
@@ -150,11 +160,7 @@ impl<'de> Deserialize<'de> for Field {
                     }
                 };
                 // check if transform_item has cast
-                if let Some(cast) = match &transform_item {
-                    Transform::String(s) => s.cast,
-                    Transform::Number(n) => n.cast,
-                    Transform::File(f) => f.cast,
-                } {
+                if let Some(cast) = transform_item.get_cast() {
                     field_type = cast;
                 }
 
@@ -182,28 +188,31 @@ impl<'de> Deserialize<'de> for Field {
 // #region Rules
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum Rules {
+pub enum Rule {
     String(StringRules),
     Number(NumberRules),
     File(FileRules),
+    Enum(EnumRules),
+    Boolean(BooleanRules),
+    Array(ArrayRules),
     // todo[Add]: Type
 }
 
-impl Rules {
-    pub fn is_same_type(&self, other: &Rules) -> bool {
+impl Rule {
+    pub fn is_same_type(&self, other: &Rule) -> bool {
         // std::mem::discriminant checks for enum variant regradless of the inner value
         // (StringRules or NumberRules).
         // in other words, this is the same as:
-        // if (self is Rules::T and other is Rules::T), where T is just any entry of the enum
+        // if (self is Rule::T and other is Rule::T), where T is just any entry of the enum
         std::mem::discriminant(self) == std::mem::discriminant(other)
     }
 
     /// This function merges the rules of the same type and returns an error on anything else
-    pub fn merge(&mut self, other: Rules, errors: &mut Vec<String>) {
+    pub fn merge(&mut self, other: Rule, errors: &mut Vec<String>) {
         match (self, other) {
-            (Rules::String(a), Rules::String(b)) => a.merge(b, errors),
-            (Rules::Number(a), Rules::Number(b)) => a.merge(b, errors),
-            (Rules::File(a), Rules::File(b)) => a.merge(b, errors),
+            (Rule::String(a), Rule::String(b)) => a.merge(b, errors),
+            (Rule::Number(a), Rule::Number(b)) => a.merge(b, errors),
+            (Rule::File(a), Rule::File(b)) => a.merge(b, errors),
             // todo[Add]: Type
             _ => {
                 errors.push("Unknown rule type to be merged.".to_string());
@@ -226,6 +235,9 @@ pub enum Transform {
     String(StringTransform),
     Number(NumberTransform),
     File(FileTransform),
+    Enum(EnumTransform),
+    Boolean(BooleanTransform),
+    Array(ArrayTransform),
     // todo[Add]: Type
 }
 
@@ -251,8 +263,80 @@ impl Transform {
             (Transform::String(a), Transform::String(b)) => a.merge(b, errors),
             (Transform::Number(a), Transform::Number(b)) => a.merge(b, errors),
             (Transform::File(a), Transform::File(b)) => a.merge(b, errors),
-            _ => {
-                errors.push("Unknown rule type to be merged.".to_string());
+            _ => errors.push("Unknown rule type to be merged.".to_string()),
+
+        }
+    }
+}
+
+macro_rules! match_types {
+    ($val:expr, $($variant:pat),+ $(,)?) => {
+        matches!($val, $(Some($variant))|+)
+    };
+}
+
+use paste::paste;
+
+macro_rules! make_transform {
+    // $t: The type name (e.g., String, Boolean)
+    // $obj: The object containing the cast field (e.g., f)
+    ($t:ident, $obj:expr) => {
+        paste! {
+            Transform::$t([<$t Transform>] {
+                cast: $obj.cast,
+                ..Default::default()
+            })
+        }
+    };
+}
+
+impl Transform {
+    pub fn get_cast(&self) -> Option<FieldType> {
+        match self {
+            Transform::String(s) => s.cast,
+            Transform::Number(n) => n.cast,
+            Transform::File(f) => f.cast,
+            Transform::Enum(e) => e.cast,
+            Transform::Boolean(b) => b.cast,
+            Transform::Array(a) => a.cast,
+            // todo[Add]: Types more types here
+        }
+    }
+
+    pub fn is_valid_cast(&self, array_type: Option<FieldType>) -> bool {
+        match self {
+            Transform::String(f) => match_types!(f.cast, FieldType::Number, FieldType::Boolean),
+            Transform::Number(f) => match_types!(
+                f.cast,
+                FieldType::Number,
+                FieldType::String,
+                FieldType::Boolean,
+                FieldType::Hex
+            ),
+            Transform::Boolean(f) => match_types!(f.cast, FieldType::Number, FieldType::String),
+            Transform::Enum(f) => match_types!(f.cast, FieldType::Number, FieldType::String,),
+            Transform::File(f) => match_types!(f.cast, FieldType::Image, FieldType::Base64,),
+            // todo[Add]: Types more types here
+            Transform::Array(f) => {
+                // create a transform from array_type
+                let transform = match array_type {
+                    Some(FieldType::String) => make_transform!(String, f),
+                    Some(FieldType::Boolean) => make_transform!(Boolean, f),
+                    Some(FieldType::Enum) => make_transform!(Enum, f),
+                    Some(FieldType::Number) => make_transform!(Number, f),
+                    Some(FieldType::File) => make_transform!(File, f),
+
+                    // todo[Add]: Types your mock transform here
+                    _ => Transform::Array(ArrayTransform {
+                        cast: f.cast,
+                        join: None,
+                        sum: None,
+                    }),
+                };
+                match transform {
+                    Transform::Array(_) => false,
+                    _ => transform.is_valid_cast(array_type),
+                }
             }
         }
     }
@@ -266,9 +350,26 @@ impl Transform {
 pub enum FieldType {
     String,
     Number,
-    File,
     Boolean,
     Array,
+    File,
+    Enum,
+    Image,
+    Mail,
+    Password,
+    Username,
+    Url,
+    Uuid,
+    HttpUrl,
+    Base64,
+    Jwt,
+    Hex,
+    Cidrv4,
+    Cidrv6,
+    Ulid,
+    Cuid2,
+    Hash,
+    Date,
 }
 
 // #endregion
