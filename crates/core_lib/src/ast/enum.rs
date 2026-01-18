@@ -56,14 +56,16 @@ impl RuleTrait for EnumRules {
 }
 
 impl Mergeable for EnumRules {
-    fn merge(&mut self, other: Self, errors: &mut Vec<String>) {
+    fn merge(&mut self, other: Self) -> Result<(), String> {
         if other.values.is_some() {
             if self.values.is_some() {
-                errors.push("Duplicate rule: values".to_string());
+                return Err("Duplicate rule: values".to_string());
             } else {
                 self.values = other.values;
             }
         }
+
+        Ok(())
     }
 }
 
@@ -95,13 +97,15 @@ impl TransformTrait for EnumTransform {
 }
 
 impl Mergeable for EnumTransform {
-    fn merge(&mut self, other: Self, errors: &mut Vec<String>) {
+    fn merge(&mut self, other: Self) -> Result<(), String> {
         if other.cast.is_some() {
             if self.cast.is_some() {
-                errors.push("Duplicate transform: cast".to_string());
+                return Err("Duplicate transform: cast".to_string());
             } else {
                 self.cast = other.cast;
             }
         }
+
+        Ok(())
     }
 }

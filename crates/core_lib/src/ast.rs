@@ -24,7 +24,7 @@ pub use string::{StringRules, StringTransform};
 
 /// This trait will be used for each rule to define the merge behaviour
 pub trait Mergeable {
-    fn merge(&mut self, other: Self, errors: &mut Vec<String>);
+    fn merge(&mut self, other: Self) -> Result<(), String>;
 }
 
 // this trait will contain the base rule behaviour
@@ -208,15 +208,16 @@ impl Rule {
     }
 
     /// This function merges the rules of the same type and returns an error on anything else
-    pub fn merge(&mut self, other: Rule, errors: &mut Vec<String>) {
+    pub fn merge(&mut self, other: Rule) -> Result<(), String> {
         match (self, other) {
-            (Rule::String(a), Rule::String(b)) => a.merge(b, errors),
-            (Rule::Number(a), Rule::Number(b)) => a.merge(b, errors),
-            (Rule::File(a), Rule::File(b)) => a.merge(b, errors),
+            (Rule::String(a), Rule::String(b)) => a.merge(b),
+            (Rule::Number(a), Rule::Number(b)) => a.merge(b),
+            (Rule::File(a), Rule::File(b)) => a.merge(b),
+            (Rule::Boolean(a), Rule::Boolean(b)) => a.merge(b),
+            (Rule::Array(a), Rule::Array(b)) => a.merge(b),
+            (Rule::Enum(a), Rule::Enum(b)) => a.merge(b),
             // todo[Add]: Type
-            _ => {
-                errors.push("Unknown rule type to be merged.".to_string());
-            }
+            _ => Err("Unknown rule type to be merged.".to_string()),
         }
     }
 }
@@ -257,14 +258,13 @@ impl Transform {
     }
 
     /// This function merges the rules of the same type and returns an error on anything else
-    pub fn merge(&mut self, other: Transform, errors: &mut Vec<String>) {
+    pub fn merge(&mut self, other: Transform) -> Result<(), String> {
         match (self, other) {
             // todo[Add]: Type
-            (Transform::String(a), Transform::String(b)) => a.merge(b, errors),
-            (Transform::Number(a), Transform::Number(b)) => a.merge(b, errors),
-            (Transform::File(a), Transform::File(b)) => a.merge(b, errors),
-            _ => errors.push("Unknown rule type to be merged.".to_string()),
-
+            (Transform::String(a), Transform::String(b)) => a.merge(b),
+            (Transform::Number(a), Transform::Number(b)) => a.merge(b),
+            (Transform::File(a), Transform::File(b)) => a.merge(b),
+            _ => Err("Unknown rule type to be merged.".to_string()),
         }
     }
 }
@@ -276,6 +276,8 @@ macro_rules! match_types {
 }
 
 use paste::paste;
+
+use crate::vis_parser::ParserError;
 
 macro_rules! make_transform {
     // $t: The type name (e.g., String, Boolean)

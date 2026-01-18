@@ -6,36 +6,6 @@ use crate::ast::{
 use indexmap::IndexMap;
 use std::{collections::HashMap, thread::current};
 
-/// This function take the set of rules that is currently being built and commits it to the actual
-/// field
-fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
-    match std::mem::replace(builder, ActiveRuleBuilder::None) {
-        ActiveRuleBuilder::String(r) => current_field.rules.push(Rule::String(r)),
-        ActiveRuleBuilder::Number(r) => current_field.rules.push(Rule::Number(r)),
-        ActiveRuleBuilder::File(r) => current_field.rules.push(Rule::File(r)),
-        ActiveRuleBuilder::Boolean(r) => current_field.rules.push(Rule::Boolean(r)),
-        ActiveRuleBuilder::Array(r) => current_field.rules.push(Rule::Array(r)),
-        ActiveRuleBuilder::Enum(r) => current_field.rules.push(Rule::Enum(r)),
-        // todo[Add]: Type
-        ActiveRuleBuilder::None => {}
-    }
-}
-
-/// This function take the set of transforms that is currently being built and commits it to the actual
-/// field
-fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Field) {
-    match std::mem::replace(builder, ActiveTransformBuilder::None) {
-        ActiveTransformBuilder::String(t) => current_field.transform.push(Transform::String(t)),
-        ActiveTransformBuilder::Number(t) => current_field.transform.push(Transform::Number(t)),
-        ActiveTransformBuilder::File(t) => current_field.transform.push(Transform::File(t)),
-        ActiveTransformBuilder::Boolean(t) => current_field.transform.push(Transform::Boolean(t)),
-        ActiveTransformBuilder::Array(t) => current_field.transform.push(Transform::Array(t)),
-        ActiveTransformBuilder::Enum(t) => current_field.transform.push(Transform::Enum(t)),
-        // todo[Add]: Type
-        ActiveTransformBuilder::None => {}
-    }
-}
-
 // todo[Add]: Type
 enum ActiveRuleBuilder {
     String(StringRules),
@@ -94,6 +64,36 @@ impl BuilderTrait for ActiveTransformBuilder {
     }
 }
 
+/// This function take the set of rules that is currently being built and commits it to the actual
+/// field
+fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
+    match std::mem::replace(builder, ActiveRuleBuilder::None) {
+        ActiveRuleBuilder::String(r) => current_field.rules.push(Rule::String(r)),
+        ActiveRuleBuilder::Number(r) => current_field.rules.push(Rule::Number(r)),
+        ActiveRuleBuilder::File(r) => current_field.rules.push(Rule::File(r)),
+        ActiveRuleBuilder::Boolean(r) => current_field.rules.push(Rule::Boolean(r)),
+        ActiveRuleBuilder::Array(r) => current_field.rules.push(Rule::Array(r)),
+        ActiveRuleBuilder::Enum(r) => current_field.rules.push(Rule::Enum(r)),
+        // todo[Add]: Type
+        ActiveRuleBuilder::None => {}
+    }
+}
+
+/// This function take the set of transforms that is currently being built and commits it to the actual
+/// field
+fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Field) {
+    match std::mem::replace(builder, ActiveTransformBuilder::None) {
+        ActiveTransformBuilder::String(t) => current_field.transform.push(Transform::String(t)),
+        ActiveTransformBuilder::Number(t) => current_field.transform.push(Transform::Number(t)),
+        ActiveTransformBuilder::File(t) => current_field.transform.push(Transform::File(t)),
+        ActiveTransformBuilder::Boolean(t) => current_field.transform.push(Transform::Boolean(t)),
+        ActiveTransformBuilder::Array(t) => current_field.transform.push(Transform::Array(t)),
+        ActiveTransformBuilder::Enum(t) => current_field.transform.push(Transform::Enum(t)),
+        // todo[Add]: Type
+        ActiveTransformBuilder::None => {}
+    }
+}
+
 // 1. Define the Level Enum
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Level {
@@ -139,13 +139,33 @@ impl Level {
     }
 }
 
+/// helper function to get the number of spaces at the start of a line
 pub fn raw_spaces(line: &str) -> usize {
     line.chars().take_while(|c| c.is_whitespace()).count()
 }
 
-pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
+// Parser errors type
+pub struct ParserError {
+    pub message: String,
+    pub line: u32,
+    pub start_col: u32,
+    pub end_col: u32,
+}
+
+impl ParserError {
+    fn new(message: String, line: u32, start_col: u32, end_col: u32) -> ParserError {
+        ParserError {
+            message,
+            line,
+            start_col,
+            end_col,
+        }
+    }
+}
+
+pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>> {
     let mut forms: IndexMap<String, Form> = IndexMap::new();
-    let mut errors: Vec<String> = Vec::new();
+    let mut errors: Vec<ParserError> = Vec::new();
 
     let mut current_level = Level::Form;
     let mut levels_vector = vec![0; 5]; // this vector stores the level depth and is indexed
@@ -153,7 +173,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
     let mut parsing_type = FieldType::String;
     // through the Level enum
     let mut prev_spaces = 0;
-    let lines: Vec<&str> = input
+    let lines = input
         .lines()
         .filter(|l| !l.trim().is_empty() && !l.trim().starts_with('#')) // ignores empty lines and
         // lines starting with #
@@ -165,7 +185,11 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                 l
             }
         })
-        .collect();
+        .enumerate();
+
+    // used for final erroring
+    let number_of_lines = lines.clone().count();
+    let last_line_length = lines.clone().last().iter().len();
 
     let mut iter = lines.into_iter().peekable();
 
@@ -176,7 +200,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
     let mut active_transform_builder = ActiveTransformBuilder::None;
     let mut prev_level = Level::Form;
 
-    while let Some(line) = iter.next() {
+    while let Some((line_index, line)) = iter.next() {
         let current_spaces = raw_spaces(line);
         let trimmed = line.trim();
         if trimmed.is_empty() || trimmed.starts_with('#') {
@@ -210,8 +234,22 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
             if (new_level as usize) <= (Level::Field as usize) {
                 if let Some(form) = forms.get_mut(&current_form_name) {
                     if let Some(finished_field) = form.fields.get_mut(&current_field_name) {
-                        merge_rules(finished_field, &mut errors);
-                        merge_transforms(finished_field, &mut errors);
+                        merge_rules(finished_field).unwrap_or_else(|error| {
+                            errors.push(ParserError::new(
+                                error,
+                                line_index as u32,
+                                current_level as u32,
+                                current_level as u32 + line.len() as u32,
+                            ));
+                        });
+                        merge_transforms(finished_field).unwrap_or_else(|error| {
+                            errors.push(ParserError::new(
+                                error,
+                                line_index as u32,
+                                current_level as u32,
+                                current_level as u32 + line.len() as u32,
+                            ));
+                        });
                     }
                 }
             }
@@ -226,15 +264,22 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
             Level::Form => {
                 current_form_name = key.to_string();
                 if !value.is_empty() {
-                    errors.push(format!(
-                        "Error: Form {} cannot be set to a single value",
-                        key
+                    errors.push(ParserError::new(
+                        format!("Error: Form {} cannot be set to a single value", key),
+                        line_index as u32,
+                        current_level as u32,
+                        current_level as u32 + line.len() as u32,
                     ));
                     continue;
                 }
 
                 if forms.contains_key(key) {
-                    errors.push(format!("Duplicate Form name: {}", key));
+                    errors.push(ParserError::new(
+                        format!("Duplicate Form name: {}", key),
+                        line_index as u32,
+                        current_level as u32,
+                        current_level as u32 + line.len() as u32,
+                    ));
                     continue;
                 }
 
@@ -250,15 +295,22 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                 current_field_name = key.to_string();
 
                 if !value.is_empty() {
-                    errors.push(format!(
-                        "Error: Field {} cannot be set to a single value",
-                        key
+                    errors.push(ParserError::new(
+                        format!("Error: Field {} cannot be set to a single value", key),
+                        line_index as u32,
+                        current_level as u32,
+                        current_level as u32 + line.len() as u32,
                     ));
                     continue;
                 }
 
                 if current_form.fields.contains_key(key) {
-                    errors.push(format!("Duplicate Field name: {}", key));
+                    errors.push(ParserError::new(
+                        format!("Duplicate Field name: {}", key),
+                        line_index as u32,
+                        current_level as u32,
+                        current_level as u32 + line.len() as u32,
+                    ));
                     continue;
                 }
 
@@ -279,7 +331,12 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                     // match all possible properties
                     "type" | "fieldType" => {
                         if value.is_empty() {
-                            errors.push(format!("Error: field type cannot be empty"));
+                            errors.push(ParserError::new(
+                                format!("Error: field type cannot be empty"),
+                                line_index as u32,
+                                current_level as u32,
+                                current_level as u32 + line.len() as u32,
+                            ));
                             continue;
                         }
 
@@ -292,7 +349,12 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                             "array" => FieldType::Array,
                             "enum" => FieldType::Enum,
                             _ => {
-                                errors.push(format!("Unknown field type {}", value));
+                                errors.push(ParserError::new(
+                                    format!("Unknown field type {}", value),
+                                    line_index as u32,
+                                    current_level as u32,
+                                    current_level as u32 + line.len() as u32,
+                                ));
                                 continue;
                             }
                         };
@@ -302,7 +364,12 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                     }
                     "required" => {
                         if value.is_empty() {
-                            errors.push(format!("Error: required cannot be empty"));
+                            errors.push(ParserError::new(
+                                format!("Error: required cannot be empty"),
+                                line_index as u32,
+                                current_level as u32,
+                                current_level as u32 + line.len() as u32,
+                            ));
                             continue;
                         }
 
@@ -310,7 +377,12 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                             "true" => current_field.required = true,
                             "false" => current_field.required = false,
                             _ => {
-                                errors.push(format!("Unknown required value {}", value));
+                                errors.push(ParserError::new(
+                                    format!("Unknown required value {}", value),
+                                    line_index as u32,
+                                    current_level as u32,
+                                    current_level as u32 + line.len() as u32,
+                                ));
                                 continue;
                             }
                         };
@@ -320,7 +392,12 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                     }
                     "rules" => {
                         if !value.is_empty() {
-                            errors.push(format!("Error: rules cannot be set to a single value"));
+                            errors.push(ParserError::new(
+                                format!("Error: rules cannot be set to a single value"),
+                                line_index as u32,
+                                current_level as u32,
+                                current_level as u32 + line.len() as u32,
+                            ));
                             continue;
                         }
 
@@ -328,16 +405,26 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                     }
                     "transform" => {
                         if !value.is_empty() {
-                            errors.push(format!("Error: rules cannot be set to a single value"));
+                            errors.push(ParserError::new(
+                                format!("Error: rules cannot be set to a single value"),
+                                line_index as u32,
+                                current_level as u32,
+                                current_level as u32 + line.len() as u32,
+                            ));
                             continue;
                         }
 
                         active_context = "transform";
                     }
                     _ => {
-                        errors.push(format!(
-                            "Unknown property {} at {}",
-                            property_name, &current_field_name
+                        errors.push(ParserError::new(
+                            format!(
+                                "Unknown property {} at {}",
+                                property_name, &current_field_name
+                            ),
+                            line_index as u32,
+                            current_level as u32,
+                            current_level as u32 + line.len() as u32,
                         ));
                     }
                 }
@@ -358,7 +445,12 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                             FieldType::Enum => ActiveRuleBuilder::Enum(EnumRules::new()),
                             // todo[Add]: Type
                             _ => {
-                                errors.push(format!("Unknown field type {}", value));
+                                errors.push(ParserError::new(
+                                    format!("Unknown field type {}", value),
+                                    line_index as u32,
+                                    current_level as u32,
+                                    current_level as u32 + line.len() as u32,
+                                ));
                                 continue;
                             }
                         };
@@ -369,8 +461,18 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                         if value.starts_with('{') {
                             // Variation 1: Inline JSON
                             // <key>: { value: <value>, error: <error> }
-                            let rt: RuleType<serde_yaml_ng::Value> = serde_yaml_ng::from_str(value)
-                                .map_err(|e| vec![format!("Invalid inline rule: {}", e)])?;
+                            let rt_result: Result<RuleType<serde_yaml_ng::Value>, Vec<String>> =
+                                serde_yaml_ng::from_str(value)
+                                    .map_err(|e| vec![format!("Invalid inline rule: {}", e)]);
+                            let Ok(rt) = rt_result else {
+                                errors.push(ParserError::new(
+                                    format!("Invalid inline rule: {}", rt_result.unwrap_err()[0]),
+                                    line_index as u32,
+                                    current_level as u32,
+                                    current_level as u32 + line.len() as u32,
+                                ));
+                                continue;
+                            };
                             (rt.value, rt.error)
                         } else if value.is_empty() {
                             // Variation 3: Nested Block (Lookahead)
@@ -380,14 +482,14 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                             let mut n_val = serde_yaml_ng::Value::Null;
                             let mut n_err = None;
 
-                            while let Some(peek_line) = iter.peek() {
+                            while let Some((peek_index, peek_line)) = iter.peek() {
                                 let p_spaces = raw_spaces(peek_line);
                                 // Stop if indentation is not deeper (Level 4)
                                 if p_spaces <= current_spaces {
                                     break;
                                 }
 
-                                let child_line = iter.next().unwrap();
+                                let (_, child_line) = iter.next().unwrap();
                                 let c_parts: Vec<&str> = child_line.trim().splitn(2, ':').collect();
                                 let c_key = c_parts[0].trim();
                                 let c_val = if c_parts.len() > 1 {
@@ -420,7 +522,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                             let mut s_err = None;
 
                             // Peek for sibling error
-                            if let Some(peek_line) = iter.peek() {
+                            if let Some((peek_index, peek_line)) = iter.peek() {
                                 let p_spaces = raw_spaces(peek_line);
                                 if p_spaces == current_spaces {
                                     let p_trimmed = peek_line.trim();
@@ -451,7 +553,12 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                     };
 
                     if let Err(msg) = result {
-                        errors.push(format!("Rule Error at {}: {}", current_field_name, msg));
+                        errors.push(ParserError::new(
+                            format!("Rule Error at {}: {}", current_field_name, msg),
+                            line_index as u32,
+                            current_level as u32,
+                            current_level as u32 + line.len() as u32,
+                        ));
                         continue;
                     }
                 }
@@ -478,7 +585,12 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                             FieldType::Enum => ActiveTransformBuilder::Enum(EnumTransform::new()),
                             // todo[Add]: Type
                             _ => {
-                                errors.push(format!("Unknown field type {}", value));
+                                errors.push(ParserError::new(
+                                    format!("Unknown field type {}", value),
+                                    line_index as u32,
+                                    current_level as u32,
+                                    current_level as u32 + line.len() as u32,
+                                ));
                                 continue;
                             }
                         };
@@ -496,7 +608,12 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                                 "enum" => FieldType::Enum,
                                 "file" => FieldType::File,
                                 _ => {
-                                    errors.push(format!("Invalid cast type '{}'", value));
+                                    errors.push(ParserError::new(
+                                        format!("Invalid cast type '{}'", value),
+                                        line_index as u32,
+                                        current_level as u32,
+                                        current_level as u32 + line.len() as u32,
+                                    ));
                                     continue;
                                 }
                             };
@@ -505,7 +622,15 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                             parsing_type = cast_type;
 
                             // build transformation
-                            build_transform(key, value, &mut active_transform_builder, &mut errors);
+                            build_transform(
+                                key,
+                                value,
+                                &mut active_transform_builder,
+                                &mut errors,
+                                line_index,
+                                current_level,
+                                line,
+                            );
 
                             // 3. checking for conflict and flushing
                             if let Some(rule_builder_type) = active_rule_builder.get_type() {
@@ -532,24 +657,47 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
                         | "lowercase" | "to_uppercase" | "to_upper_case" | "toUpperCase"
                         | "uppercase" => {
                             if current_field.field_type != FieldType::String {
-                                errors.push(format!(
-                                    "Cannot use the {} transform non-string field {}",
-                                    key, current_field_name
+                                errors.push(ParserError::new(
+                                    format!(
+                                        "Cannot use the {} transform non-string field {}",
+                                        key, current_field_name
+                                    ),
+                                    line_index as u32,
+                                    current_level as u32,
+                                    current_level as u32 + line.len() as u32,
                                 ));
                             }
 
-                            build_transform(key, value, &mut active_transform_builder, &mut errors);
+                            build_transform(
+                                key,
+                                value,
+                                &mut active_transform_builder,
+                                &mut errors,
+                                line_index,
+                                current_level,
+                                line,
+                            );
                         }
                         // end of String only transforms
                         _ => {
-                            errors.push(format!("Unknown transform property: {}", key));
+                            errors.push(ParserError::new(
+                                format!("Unknown transform property: {}", key),
+                                line_index as u32,
+                                current_level as u32,
+                                current_level as u32 + line.len() as u32,
+                            ));
                         }
                     }
                 }
                 _ => {
-                    errors.push(format!(
-                        "Unknown context {} at {}",
-                        active_context, &current_field_name
+                    errors.push(ParserError::new(
+                        format!(
+                            "Unknown context {} at {}",
+                            active_context, &current_field_name
+                        ),
+                        line_index as u32,
+                        current_level as u32,
+                        current_level as u32 + line.len() as u32,
                     ));
                 }
             },
@@ -566,8 +714,22 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<String>> {
         if let Some(field) = form.fields.get_mut(&current_field_name) {
             flush_rules(&mut active_rule_builder, field);
             flush_transforms(&mut active_transform_builder, field);
-            merge_rules(field, &mut errors);
-            merge_transforms(field, &mut errors);
+            merge_rules(field).unwrap_or_else(|error| {
+                errors.push(ParserError::new(
+                    error,
+                    number_of_lines as u32,
+                    current_level as u32,
+                    current_level as u32 + last_line_length as u32,
+                ));
+            });
+            merge_transforms(field).unwrap_or_else(|error| {
+                errors.push(ParserError::new(
+                    error,
+                    number_of_lines as u32,
+                    current_level as u32,
+                    current_level as u32 + last_line_length as u32,
+                ));
+            });
         }
     }
 
@@ -583,7 +745,10 @@ fn build_transform(
     key: &str,
     value: &str,
     builder: &mut ActiveTransformBuilder,
-    errors: &mut Vec<String>,
+    errors: &mut Vec<ParserError>,
+    line_index: usize,
+    current_level: Level,
+    line: &str,
 ) {
     let clean_val_str = value.trim().trim_end_matches(',');
     let final_val = serde_yaml_ng::from_str(clean_val_str).unwrap();
@@ -612,11 +777,16 @@ fn build_transform(
     };
 
     if let Err(r) = result {
-        errors.push(format!("Transformation Error: {}", r).to_string());
+        errors.push(ParserError::new(
+            format!("Transformation Error: {}", r),
+            line_index as u32,
+            current_level as u32,
+            current_level as u32 + line.len() as u32,
+        ));
     }
 }
 
-fn merge_rules(field: &mut Field, errors: &mut Vec<String>) {
+fn merge_rules(field: &mut Field) -> Result<(), String> {
     // 1. Take the rules out (empties the field's vector)
     let raw_rules = std::mem::take(&mut field.rules);
 
@@ -627,7 +797,10 @@ fn merge_rules(field: &mut Field, errors: &mut Vec<String>) {
     for rule in raw_rules {
         if let Some(existing) = accumulated_rules.iter_mut().find(|r| r.is_same_type(&rule)) {
             // This merges rules for the same types
-            existing.merge(rule, errors);
+            match existing.merge(rule) {
+                Err(e) => return Err(e),
+                Ok(_) => (),
+            }
         } else {
             // This adds the rules for types seen for the first time
             accumulated_rules.push(rule);
@@ -636,9 +809,10 @@ fn merge_rules(field: &mut Field, errors: &mut Vec<String>) {
 
     // 4. Push back the merged results
     field.rules = accumulated_rules;
+    Ok(())
 }
 
-fn merge_transforms(field: &mut Field, errors: &mut Vec<String>) {
+fn merge_transforms(field: &mut Field) -> Result<(), String> {
     // 1. Take the rules out (empties the field's vector)
     let raw_transforms = std::mem::take(&mut field.transform);
 
@@ -652,7 +826,10 @@ fn merge_transforms(field: &mut Field, errors: &mut Vec<String>) {
             .find(|r| r.is_same_type(&transform))
         {
             // This merges rules for the same types
-            existing.merge(transform, errors);
+            match existing.merge(transform) {
+                Err(e) => return Err(e),
+                Ok(_) => (),
+            }
         } else {
             // This adds the rules for types seen for the first time
             accumulated_transforms.push(transform);
@@ -661,4 +838,5 @@ fn merge_transforms(field: &mut Field, errors: &mut Vec<String>) {
 
     // 4. Push back the merged results
     field.transform = accumulated_transforms;
+    Ok(())
 }

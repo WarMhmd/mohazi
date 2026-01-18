@@ -86,28 +86,30 @@ impl RuleTrait for ArrayRules {
 }
 
 impl Mergeable for ArrayRules {
-    fn merge(&mut self, other: Self, errors: &mut Vec<String>) {
+    fn merge(&mut self, other: Self) -> Result<(), String> {
         if other.length.is_some() {
             if self.length.is_some() {
-                errors.push("Duplicate rule: length".to_string());
+                return Err("Duplicate rule: length".to_string());
             } else {
                 self.length = other.length;
             }
         }
         if other.min_length.is_some() {
             if self.min_length.is_some() {
-                errors.push("Duplicate rule: min_length".to_string());
+                return Err("Duplicate rule: min_length".to_string());
             } else {
                 self.min_length = other.min_length;
             }
         }
         if other.max_length.is_some() {
             if self.max_length.is_some() {
-                errors.push("Duplicate rule: max_length".to_string());
+                return Err("Duplicate rule: max_length".to_string());
             } else {
                 self.max_length = other.max_length;
             }
         }
+
+        Ok(())
     }
 }
 
@@ -143,6 +145,34 @@ impl TransformTrait for ArrayTransform {
             "sum" => self.sum = Some(parse_val(value)?),
             "cast" => self.cast = Some(parse_val(value)?),
             _ => return Err(format!("Unknown transform {}", key)),
+        }
+
+        Ok(())
+    }
+}
+
+impl Mergeable for ArrayTransform {
+    fn merge(&mut self, other: Self) -> Result<(), String> {
+        if other.cast.is_some() {
+            if self.cast.is_some() {
+                return Err("Duplicate transform: cast".to_string());
+            } else {
+                self.cast = other.cast;
+            }
+        }
+        if other.join.is_some() {
+            if self.join.is_some() {
+                return Err("Duplicate transform: join".to_string());
+            } else {
+                self.join = other.join;
+            }
+        }
+        if other.sum.is_some() {
+            if self.sum.is_some() {
+                return Err("Duplicate transform: sum".to_string());
+            } else {
+                self.sum = other.sum;
+            }
         }
 
         Ok(())
