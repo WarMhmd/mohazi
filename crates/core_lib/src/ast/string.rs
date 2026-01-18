@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_yaml_ng::Value;
 
 use crate::ast::TransformTrait;
+use crate::vis_parser::ParserError;
 
 use super::parse_val;
 use super::FieldType;
@@ -126,70 +127,72 @@ impl RuleTrait for StringRules {
 }
 
 impl Mergeable for StringRules {
-    fn merge(&mut self, other: StringRules, erros: &mut Vec<String>) {
+    fn merge(&mut self, other: StringRules) -> Result<(), String> {
         if other.min_length.is_some() {
             if self.min_length.is_some() {
-                erros.push("Duplicate rule: min_length".to_string());
+                return Err("Duplicate rule: min_length".to_string());
             } else {
                 self.min_length = other.min_length;
             }
         }
         if other.max_length.is_some() {
             if self.max_length.is_some() {
-                erros.push("Duplicate rule: max_length".to_string());
+                return Err("Duplicate rule: max_length".to_string());
             } else {
                 self.max_length = other.max_length;
             }
         }
         if other.length.is_some() {
             if self.length.is_some() {
-                erros.push("Duplicate rule: length".to_string());
+                return Err("Duplicate rule: length".to_string());
             } else {
                 self.length = other.length;
             }
         }
         if other.regex.is_some() {
             if self.regex.is_some() {
-                erros.push("Duplicate rule: regex".to_string());
+                return Err("Duplicate rule: regex".to_string());
             } else {
                 self.regex = other.regex;
             }
         }
         if other.starts_with.is_some() {
             if self.starts_with.is_some() {
-                erros.push("Duplicate rule: starts_with".to_string());
-                return;
+                return Err("Duplicate rule: starts_with".to_string());
+            } else {
+                self.starts_with = other.starts_with;
             }
-            self.starts_with = other.starts_with;
         }
         if other.ends_with.is_some() {
             if self.ends_with.is_some() {
-                erros.push("Duplicate rule: ends_with".to_string());
-                return;
+                return Err("Duplicate rule: ends_with".to_string());
+            } else {
+                self.ends_with = other.ends_with;
             }
-            self.ends_with = other.ends_with;
         }
         if other.includes.is_some() {
             if self.includes.is_some() {
-                erros.push("Duplicate rule: includes".to_string());
+                return Err("Duplicate rule: includes".to_string());
             } else {
                 self.includes = other.includes;
             }
         }
         if other.uppercase.is_some() {
             if self.uppercase.is_some() {
-                erros.push("Duplicate rule: uppercase".to_string());
+                return Err("Duplicate rule: uppercase".to_string());
             } else {
                 self.uppercase = other.uppercase;
             }
         }
         if other.lowercase.is_some() {
             if self.lowercase.is_some() {
-                erros.push("Duplicate rule: lowercase".to_string());
+                return Err("Duplicate rule: lowercase".to_string());
             } else {
                 self.lowercase = other.lowercase;
             }
         }
+
+        Ok(())
     }
 }
 
@@ -217,10 +220,10 @@ pub struct StringTransform {
 }
 
 impl Mergeable for StringTransform {
-    fn merge(&mut self, other: Self, errors: &mut Vec<String>) {
+    fn merge(&mut self, other: Self) -> Result<(), String> {
         if other.cast.is_some() {
             if self.cast.is_some() {
-                errors.push("Duplicate transform: cast".to_string());
+                return Err("Duplicate transform: cast".to_string());
             } else {
                 self.cast = other.cast;
             }
@@ -228,7 +231,7 @@ impl Mergeable for StringTransform {
 
         if other.to_uppercase.is_some() {
             if self.to_uppercase.is_some() {
-                errors.push("Duplicate transform: to_uppercase".to_string());
+                return Err("Duplicate transform: to_uppercase".to_string());
             } else {
                 self.to_uppercase = other.to_uppercase;
             }
@@ -236,7 +239,7 @@ impl Mergeable for StringTransform {
 
         if other.to_lowercase.is_some() {
             if self.to_lowercase.is_some() {
-                errors.push("Duplicate transform: to_lowercase".to_string());
+                return Err("Duplicate transform: to_lowercase".to_string());
             } else {
                 self.to_lowercase = other.to_lowercase;
             }
@@ -244,7 +247,7 @@ impl Mergeable for StringTransform {
 
         if other.trim.is_some() {
             if self.trim.is_some() {
-                errors.push("Duplicate transform: trim".to_string());
+                return Err("Duplicate transform: trim".to_string());
             } else {
                 self.trim = other.trim;
             }
@@ -252,11 +255,13 @@ impl Mergeable for StringTransform {
 
         if other.split.is_some() {
             if self.split.is_some() {
-                errors.push("Duplicate transform: split".to_string());
+                return Err("Duplicate transform: split".to_string());
             } else {
                 self.split = other.split;
             }
         }
+
+        Ok(())
     }
 }
 

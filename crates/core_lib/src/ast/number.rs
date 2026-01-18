@@ -50,19 +50,66 @@ impl RuleTrait for NumberRules {
         let rule_err = error;
 
         match key {
-            "min" | "gte" => {
+            "min" | "gte" | "greaterThanOrEqual" => {
                 self.min = Some(RuleType {
                     value: parse_val(value)?,
                     error: rule_err,
                 });
             }
-            "max" | "lte" => {
+            "max" | "lte" | "lessThanOrEqual" => {
                 self.max = Some(RuleType {
                     value: parse_val(value)?,
                     error: rule_err,
                 });
             }
-            // ... Add cases for positive, multipleOf, etc.
+            "lt" | "lessThan" => {
+                self.lt = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                });
+            }
+            "gt" | "greaterThan" => {
+                self.gt = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                });
+            }
+            "equal" => {
+                self.equal = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                });
+            }
+            "positive" => {
+                self.positive = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                });
+            }
+            "nonnegative" | "nonNegative" | "non_negative" => {
+                self.nonnegative = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                })
+            }
+            "negative" => {
+                self.negative = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                });
+            }
+            "nonpositive" | "nonPositive" | "non_positive" => {
+                self.nonpositive = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                })
+            }
+            "multipleOf" | "divisibleBy" | "multiple_of" => {
+                self.multiple_of = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                })
+            }
             _ => return Err(format!("Unknown number rule: {}", key)),
         }
         Ok(())
@@ -86,77 +133,78 @@ impl RuleTrait for NumberRules {
 }
 
 impl Mergeable for NumberRules {
-    fn merge(&mut self, other: NumberRules, errors: &mut Vec<String>) {
+    fn merge(&mut self, other: NumberRules) -> Result<(), String> {
         if other.lt.is_some() {
             if self.lt.is_some() {
-                errors.push("Duplicate rule: lt".to_string());
+                return Err("Duplicate rule: lt".to_string());
             } else {
                 self.lt = other.lt;
             }
         }
         if other.max.is_some() {
             if self.max.is_some() {
-                errors.push("Duplicate rule: max".to_string());
+                return Err("Duplicate rule: max".to_string());
             } else {
                 self.max = other.max;
             }
         }
         if other.gt.is_some() {
             if self.gt.is_some() {
-                errors.push("Duplicate rule: gt".to_string());
+                return Err("Duplicate rule: gt".to_string());
             } else {
                 self.gt = other.gt;
             }
         }
         if other.min.is_some() {
             if self.min.is_some() {
-                errors.push("Duplicate rule: min".to_string());
+                return Err("Duplicate rule: min".to_string());
             } else {
                 self.min = other.min;
             }
         }
         if other.equal.is_some() {
             if self.equal.is_some() {
-                errors.push("Duplicate rule: equal".to_string());
+                return Err("Duplicate rule: equal".to_string());
             } else {
                 self.equal = other.equal;
             }
         }
         if other.positive.is_some() {
             if self.positive.is_some() {
-                errors.push("Duplicate rule: positive".to_string());
+                return Err("Duplicate rule: positive".to_string());
             } else {
                 self.positive = other.positive;
             }
         }
         if other.nonpositive.is_some() {
             if self.nonpositive.is_some() {
-                errors.push("Duplicate rule: nonpositive".to_string());
+                return Err("Duplicate rule: nonpositive".to_string());
             } else {
                 self.nonpositive = other.nonpositive;
             }
         }
         if other.negative.is_some() {
             if self.negative.is_some() {
-                errors.push("Duplicate rule: negative".to_string());
+                return Err("Duplicate rule: negative".to_string());
             } else {
                 self.negative = other.negative;
             }
         }
         if other.nonnegative.is_some() {
             if self.nonnegative.is_some() {
-                errors.push("Duplicate rule: nonnegative".to_string());
+                return Err("Duplicate rule: nonnegative".to_string());
             } else {
                 self.nonnegative = other.nonnegative;
             }
         }
         if other.multiple_of.is_some() {
             if self.multiple_of.is_some() {
-                errors.push("Duplicate rule: multiple_of".to_string());
+                return Err("Duplicate rule: multiple_of".to_string());
             } else {
                 self.multiple_of = other.multiple_of;
             }
         }
+        Ok(())
     }
 }
 
@@ -167,16 +215,19 @@ pub struct NumberTransform {
 }
 
 impl Mergeable for NumberTransform {
-    fn merge(&mut self, other: Self, errors: &mut Vec<String>) {
+    fn merge(&mut self, other: Self) -> Result<(), String> {
         if other.cast.is_some() {
             if self.cast.is_some() {
-                errors.push("Duplicate transform: cast".to_string());
+                return Err("Duplicate transform: cast".to_string());
             } else {
                 self.cast = other.cast;
             }
         }
+
+        Ok(())
     }
 }
+
 impl TransformTrait for NumberTransform {
     fn new() -> Self {
         NumberTransform { cast: None }

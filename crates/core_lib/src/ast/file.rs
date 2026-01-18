@@ -72,28 +72,30 @@ impl RuleTrait for FileRules {
 }
 
 impl Mergeable for FileRules {
-    fn merge(&mut self, other: FileRules, errors: &mut Vec<String>) {
+    fn merge(&mut self, other: FileRules) -> Result<(), String> {
         if other.max_size.is_some() {
             if self.max_size.is_some() {
-                errors.push("Duplicate rule: maxSize".to_string());
+                return Err("Duplicate rule: maxSize".to_string());
             } else {
                 self.max_size = other.max_size;
             }
         }
         if other.min_size.is_some() {
             if self.min_size.is_some() {
-                errors.push("Duplicate rule: minSize".to_string());
+                return Err("Duplicate rule: minSize".to_string());
             } else {
                 self.min_size = other.min_size;
             }
         }
         if other.extension.is_some() {
             if self.extension.is_some() {
-                errors.push("Duplicate rule: extension".to_string());
+                return Err("Duplicate rule: extension".to_string());
             } else {
                 self.extension = other.extension;
             }
         }
+
+        Ok(())
     }
 }
 
@@ -104,14 +106,16 @@ pub struct FileTransform {
 }
 
 impl Mergeable for FileTransform {
-    fn merge(&mut self, other: Self, errors: &mut Vec<String>) {
+    fn merge(&mut self, other: Self) -> Result<(), String> {
         if other.cast.is_some() {
             if self.cast.is_some() {
-                errors.push("Duplicate transform: cast".to_string());
+                return Err("Duplicate transform: cast".to_string());
             } else {
                 self.cast = other.cast;
             }
         }
+
+        Ok(())
     }
 }
 

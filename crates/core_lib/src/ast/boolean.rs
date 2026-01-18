@@ -48,14 +48,16 @@ impl RuleTrait for BooleanRules {
 }
 
 impl Mergeable for BooleanRules {
-    fn merge(&mut self, other: Self, errors: &mut Vec<String>) {
+    fn merge(&mut self, other: Self) -> Result<(), String> {
         if other.state.is_some() {
             if self.state.is_some() {
-                errors.push("Duplicate rule: state".to_string());
+                return Err("Duplicate rule: state".to_string());
             } else {
                 self.state = other.state;
             }
         }
+
+        Ok(())
     }
 }
 
@@ -88,13 +90,15 @@ impl TransformTrait for BooleanTransform {
 }
 
 impl Mergeable for BooleanTransform {
-    fn merge(&mut self, other: Self, errors: &mut Vec<String>) {
+    fn merge(&mut self, other: Self) -> Result<(), String> {
         if other.cast.is_some() {
             if self.cast.is_some() {
-                errors.push("Duplicate transform: cast".to_string());
+                return Err("Duplicate transform: cast".to_string());
             } else {
                 self.cast = other.cast;
             }
         }
+
+        Ok(())
     }
 }
