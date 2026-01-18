@@ -50,19 +50,66 @@ impl RuleTrait for NumberRules {
         let rule_err = error;
 
         match key {
-            "min" | "gte" => {
+            "min" | "gte" | "greaterThanOrEqual" => {
                 self.min = Some(RuleType {
                     value: parse_val(value)?,
                     error: rule_err,
                 });
             }
-            "max" | "lte" => {
+            "max" | "lte" | "lessThanOrEqual" => {
                 self.max = Some(RuleType {
                     value: parse_val(value)?,
                     error: rule_err,
                 });
             }
-            // ... Add cases for positive, multipleOf, etc.
+            "lt" | "lessThan" => {
+                self.lt = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                });
+            }
+            "gt" | "greaterThan" => {
+                self.gt = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                });
+            }
+            "equal" => {
+                self.equal = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                });
+            }
+            "positive" => {
+                self.positive = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                });
+            }
+            "nonnegative" | "nonNegative" | "non_negative" => {
+                self.nonnegative = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                })
+            }
+            "negative" => {
+                self.negative = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                });
+            }
+            "nonpositive" | "nonPositive" | "non_positive" => {
+                self.nonpositive = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                })
+            }
+            "multipleOf" | "divisibleBy" | "multiple_of" => {
+                self.multiple_of = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                })
+            }
             _ => return Err(format!("Unknown number rule: {}", key)),
         }
         Ok(())
