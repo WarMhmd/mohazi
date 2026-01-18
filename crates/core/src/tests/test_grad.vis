@@ -6,6 +6,9 @@ login:
             maxLength: 4,
             error: "This is maxLength error"
         defaultError: "Invalid username."
+        transform:
+            trim: true
+            uppercase: true
         rules:
             minLength: 3
             error: "Username must be at least 3 characters." # This is a comment
@@ -13,5 +16,6 @@ login:
                 value: "^[a-zA-Z0-9_]+$"
                 error: "Username can only contain letters, numbers, and underscores."
         transform:
-            trim: true
-            uppercase: true
+            split: ","
+        transform:
+            cast: number

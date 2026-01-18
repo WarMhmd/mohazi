@@ -1,5 +1,5 @@
 mod ast;
-mod vis_to_yaml;
+mod vis_parser;
 
 fn main() {
     let path = "/home/alhareth/projects/mohazi/crates/core/src/tests/test_grad.vis";
@@ -7,7 +7,7 @@ fn main() {
     let mut out_file = std::fs::File::create(out_path).unwrap();
     let file_content = std::fs::read_to_string(path).unwrap();
 
-    match vis_to_yaml::parse_vis(&file_content) {
+    match vis_parser::parse_vis(&file_content) {
         Ok(v) => {
             println!("{:#?}", v)
         }
