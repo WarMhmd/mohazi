@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-core = { workspace = true }
+core_lib = { workspace = true }
 
 tower-lsp = "0.20"
 

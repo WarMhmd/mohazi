@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/core",
+    "crates/core_lib",
     "crates/compiler",
     "crates/lsp",
 ]
@@ -19,4 +19,4 @@ miette = { version = "7.6.0", features = ["fancy"] } # For pretty errors
 tokio = { version = "1.0", features = ["full", "macros"] }
 
 # Internal Dependencies (your crates)
-core = { path = "./crates/core" }
+core_lib = { path = "./crates/core_lib" }
