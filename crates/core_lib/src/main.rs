@@ -2,9 +2,7 @@ mod ast;
 mod vis_parser;
 
 fn main() {
-    let path = "/home/alhareth/projects/mohazi/crates/core/src/tests/test_grad.vis";
-    let out_path = "/home/alhareth/projects/mohazi/crates/core/src/tests/test_output.yaml";
-    let mut out_file = std::fs::File::create(out_path).unwrap();
+    let path = "/home/alhareth/projects/mohazi/crates/core_lib/src/tests/test_grad.vis";
     let file_content = std::fs::read_to_string(path).unwrap();
 
     match vis_parser::parse_vis(&file_content) {
