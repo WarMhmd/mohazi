@@ -6,6 +6,17 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
 
+// This macro is used to remove some boilerplate
+macro_rules! completion_items {
+    ( $( ($label:expr, $detail:expr) ),* $(,)? ) => {
+        vec![
+            $(
+                CompletionItem::new_simple($label.to_string(), $detail.to_string()),
+            )*
+        ]
+    };
+}
+
 #[derive(Debug)]
 pub struct Backend {
     pub client: Client,
@@ -87,22 +98,24 @@ impl LanguageServer for Backend {
         let prefix = &line[..safe_col];
 
         // CASE A: User is typing a value for "type: "
-        if prefix.trim().ends_with("type:") || prefix.trim().ends_with("type: ") {
-            return Ok(Some(CompletionResponse::Array(vec![
-                CompletionItem::new_simple("string".to_string(), "String type".to_string()),
-                CompletionItem::new_simple("number".to_string(), "Number type".to_string()),
-                CompletionItem::new_simple("boolean".to_string(), "Boolean type".to_string()),
-                CompletionItem::new_simple("array".to_string(), "Array type".to_string()),
-                CompletionItem::new_simple("enum".to_string(), "Enum type".to_string()),
-                CompletionItem::new_simple("file".to_string(), "File type".to_string()),
+        if prefix.trim().ends_with("type:") || prefix.trim().ends_with("field_type:") {
+            // check the macro implementation to understand
+            // todo[Add]: type
+            return Ok(Some(CompletionResponse::Array(completion_items![
+                ("string", "String type"),
+                ("number", "Number type"),
+                ("boolean", "Boolean type"),
+                ("array", "Array type"),
+                ("enum", "Enum type"),
+                ("file", "File type"),
             ])));
         }
 
         // CASE B: User is starting a new rule (Top level or field level)
         // You might check indentation here to know if you are inside a field
-        return Ok(Some(CompletionResponse::Array(vec![
-            CompletionItem::new_simple("rules:".to_string(), "Define validation rules".to_string()),
-            CompletionItem::new_simple("transform:".to_string(), "Transform block".to_string()),
+        return Ok(Some(CompletionResponse::Array(completion_items![
+            ("rules:", "Define validation rules"),
+            ("transform:", "Transform block"),
         ])));
     }
 
