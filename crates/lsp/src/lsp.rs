@@ -168,9 +168,65 @@ impl LanguageServer for Backend {
         Ok(())
     }
 
-    async fn hover(&self, _: HoverParams) -> Result<Option<Hover>> {
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        let position = params.text_document_position_params.position;
+        let uri = params.text_document_position_params.text_document.uri;
+
+        // get the document
+        let doc = self.documents.read().unwrap();
+        let content = match doc.get(&uri) {
+            Some(text) => text,
+            None => return Ok(None),
+        };
+
+        let line_index = position.line as usize;
+        let line = match content.lines().nth(line_index) {
+            Some(l) => l,
+            None => return Ok(None),
+        };
+
+        // get the current word
+        let word = match self.get_word_at_position(line, position.character as usize) {
+            Some(w) => w,
+            None => return Ok(None), // Cursor is on whitespace
+        };
+
+        // documentation table
+        let markdown_text = match word.as_str() {
+            // Keywords
+            "type" => "## Keyword: type\nDefines the data type of the field. \n\n**Usage:** `type: string`",
+            "required" => "## Keyword: Required**\n`required: true`\n\nMarks the field as mandatory.",
+            "defaultError" => "## Keyword: Default error message**\n`defaultError: 'Error message'`\n\nSets a default error message to be used when the field is missing.",
+            "rules" => "## Keyword: rules\nDefines validation rules for a specific field.",
+            "transform" => "## Keyword: rules\nDefines available transforms a field.",
+            
+            // Types
+            // todo[Add]: type
+            "string" => "**Type: String**\nRepresents text data.",
+            "number" => "**Type: Number**\nRepresents a number.",
+            "file" => "**Type: File**\nA file field.",
+            "array" => "**Type: Array**\nA list of elements field.",
+            "boolean" => "**Type: Boolean**\nA field of either true or false.",
+            "enum" => "**Type: Enum**\nA field with a limited set of possible values.",
+            
+            // Rules 
+            "min" => "**Rule: Min**\n`min: <number>`\n\nCorrect types: number.\n\nEnforces a minimum numeric value or string length.",
+            "min" => "**Rule: Max**\n`max: <number>`\n\nCorrect types: number.\n\nEnforces a maximum numeric value or string length.",
+            "maxLength" => "**Rule: Max length**\n`maxLength: <number>`\n\nCorrect types: string.\n\nEnforces a maximum string length.",
+            "minLength" => "**Rule: Min length**\n`minLength: <number>`\n\nCorrect types: string.\n\nEnforces a minimum string length.",
+
+            // Transforms
+            "cast" => "**Transform: Cast**\n`cast: <type>`\n\nConverts the field to the specified type.",
+            "trim" => "**Transform: Trim**\n`trim: true`\n\nRemoves leading and trailing whitespace from the value.",
+            "lowercase" => "**Transform: Lowercase**\n`lowercase: true`\n\nConverts the value to lowercase.",
+            "uppercase" => "**Transform: Uppercase**\n`uppercase: true`\n\nConverts the value to uppercase.",
+            
+            // Fallback (User variables or unknown words)
+            _ => return Ok(None),
+        };
+
         Ok(Some(Hover {
-            contents: HoverContents::Scalar(MarkedString::String("You're hovering!".to_string())),
+            contents: HoverContents::Scalar(MarkedString::String(markdown_text.to_string())),
             range: None,
         }))
     }
@@ -263,5 +319,32 @@ impl Backend {
         }
 
         None
+    }
+
+    fn get_word_at_position(&self, line: &str, col: usize) -> Option<String> {
+        // If the line is empty or col is out of bounds, return None
+        if col >= line.len() {
+            return None;
+        }
+
+        // 1. Find the start of the word (search backwards)
+        // We look for the first character that IS NOT alphanumeric (or underscore)
+        let start = line[..col]
+            .rfind(|c: char| !c.is_alphanumeric() && c != '_')
+            .map(|i| i + 1) // Start is the char AFTER the separator
+            .unwrap_or(0); // Or 0 if we hit the start of the line
+
+        // 2. Find the end of the word (search forwards)
+        let end = line[col..]
+            .find(|c: char| !c.is_alphanumeric() && c != '_')
+            .map(|i| col + i) // Offset by current col
+            .unwrap_or(line.len()); // Or end of line
+
+        // 3. splice the word
+        if start < end {
+            Some(line[start..end].to_string())
+        } else {
+            None
+        }
     }
 }
