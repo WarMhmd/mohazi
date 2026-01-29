@@ -112,16 +112,33 @@ impl LanguageServer for Backend {
         let safe_col = col_index.min(line.len());
         let prefix = &line[..safe_col];
 
+        let current_field_type = self.get_current_field_type(&lines, line_index).unwrap_or_else(|| { return String::from("")});
+        eprintln!("type: {}", current_field_type);
+
         match context.as_deref() {
             Some("rules") => {
-                return Ok(Some(CompletionResponse::Array(completion_items![
-                    ("minLength", "Rule: Minimum string length"),
-                    ("maxLength", "Rule: Maximum string length"),
-                    ("min", "Rule: Minimum value"),
-                    ("max", "Rule: Maximum value"),
-                    ("regex", "Rule: Match custom regex pattern"),
-                    ("pattern", "Rule: Match custom regex pattern"),
-                ])));
+                match current_field_type.as_str() {
+                    "string" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("minLength", "Rule: Minimum string length"),
+                            ("maxLength", "Rule: Maximum string length"),
+                            ("regex", "Rule: Match custom regex pattern"),
+                            ("pattern", "Rule: Match custom regex pattern"),
+                        ])));
+                    }
+                    "number" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("min", "Rule: Minimum value"),
+                            ("max", "Rule: Maximum value"),
+                        ])));
+                    }
+                    "" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("random", "Random"),
+                        ])));
+                    }
+                    _ => unreachable!()
+                }
             }
             Some("transform") => {
                 return Ok(Some(CompletionResponse::Array(completion_items![
@@ -148,7 +165,9 @@ impl LanguageServer for Backend {
                     ])));
                 }
 
+                // general keywords for fields
                 return Ok(Some(CompletionResponse::Array(completion_items![
+                    ("type:", "Set field type"),
                     ("rules:", "Define validation rules"),
                     ("transform:", "Transform block"),
                     ("required:", "Required checking"),
@@ -345,6 +364,32 @@ impl Backend {
             Some(line[start..end].to_string())
         } else {
             None
+        }
+    }
+
+    /// This function gets the current field's type either from the type: or the cast: fields
+    fn get_current_field_type(&self, lines: &[&str], current_line_idx: usize) -> Option<String> {
+        if current_line_idx == 0 {
+            return None;
+        }
+
+        let mut parsing_type = String::new();
+
+        // go through previous lines
+        for i in (0..current_line_idx).rev() {
+            let line = lines[i];
+            let trimmed_line = line.trim();
+
+            if trimmed_line.starts_with("type:") || trimmed_line.starts_with("cast:") {
+                parsing_type = line.splitn(2, ":").last().unwrap().trim().to_string();
+                break;
+            }
+        }
+
+        if parsing_type.is_empty() {
+            return None;
+        } else {
+            return Some(parsing_type);
         }
     }
 }
