@@ -113,7 +113,6 @@ impl LanguageServer for Backend {
         let prefix = &line[..safe_col];
 
         let current_field_type = self.get_current_field_type(&lines, line_index).unwrap_or_else(|| { return String::from("")});
-        eprintln!("type: {}", current_field_type);
 
         match context.as_deref() {
             Some("rules") => {
@@ -122,14 +121,54 @@ impl LanguageServer for Backend {
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("minLength", "Rule: Minimum string length"),
                             ("maxLength", "Rule: Maximum string length"),
+                            ("length", "Rule: Set the string length"),
                             ("regex", "Rule: Match custom regex pattern"),
                             ("pattern", "Rule: Match custom regex pattern"),
+                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            ("endsWith", "Rule: Check if the string ends with a suffix"),
+                            ("uppercase", "Rule: Check if the string is written in uppercase"),
+                            ("lowercase", "Rule: Check if the string is written in lowercase"),
                         ])));
                     }
                     "number" => {
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("min", "Rule: Minimum value"),
                             ("max", "Rule: Maximum value"),
+                            ("gt", "Rule:  Greater than"),
+                            ("gte", "Rule:  Greater than or equal"),
+                            ("lt", "Rule:  Less than"),
+                            ("lte", "Rule:  Less than or equal"),
+                            ("equal", "Rule: Check if the number is equal to some value"),
+                            ("positive", "Rule: Check if the number is positive"),
+                            ("negative", "Rule: Check if the number is negative"),
+                            ("nonpositive", "Rule: Check if the number is not positive"),
+                            ("nonnegative", "Rule: Check if the number is not negative"),
+                            ("multipleOf", "Rule: Check if the number is a multiple of some value"),
+                        ])));
+                    }
+                    "file" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("extension", "Rule: Check if the file has a specific extension"),
+                            ("maxSize", "Rule: Check if the file size is less than or equal to some value"),
+                            ("minSize", "Rule: Check if the file size is greater than or equal to some value"),
+                        ])));
+                    }
+                    "boolean" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("state", "Rule: Check if the boolean is true or false"),
+                        ])));
+                    }
+                    "enum" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("values", "Rule: Check if the enum value is one of the allowed values"),
+                        ])));
+                    }
+                    "array" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("type", "Rule: Check if the array elements are of a specific type"),
+                            ("minLength", "Rule: Check if the array length is greater than or equal to some value"),
+                            ("maxLength", "Rule: Check if the array length is less than or equal to some value"),
+                            ("length", "Rule: Check if the array length is equal to some value"),
                         ])));
                     }
                     "" => {
@@ -141,14 +180,51 @@ impl LanguageServer for Backend {
                 }
             }
             Some("transform") => {
-                return Ok(Some(CompletionResponse::Array(completion_items![
-                    ("cast", "Transform: Cast type"),
-                    ("trim", "Transform: Remove whitespace"),
-                    ("join", "Transform: Join array elements"),
-                    ("split", "Transform: split array elements"),
-                    ("lowercase", "Transform: Convert to lowercase"),
-                    ("uppercase", "Transform: Convert to uppercase"),
-                ])));
+                match current_field_type.as_str() {
+                    "string" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                            ("trim", "Transform: Remove whitespace"),
+                            ("toLowerCase", "Transform: Convert to lowercase"),
+                            ("toUpperCase", "Transform: Convert to uppercase"),
+                            ("normalize", "Transform: Normalize Unicode characters into a specific Unicode Normalization Form"),
+                            ("split", "Transform: split array elements"),
+                        ])));
+                    }
+                    "number" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                        ])));
+                    }
+                    "file" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                        ])));
+                    }
+                    "boolean" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                        ])));
+                    }
+                    "array" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                            ("join", "Transform: Join array elements"),
+                            ("sum", "Transform: Sum array elements"),
+                        ])));
+                    }
+                    "" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                            ("trim", "Transform: Remove whitespace"),
+                            ("join", "Transform: Join array elements"),
+                            ("split", "Transform: split array elements"),
+                            ("lowercase", "Transform: Convert to lowercase"),
+                            ("uppercase", "Transform: Convert to uppercase"),
+                        ])));
+                    }
+                    _ => unreachable!()
+                }
             }
             _ => {
                 // Top level context
