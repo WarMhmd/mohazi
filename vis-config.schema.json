@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Vis Config",
+  "description": "Configuration for mohazi/vis code generation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["input", "languages"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional reference to the JSON schema for editor tooling.",
+      "format": "uri-reference"
+    },
+    "input": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path to the input directory containing .vis sources (relative to the config file).",
+      "examples": ["./vis"]
+    },
+    "languages": {
+      "type": "object",
+      "description": "Per-language output configuration keyed by language name (e.g. C#, javascript).",
+      "minProperties": 1,
+      "patternProperties": {
+        "javascript|C#": {
+          "$ref": "#/$defs/languageConfig"
+        }
+      },
+      "additionalProperties": false,
+      "examples": [
+        {
+          "javascript": { "enabled": true, "output": "./frontend/lib/vis" },
+          "C#": { "enabled": true, "output": "./backend/lib/vis" }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "languageConfig": {
+      "type": "object",
+      "description": "Configuration for a single language backend.",
+      "additionalProperties": false,
+      "required": ["output"],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this language backend is enabled."
+        },
+        "output": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Output directory for generated files (relative to the config file)."
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "input": "./vis",
+      "languages": {
+        "javascript": {
+          "enabled": true,
+          "output": "./frontend/lib/vis"
+        },
+        "C#": {
+          "enabled": true,
+          "output": "./backend/lib/vis"
+        }
+      }
+    }
+  ]
+}

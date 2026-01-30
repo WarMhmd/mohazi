@@ -1,0 +1,15 @@
+{
+  "$schema": "./vis-config.schema.json",
+  "input": "./vis",
+  "languages": {
+    "javascript": {
+      "enabled": true,
+      "output": "./frontend/lib/vis"
+    },
+
+    "C#": {
+      "enabled": true,
+      "output": "./backend/lib/vis"
+    }
+  }
+}

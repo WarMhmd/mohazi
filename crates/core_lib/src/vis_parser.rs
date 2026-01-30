@@ -145,6 +145,7 @@ pub fn raw_spaces(line: &str) -> usize {
 }
 
 // Parser errors type
+#[derive(Debug)]
 pub struct ParserError {
     pub message: String,
     pub line: u32,
