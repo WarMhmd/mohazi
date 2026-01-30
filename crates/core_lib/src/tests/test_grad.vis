@@ -1,6 +1,6 @@
 login: 
     username: 
-        type: string
+        type:string
         required: true
         rules:
             maxLength: 4,
@@ -19,3 +19,5 @@ login:
             split: ","
         transform:
             cast: number
+register:
+    username: "Invalid password."
