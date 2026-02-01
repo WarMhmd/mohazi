@@ -129,12 +129,11 @@ impl LanguageServer for Backend {
                             ("endsWith", "Rule: Check if the string ends with a suffix"),
                             ("uppercase", "Rule: Check if the string is written in uppercase"),
                             ("lowercase", "Rule: Check if the string is written in lowercase"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
                         ])));
                     }
                     "number" => {
                         return Ok(Some(CompletionResponse::Array(completion_items![
-                            ("min", "Rule: Minimum value"),
-                            ("max", "Rule: Maximum value"),
                             ("gt", "Rule:  Greater than"),
                             ("gte", "Rule:  Greater than or equal"),
                             ("lt", "Rule:  Less than"),
@@ -145,6 +144,7 @@ impl LanguageServer for Backend {
                             ("nonpositive", "Rule: Check if the number is not positive"),
                             ("nonnegative", "Rule: Check if the number is not negative"),
                             ("multipleOf", "Rule: Check if the number is a multiple of some value"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
                         ])));
                     }
                     "file" => {
@@ -152,16 +152,19 @@ impl LanguageServer for Backend {
                             ("extension", "Rule: Check if the file has a specific extension"),
                             ("maxSize", "Rule: Check if the file size is less than or equal to some value"),
                             ("minSize", "Rule: Check if the file size is greater than or equal to some value"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
                         ])));
                     }
                     "boolean" => {
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("state", "Rule: Check if the boolean is true or false"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
                         ])));
                     }
                     "enum" => {
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("values", "Rule: Check if the enum value is one of the allowed values"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
                         ])));
                     }
                     "array" => {
@@ -170,11 +173,12 @@ impl LanguageServer for Backend {
                             ("minLength", "Rule: Check if the array length is greater than or equal to some value"),
                             ("maxLength", "Rule: Check if the array length is less than or equal to some value"),
                             ("length", "Rule: Check if the array length is equal to some value"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
                         ])));
                     }
                     "" => {
                         return Ok(Some(CompletionResponse::Array(completion_items![
-                            ("random", "Random"),
+                            ("unknow type", "You have not defined a type"),
                         ])));
                     }
                     _ => unreachable!()
@@ -183,6 +187,15 @@ impl LanguageServer for Backend {
             Some("transform") => {
                 match current_field_type.as_str() {
                     "string" => {
+
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("number", "Cast: string to number"),
+                                ("boolean", "Cast: string to boolean"),
+                            ])));
+                        }
+
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("cast", "Transform: Cast type"),
                             ("trim", "Transform: Remove whitespace"),
@@ -193,16 +206,42 @@ impl LanguageServer for Backend {
                         ])));
                     }
                     "number" => {
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("number", "Cast: number to number"),
+                                ("string", "Cast: number to string"),
+                                ("boolean", "Cast: number to boolean"),
+                                ("hex", "Cast: number to hex"),
+                            ])));
+                        }
+
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("cast", "Transform: Cast type"),
                         ])));
                     }
                     "file" => {
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("image", "Cast: file to image"),
+                                ("base64", "Cast: file to base64"),
+                            ])));
+                        }
+
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("cast", "Transform: Cast type"),
                         ])));
                     }
                     "boolean" => {
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("number", "Cast: boolean to number"),
+                                ("string", "Cast: boolean to string"),
+                            ])));
+                        }
+
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("cast", "Transform: Cast type"),
                         ])));
