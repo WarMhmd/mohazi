@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use core_lib::vis_parser;
+use core_lib::ast::Transform;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
@@ -226,9 +227,9 @@ impl LanguageServer for Backend {
                     _ => unreachable!()
                 }
             }
-            _ => {
+            _|None => {
                 // Top level context
-                if prefix.trim().ends_with("type:") || prefix.trim().ends_with("field_type:") {
+                if prefix.trim().ends_with("type: ") || prefix.trim().ends_with("field_type: ") {
                     // check the macro implementation to understand
                     // todo[Add]: type
                     return Ok(Some(CompletionResponse::Array(completion_items![
@@ -393,7 +394,7 @@ impl Backend {
                 if indent < get_indent_level(lines[current_line_idx]) {
                     target_indent = indent + 1; // Force a check
                 } else {
-                    target_indent = indent;
+                    continue;
                 }
             }
 
@@ -410,6 +411,10 @@ impl Backend {
                 // If we hit a parent that isn't a known block key (e.g. "username:"),
                 // we update our target indent and keep searching upwards
                 target_indent = indent;
+            } else if indent == target_indent {
+                // If we hit a parent that isn't a known block key (e.g. "username:"),
+                // we set the context to the global context (None)
+                return None;
             }
         }
 
