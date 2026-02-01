@@ -6,23 +6,6 @@ use crate::ast::{
 use indexmap::IndexMap;
 use std::collections::HashMap;
 
-const KEYWORDS: [&str; 14] = [
-    "type",
-    "fieldType",
-    "required",
-    "defaultError",
-    "error",
-    "value",
-    "rules",
-    "transform",
-    "enum",
-    "array",
-    "file",
-    "number",
-    "string",
-    "boolean",
-];
-
 // todo[Add]: Type
 enum ActiveRuleBuilder {
     String(StringRules),
@@ -324,17 +307,6 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
             Level::Field => {
                 let current_form = forms.get_mut(&current_form_name).unwrap();
                 current_field_name = key.to_string();
-
-                // check that no keywords are used at that level
-                if KEYWORDS.contains(&key) {
-                    errors.push(ParserError::new(
-                        format!("Error: Field {} is a reserved keyword", key),
-                        line_index as u32,
-                        current_level as u32,
-                        current_level as u32 + line.len() as u32,
-                    ));
-                    continue;
-                }
 
                 // check that there is no value after the field name like `username: value`
                 if !value.is_empty() {
