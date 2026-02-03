@@ -308,7 +308,7 @@ impl LanguageServer for Backend {
             }
             _ | None => {
                 // Top level context
-                if prefix.trim().ends_with("type: ") || prefix.trim().ends_with("field_type: ") {
+                if prefix.ends_with("type: ") || prefix.ends_with("field_type: ") {
                     // check the macro implementation to understand
                     // todo[Add]: type
                     return Ok(Some(CompletionResponse::Array(completion_items![
