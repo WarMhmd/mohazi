@@ -1,6 +1,10 @@
-# Type: enum
+# Rule: values
 
-Description: Restricts the field value to a predefined set of allowed values.
+Aliases: -
+
+Accepted values: string | string array to define values of the enum
+
+Applicable types: enum
 
 Example:
 ```yaml

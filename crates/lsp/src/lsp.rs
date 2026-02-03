@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::sync::RwLock;
 
-use core_lib::vis_parser;
 use core_lib::ast::Transform;
+use core_lib::vis_parser;
+use include_dir::{include_dir, Dir};
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
@@ -21,6 +22,13 @@ macro_rules! completion_items {
 /// A helper function that returns how many whitespaces are at the beginning of a line
 fn get_indent_level(line: &str) -> usize {
     line.chars().take_while(|c| c.is_whitespace()).count()
+}
+
+static DOCS_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/docs");
+
+fn get_docs(dir: &str, name: &str) -> Option<&'static str> {
+    let path = format!("{}/{}.md", dir, name);
+    DOCS_DIR.get_file(path)?.contents_utf8()
 }
 
 #[derive(Debug)]
@@ -113,7 +121,9 @@ impl LanguageServer for Backend {
         let safe_col = col_index.min(line.len());
         let prefix = &line[..safe_col];
 
-        let current_field_type = self.get_current_field_type(&lines, line_index).unwrap_or_else(|| { return String::from("")});
+        let current_field_type = self
+            .get_current_field_type(&lines, line_index)
+            .unwrap_or_else(|| return String::from(""));
 
         match context.as_deref() {
             Some("rules") => {
@@ -125,11 +135,23 @@ impl LanguageServer for Backend {
                             ("length", "Rule: Set the string length"),
                             ("regex", "Rule: Match custom regex pattern"),
                             ("pattern", "Rule: Match custom regex pattern"),
-                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            (
+                                "startsWith",
+                                "Rule: Check if the string starts with a prefix"
+                            ),
                             ("endsWith", "Rule: Check if the string ends with a suffix"),
-                            ("uppercase", "Rule: Check if the string is written in uppercase"),
-                            ("lowercase", "Rule: Check if the string is written in lowercase"),
-                            ("error", "Rule Error: set custom error message for the previous rule"),
+                            (
+                                "uppercase",
+                                "Rule: Check if the string is written in uppercase"
+                            ),
+                            (
+                                "lowercase",
+                                "Rule: Check if the string is written in lowercase"
+                            ),
+                            (
+                                "error",
+                                "Rule Error: set custom error message for the previous rule"
+                            ),
                         ])));
                     }
                     "number" => {
@@ -143,8 +165,14 @@ impl LanguageServer for Backend {
                             ("negative", "Rule: Check if the number is negative"),
                             ("nonpositive", "Rule: Check if the number is not positive"),
                             ("nonnegative", "Rule: Check if the number is not negative"),
-                            ("multipleOf", "Rule: Check if the number is a multiple of some value"),
-                            ("error", "Rule Error: set custom error message for the previous rule"),
+                            (
+                                "multipleOf",
+                                "Rule: Check if the number is a multiple of some value"
+                            ),
+                            (
+                                "error",
+                                "Rule Error: set custom error message for the previous rule"
+                            ),
                         ])));
                     }
                     "file" => {
@@ -158,13 +186,22 @@ impl LanguageServer for Backend {
                     "boolean" => {
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("state", "Rule: Check if the boolean is true or false"),
-                            ("error", "Rule Error: set custom error message for the previous rule"),
+                            (
+                                "error",
+                                "Rule Error: set custom error message for the previous rule"
+                            ),
                         ])));
                     }
                     "enum" => {
                         return Ok(Some(CompletionResponse::Array(completion_items![
-                            ("values", "Rule: Check if the enum value is one of the allowed values"),
-                            ("error", "Rule Error: set custom error message for the previous rule"),
+                            (
+                                "values",
+                                "Rule: Check if the enum value is one of the allowed values"
+                            ),
+                            (
+                                "error",
+                                "Rule Error: set custom error message for the previous rule"
+                            ),
                         ])));
                     }
                     "array" => {
@@ -177,17 +214,17 @@ impl LanguageServer for Backend {
                         ])));
                     }
                     "" => {
-                        return Ok(Some(CompletionResponse::Array(completion_items![
-                            ("unknow type", "You have not defined a type"),
-                        ])));
+                        return Ok(Some(CompletionResponse::Array(completion_items![(
+                            "unknow type",
+                            "You have not defined a type"
+                        ),])));
                     }
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 }
             }
             Some("transform") => {
                 match current_field_type.as_str() {
                     "string" => {
-
                         // setup the cast completion list
                         if prefix.ends_with("cast: ") {
                             return Ok(Some(CompletionResponse::Array(completion_items![
@@ -216,9 +253,10 @@ impl LanguageServer for Backend {
                             ])));
                         }
 
-                        return Ok(Some(CompletionResponse::Array(completion_items![
-                            ("cast", "Transform: Cast type"),
-                        ])));
+                        return Ok(Some(CompletionResponse::Array(completion_items![(
+                            "cast",
+                            "Transform: Cast type"
+                        ),])));
                     }
                     "file" => {
                         // setup the cast completion list
@@ -229,9 +267,10 @@ impl LanguageServer for Backend {
                             ])));
                         }
 
-                        return Ok(Some(CompletionResponse::Array(completion_items![
-                            ("cast", "Transform: Cast type"),
-                        ])));
+                        return Ok(Some(CompletionResponse::Array(completion_items![(
+                            "cast",
+                            "Transform: Cast type"
+                        ),])));
                     }
                     "boolean" => {
                         // setup the cast completion list
@@ -242,9 +281,10 @@ impl LanguageServer for Backend {
                             ])));
                         }
 
-                        return Ok(Some(CompletionResponse::Array(completion_items![
-                            ("cast", "Transform: Cast type"),
-                        ])));
+                        return Ok(Some(CompletionResponse::Array(completion_items![(
+                            "cast",
+                            "Transform: Cast type"
+                        ),])));
                     }
                     "array" => {
                         return Ok(Some(CompletionResponse::Array(completion_items![
@@ -263,10 +303,10 @@ impl LanguageServer for Backend {
                             ("uppercase", "Transform: Convert to uppercase"),
                         ])));
                     }
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 }
             }
-            _|None => {
+            _ | None => {
                 // Top level context
                 if prefix.trim().ends_with("type: ") || prefix.trim().ends_with("field_type: ") {
                     // check the macro implementation to understand
@@ -313,6 +353,7 @@ impl LanguageServer for Backend {
             Some(text) => text,
             None => return Ok(None),
         };
+        let lines = content.lines().collect::<Vec<&str>>();
 
         let line_index = position.line as usize;
         let line = match content.lines().nth(line_index) {
@@ -329,33 +370,64 @@ impl LanguageServer for Backend {
         // documentation table
         let markdown_text = match word.as_str() {
             // Keywords
-            "type" => "## Keyword: type\nDefines the data type of the field. \n\n**Usage:** `type: string`",
-            "required" => "## Keyword: Required**\n`required: true`\n\nMarks the field as mandatory.",
-            "defaultError" => "## Keyword: Default error message**\n`defaultError: 'Error message'`\n\nSets a default error message to be used when the field is missing.",
-            "rules" => "## Keyword: rules\nDefines validation rules for a specific field.",
-            "transform" => "## Keyword: rules\nDefines available transforms a field.",
-            
+            "type" => {
+                let context = self.find_parent_context(&lines, line_index);
+
+                if context.is_none() {
+                    get_docs("keywords", "type").unwrap()
+                } else {
+                    get_docs("rules", "array-type").unwrap()
+                }
+            }
+            "required" => get_docs("keywords", "required").unwrap(),
+            "defaultError" => get_docs("keywords", "defaultError").unwrap(),
+            "rules" => get_docs("keywords", "rules").unwrap(),
+            "transform" => get_docs("keywords", "transform").unwrap(),
+
             // Types
             // todo[Add]: type
-            "string" => "**Type: String**\nRepresents text data.",
-            "number" => "**Type: Number**\nRepresents a number.",
-            "file" => "**Type: File**\nA file field.",
-            "array" => "**Type: Array**\nA list of elements field.",
-            "boolean" => "**Type: Boolean**\nA field of either true or false.",
-            "enum" => "**Type: Enum**\nA field with a limited set of possible values.",
-            
-            // Rules 
-            "min" => "**Rule: Min**\n`min: <number>`\n\nCorrect types: number.\n\nEnforces a minimum numeric value or string length.",
-            "min" => "**Rule: Max**\n`max: <number>`\n\nCorrect types: number.\n\nEnforces a maximum numeric value or string length.",
-            "maxLength" => "**Rule: Max length**\n`maxLength: <number>`\n\nCorrect types: string.\n\nEnforces a maximum string length.",
-            "minLength" => "**Rule: Min length**\n`minLength: <number>`\n\nCorrect types: string.\n\nEnforces a minimum string length.",
+            "string" => get_docs("types", "string").unwrap(),
+            "number" => get_docs("types", "number").unwrap(),
+            "file" => get_docs("types", "file").unwrap(),
+            "array" => get_docs("types", "array").unwrap(),
+            "boolean" => get_docs("types", "boolean").unwrap(),
+            "enum" => get_docs("types", "enum").unwrap(),
+
+            // Rules
+            "min" => get_docs("rules", "min").unwrap(),
+            "max" => get_docs("rules", "max").unwrap(),
+            "maxLength" => get_docs("rules", "maxLength").unwrap(),
+            "minLength" => get_docs("rules", "minLength").unwrap(),
+            "length" => get_docs("rules", "length").unwrap(),
+            "uppercase" => get_docs("rules", "uppercase").unwrap(),
+            "lowercase" => get_docs("rules", "lowercase").unwrap(),
+            // "type" => get_docs("rules", "array-type").unwrap(), // special case, handled in the
+            // first type
+            "endsWith" => get_docs("rules", "endsWith").unwrap(),
+            "startsWith" => get_docs("rules", "startsWith").unwrap(),
+            "values" => get_docs("rules", "enum-values").unwrap(),
+            "equal" => get_docs("rules", "equal").unwrap(),
+            "gt" => get_docs("rules", "gt").unwrap(),
+            "lt" => get_docs("rules", "lt").unwrap(),
+            "includes" => get_docs("rules", "includes").unwrap(),
+            "multipleOf" => get_docs("rules", "multipleOf").unwrap(),
+            "negative" => get_docs("rules", "negative").unwrap(),
+            "nonnegative" => get_docs("rules", "nonnegative").unwrap(),
+            "positive" => get_docs("rules", "positive").unwrap(),
+            "nonpositive" => get_docs("rules", "nonpositive").unwrap(),
+            "regex" => get_docs("rules", "regex").unwrap(),
+            "state" => get_docs("rules", "state").unwrap(),
 
             // Transforms
-            "cast" => "**Transform: Cast**\n`cast: <type>`\n\nConverts the field to the specified type.",
-            "trim" => "**Transform: Trim**\n`trim: true`\n\nRemoves leading and trailing whitespace from the value.",
-            "lowercase" => "**Transform: Lowercase**\n`lowercase: true`\n\nConverts the value to lowercase.",
-            "uppercase" => "**Transform: Uppercase**\n`uppercase: true`\n\nConverts the value to uppercase.",
-            
+            "cast" => get_docs("transforms", "cast").unwrap(),
+            "trim" => get_docs("transforms", "trim").unwrap(),
+            "join" => get_docs("transforms", "join").unwrap(),
+            "split" => get_docs("transforms", "split").unwrap(),
+            "sum" => get_docs("transforms", "sum").unwrap(),
+            "normalize" => get_docs("transforms", "normalize").unwrap(),
+            "toLowerCase" => get_docs("transforms", "toLowerCase").unwrap(),
+            "toUpperCase" => get_docs("transforms", "toUpperCase").unwrap(),
+
             // Fallback (User variables or unknown words)
             _ => return Ok(None),
         };
