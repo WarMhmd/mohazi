@@ -4,7 +4,7 @@ use crate::ast::{
     RuleType, StringRules, StringTransform, Transform, TransformTrait,
 };
 use indexmap::IndexMap;
-use std::{collections::HashMap, thread::current};
+use std::collections::HashMap;
 
 // todo[Add]: Type
 enum ActiveRuleBuilder {
@@ -200,6 +200,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
     let mut active_rule_builder = ActiveRuleBuilder::None;
     let mut active_transform_builder = ActiveTransformBuilder::None;
     let mut prev_level = Level::Form;
+    let mut is_type_defined = false; // This variable is used to know if the type has been defined
 
     while let Some((line_index, line)) = iter.next() {
         let current_spaces = raw_spaces(line);
@@ -212,6 +213,16 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
         let value = if parts.len() > 1 { parts[1].trim() } else { "" };
 
         if current_spaces > prev_spaces {
+            if prev_level == Level::Property && !is_type_defined {
+                // make sure we don't go deeper if the type is not defined
+                errors.push(ParserError::new(
+                    "Type not defined".to_string(),
+                    (line_index + 1) as u32,
+                    current_spaces as u32,
+                    current_spaces as u32 + line.len() as u32,
+                ));
+                continue;
+            }
             current_level = current_level.get_next_level().expect("Nested too deep");
             levels_vector[current_level as usize] = current_spaces;
         } else if current_spaces < prev_spaces {
@@ -232,7 +243,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                 }
             }
 
+            // new field
             if (new_level as usize) <= (Level::Field as usize) {
+                is_type_defined = false; // resets the type defined flag
                 if let Some(form) = forms.get_mut(&current_form_name) {
                     if let Some(finished_field) = form.fields.get_mut(&current_field_name) {
                         merge_rules(finished_field).unwrap_or_else(|error| {
@@ -295,6 +308,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                 let current_form = forms.get_mut(&current_form_name).unwrap();
                 current_field_name = key.to_string();
 
+                // check that there is no value after the field name like `username: value`
                 if !value.is_empty() {
                     errors.push(ParserError::new(
                         format!("Error: Field {} cannot be set to a single value", key),
@@ -305,6 +319,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                     continue;
                 }
 
+                // check for duplicate fields
                 if current_form.fields.contains_key(key) {
                     errors.push(ParserError::new(
                         format!("Duplicate Field name: {}", key),
@@ -362,6 +377,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
 
                         current_field.field_type = field_type;
                         parsing_type = field_type;
+                        is_type_defined = true;
                     }
                     "required" => {
                         if value.is_empty() {
@@ -434,6 +450,17 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                 "rules" => {
                     let current_form = forms.get_mut(&current_form_name).unwrap();
                     let current_field = current_form.fields.get_mut(&current_field_name).unwrap();
+
+                    // check if the type has already been defined or not
+                    if !is_type_defined {
+                        errors.push(ParserError::new(
+                            format!("Error: Cannot set rules before defining a type"),
+                            line_index as u32,
+                            current_level as u32,
+                            current_level as u32 + line.len() as u32,
+                        ));
+                        continue;
+                    }
 
                     // A. INITIALIZE BUILDER
                     if matches!(active_rule_builder, ActiveRuleBuilder::None) {
@@ -566,6 +593,17 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                 "transform" => {
                     let current_form = forms.get_mut(&current_form_name).unwrap();
                     let current_field = current_form.fields.get_mut(&current_field_name).unwrap();
+
+                    // check if the type has already been defined or not
+                    if !is_type_defined {
+                        errors.push(ParserError::new(
+                            format!("Error: Cannot set transforms before defining a type"),
+                            line_index as u32,
+                            current_level as u32,
+                            current_level as u32 + line.len() as u32,
+                        ));
+                        continue;
+                    }
 
                     // INITIALIZE BUILDER
                     if matches!(active_transform_builder, ActiveTransformBuilder::None) {
@@ -702,7 +740,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                     ));
                 }
             },
-            Level::ValueAndErrorPair => unreachable!(), // This branch is unreachable
+            Level::ValueAndErrorPair => continue, // This branch is unreachable
         }
         prev_spaces = current_spaces;
     }
@@ -733,6 +771,8 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
             });
         }
     }
+
+    println!("level vector: {:?}", levels_vector);
 
     // collect rules togather
     if errors.is_empty() {

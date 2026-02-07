@@ -24,3 +24,6 @@ target
 # Added by cargo
 
 /target
+
+# Ignore all vis files, these files are for development testing
+*.vis
