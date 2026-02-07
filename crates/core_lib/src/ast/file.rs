@@ -9,7 +9,7 @@ use super::Mergeable;
 use super::RuleTrait;
 use super::RuleType;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FileRules {
     #[serde(rename = "maxSize", alias = "max_size")]
@@ -99,7 +99,7 @@ impl Mergeable for FileRules {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FileTransform {
     pub cast: Option<FieldType>,

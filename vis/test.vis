@@ -1,5 +1,5 @@
 login: 
-username: 
+	username: 
         type: string
         required: true
         rules:
@@ -17,5 +17,5 @@ username:
                 error: "Username can only contain letters, numbers, and underscores."
         transform:
             split: ","
-        transform:
             cast: number
+        

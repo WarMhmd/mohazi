@@ -8,7 +8,7 @@ use crate::ast::TransformTrait;
 use super::FieldType;
 use super::RuleType;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BooleanRules {
     #[serde(rename = "state", alias = "value")]
@@ -61,7 +61,7 @@ impl Mergeable for BooleanRules {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BooleanTransform {
     pub cast: Option<FieldType>,

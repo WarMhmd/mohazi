@@ -186,7 +186,7 @@ impl<'de> Deserialize<'de> for Field {
 }
 
 // #region Rules
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum Rule {
     String(StringRules),
@@ -222,7 +222,7 @@ impl Rule {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct RuleType<T> {
     pub value: T,
     pub error: Option<String>,
@@ -230,7 +230,7 @@ pub struct RuleType<T> {
 // #endregion
 
 // #region Transform
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum Transform {
     String(StringTransform),

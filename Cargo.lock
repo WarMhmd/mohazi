@@ -894,6 +894,7 @@ dependencies = [
  "anyhow",
  "clap",
  "core_lib",
+ "indexmap",
  "miette",
  "serde",
  "serde_json",

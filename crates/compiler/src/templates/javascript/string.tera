@@ -1,0 +1,157 @@
+flag = true;
+
+if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
+
+    {% if required %}
+    result.errors.push({
+        path: "{{ FieldNamePath }}",
+        message: "{{ requiredError }}"
+    });
+    flag = false;
+    {% endif %}
+
+} else if (typeof data.{{ FieldName }} !== "string") {
+
+    result.errors.push({
+        path: "{{ FieldNamePath }}",
+        message: "{{ defaultError }}"
+    });
+    flag = false;
+
+} else {
+
+    {%- if rules.length %}
+    if (data.{{ FieldName }}.length !== {{ rules.length.value }}) {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ rules.length.error | default(value=defaultError) }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.minLength %}
+    if (data.{{ FieldName }}.length < {{ rules.minLength.value }}) {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ rules.minLength.error | default(value=defaultError) }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.maxLength %}
+    if (data.{{ FieldName }}.length > {{ rules.maxLength.value }}) {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ rules.maxLength.error | default(value=defaultError) }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.regex %}
+    if (!/{{ rules.regex.value }}/.test(data.{{ FieldName }})) {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ rules.regex.error | default(value=defaultError) }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.startsWith %}
+    if (!data.{{ FieldName }}.startsWith("{{ rules.startsWith.value }}")) {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ rules.startsWith.error | default(value=defaultError) }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.endsWith %}
+    if (!data.{{ FieldName }}.endsWith("{{ rules.endsWith.value }}")) {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ rules.endsWith.error | default(value=defaultError) }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.includes %}
+    if (!data.{{ FieldName }}.includes("{{ rules.includes.value }}")) {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ rules.includes.error | default(value=defaultError) }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.uppercase %}
+    if (data.{{ FieldName }} !== data.{{ FieldName }}.toUpperCase()) {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ rules.uppercase.error | default(value=defaultError) }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.lowercase %}
+    if (data.{{ FieldName }} !== data.{{ FieldName }}.toLowerCase()) {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ rules.lowercase.error | default(value=defaultError) }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.trim %}
+    data.{{ FieldName }} = data.{{ FieldName }}.trim();
+    {%- endif %}
+
+    {%- if transform.toLowercase %}
+    data.{{ FieldName }} = data.{{ FieldName }}.toLowerCase();
+    {%- endif %}
+
+    {%- if transform.toUppercase %}
+    data.{{ FieldName }} = data.{{ FieldName }}.toUpperCase();
+    {%- endif %}
+
+    {%- if transform.split %}
+    data.{{ FieldName }} = data.{{ FieldName }}.split("{{ transform.split }}");
+    {%- endif %}
+
+    {%- if transform.cast == "number" %}
+    data.{{ FieldName }} = Number(data.{{ FieldName }});
+    if (Number.isNaN(data.{{ FieldName }})) {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ defaultError }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.cast == "boolean" %}
+    if (data.{{ FieldName }} === "true") {
+        data.{{ FieldName }} = true;
+    } else if (data.{{ FieldName }} === "false") {
+        data.{{ FieldName }} = false;
+    } else {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ defaultError }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    if (flag) {
+        successData.{{ FieldName }} = data.{{ FieldName }};
+    }
+}

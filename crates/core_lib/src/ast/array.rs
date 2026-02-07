@@ -9,7 +9,7 @@ use crate::ast::TransformTrait;
 use super::FieldType;
 use super::RuleType;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ArrayRules {
     #[serde(rename = "type", alias = "lessThan")]
@@ -113,7 +113,7 @@ impl Mergeable for ArrayRules {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ArrayTransform {
     pub join: Option<String>,

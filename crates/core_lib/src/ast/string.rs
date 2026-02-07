@@ -12,7 +12,7 @@ use super::Mergeable;
 use super::RuleTrait;
 use super::RuleType;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct StringRules {
     #[serde(alias = "min", alias = "min_length")]

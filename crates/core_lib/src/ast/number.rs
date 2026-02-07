@@ -8,7 +8,7 @@ use super::Mergeable;
 use super::RuleTrait;
 use super::RuleType;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct NumberRules {
     #[serde(rename = "lt", alias = "lessThan")]
@@ -208,7 +208,7 @@ impl Mergeable for NumberRules {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct NumberTransform {
     pub cast: Option<FieldType>,

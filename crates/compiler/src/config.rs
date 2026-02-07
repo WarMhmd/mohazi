@@ -22,6 +22,11 @@ pub enum Language {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct LanguageConfig {
-    pub enabled: Option<bool>,
+    #[serde(default = "default_enabled")]
+    pub enabled: bool,
     pub output: String,
+}
+
+fn default_enabled() -> bool {
+    true
 }

@@ -10,14 +10,14 @@ use super::FieldType;
 use super::RuleType;
 use serde::de::{self};
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct EnumRules {
     #[serde(rename = "values", alias = "value")]
     values: Option<RuleType<Vec<StringOrVec>>>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 enum StringOrVec {
     String(String),
     Vec(Vec<String>),
@@ -69,7 +69,7 @@ impl Mergeable for EnumRules {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct EnumTransform {
     pub cast: Option<FieldType>,

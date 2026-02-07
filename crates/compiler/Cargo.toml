@@ -10,7 +10,7 @@ core_lib = { workspace = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 clap = { version = "4.4", features = ["derive", "cargo"] }
-
+indexmap = { version = "2.0", features = ["serde"] }
 tera = "1.19" 
 
 miette = { workspace = true }
