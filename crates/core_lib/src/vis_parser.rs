@@ -558,7 +558,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             // Peek for sibling error
                             if let Some((_peek_index, peek_line)) = iter.peek() {
                                 let p_spaces = raw_spaces(peek_line);
-                                if p_spaces == current_spaces {
+                                if p_spaces <= current_spaces {
                                     let p_trimmed = peek_line.trim();
                                     if p_trimmed.starts_with("error:") {
                                         let err_parts: Vec<&str> =
