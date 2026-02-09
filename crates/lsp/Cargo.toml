@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 core_lib = { workspace = true }
+include_dir = "0.7"
 
 tower-lsp = "0.20"
 

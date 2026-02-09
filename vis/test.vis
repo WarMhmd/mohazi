@@ -9,12 +9,12 @@ login:
         transform:
             trim: true
             uppercase: true
-        rules:
+        rules: 
             minLength: 3
             error: "Username must be at least 3 characters." # This is a comment
             pattern:
                 value: "^[a-zA-Z0-9_]+$"
-                error: "Username can only contain letters, numbers, and underscores."
+                    error: "Username can only contain letters, numbers, and underscores."
         transform:
             split: ","
             cast: number

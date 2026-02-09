@@ -374,6 +374,60 @@ pub enum FieldType {
     Date,
 }
 
+impl FieldType {
+    pub fn from_str(s: &str) -> Option<FieldType> {
+        match s {
+            "string" => Some(FieldType::String),
+            "number" => Some(FieldType::Number),
+            "boolean" => Some(FieldType::Boolean),
+            "array" => Some(FieldType::Array),
+            "file" => Some(FieldType::File),
+            "enum" => Some(FieldType::Enum),
+            "image" => Some(FieldType::Image),
+            "mail" => Some(FieldType::Mail),
+            "password" => Some(FieldType::Password),
+            "username" => Some(FieldType::Username),
+            "url" => Some(FieldType::Url),
+            "uuid" => Some(FieldType::Uuid),
+            "http_url" => Some(FieldType::HttpUrl),
+            "base64" => Some(FieldType::Base64),
+            "jwt" => Some(FieldType::Jwt),
+            "hex" => Some(FieldType::Hex),
+            "cidrv4" => Some(FieldType::Cidrv4),
+            "cidrv6" => Some(FieldType::Cidrv6),
+            "ulid" => Some(FieldType::Ulid),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            FieldType::String => "string",
+            FieldType::Number => "number",
+            FieldType::Boolean => "boolean",
+            FieldType::Array => "array",
+            FieldType::File => "file",
+            FieldType::Enum => "enum",
+            FieldType::Image => "image",
+            FieldType::Mail => "mail",
+            FieldType::Password => "password",
+            FieldType::Username => "username",
+            FieldType::Url => "url",
+            FieldType::Uuid => "uuid",
+            FieldType::HttpUrl => "http_url",
+            FieldType::Base64 => "base64",
+            FieldType::Jwt => "jwt",
+            FieldType::Hex => "hex",
+            FieldType::Cidrv4 => "cidrv4",
+            FieldType::Cidrv6 => "cidrv6",
+            FieldType::Ulid => "ulid",
+            FieldType::Cuid2 => "cuid2",
+            FieldType::Hash => "hash",
+            FieldType::Date => "date",
+        }
+    }
+}
+
 // #endregion
 
 #[test]
