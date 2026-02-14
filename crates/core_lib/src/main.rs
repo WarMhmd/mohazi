@@ -2,7 +2,7 @@ mod ast;
 mod vis_parser;
 
 fn main() {
-    let path = "./tests/testing.vis";
+    let path = "./crates/core_lib/src/tests/testing.vis";
     let file_content = std::fs::read_to_string(path).unwrap();
 
     match vis_parser::parse_vis(&file_content) {

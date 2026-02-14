@@ -769,6 +769,10 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 ));
                             }
 
+                            if key == "split" {
+                                parsing_type = FieldType::Array;
+                            }
+
                             build_transform(
                                 key,
                                 value,
