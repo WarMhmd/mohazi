@@ -1,6 +1,7 @@
 use core::panic;
+use std::any::{self, Any};
 
-use core_lib::ast::{Field, Form, Rule, StringRules, StringTransform, Transform};
+use core_lib::ast::{Field, FieldType, Form, Rule, StringRules, StringTransform, Transform};
 use indexmap::{map::Entry, IndexMap};
 use tera::{Context, Tera};
 
@@ -171,11 +172,22 @@ trait Templater {
         };
         context.insert("rules", &string_rules);
 
-        let string_transform: Option<&StringTransform> = match transform {
-            Some(Transform::String(t)) => Some(t),
-            _ => None,
+        let string_transform: StringTransform = match transform {
+            Some(Transform::String(t)) => {
+                let mut t = t.clone();
+                t.cast = match &t.cast {
+                    Some(FieldType::Number) => Some(FieldType::Number),
+                    Some(FieldType::Boolean) => Some(FieldType::Boolean),
+                    _ => None,
+                };
+                t
+            }
+            _ => StringTransform::default(),
         };
+
         context.insert("transform", &string_transform);
+
+        println!("Context for field '{}': {:?}", field_name, context);
 
         context
     }
