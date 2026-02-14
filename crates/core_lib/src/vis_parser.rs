@@ -626,6 +626,36 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                     let current_form = forms.get_mut(&current_form_name).unwrap();
                     let current_field = current_form.fields.get_mut(&current_field_name).unwrap();
 
+                    if current_field.rules.len() < current_field.transform.len() + 1 {
+                        let placeholder_rule = match parsing_type {
+                            FieldType::String => Rule::String(StringRules::new()),
+                            FieldType::Number => Rule::Number(NumberRules::new()),
+                            FieldType::Boolean => Rule::Boolean(BooleanRules::new()),
+                            FieldType::Array => Rule::Array(ArrayRules::new()),
+                            FieldType::File => Rule::File(FileRules::new()),
+                            FieldType::Enum => Rule::Enum(EnumRules::new()),
+                            // todo[Add]: type
+                            FieldType::Image => todo!(),
+                            FieldType::Mail => todo!(),
+                            FieldType::Password => todo!(),
+                            FieldType::Username => todo!(),
+                            FieldType::Url => todo!(),
+                            FieldType::Uuid => todo!(),
+                            FieldType::HttpUrl => todo!(),
+                            FieldType::Base64 => todo!(),
+                            FieldType::Jwt => todo!(),
+                            FieldType::Hex => todo!(),
+                            FieldType::Cidrv4 => todo!(),
+                            FieldType::Cidrv6 => todo!(),
+                            FieldType::Ulid => todo!(),
+                            FieldType::Cuid2 => todo!(),
+                            FieldType::Hash => todo!(),
+                            FieldType::Date => todo!(),
+                        };
+
+                        current_field.rules.push(placeholder_rule);
+                    }
+
                     // check if the type has already been defined or not
                     if !is_type_defined {
                         errors.push(ParserError::new(
