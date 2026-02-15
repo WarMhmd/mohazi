@@ -572,8 +572,23 @@ impl Backend {
             let line = lines[i];
             let trimmed_line = line.trim();
 
+            // two cases for choosing types: 1) direct cast or type 2) indirect transforms (join,
+            // split)
             if trimmed_line.starts_with("type:") || trimmed_line.starts_with("cast:") {
+                // case 1
                 parsing_type = line.splitn(2, ":").last().unwrap().trim().to_string();
+                break;
+            }
+
+            if trimmed_line.starts_with("join:") {
+                // case 2
+                parsing_type = "string".to_string();
+                break;
+            }
+
+            if trimmed_line.starts_with("split:") {
+                // case 2
+                parsing_type = "array".to_string();
                 break;
             }
         }

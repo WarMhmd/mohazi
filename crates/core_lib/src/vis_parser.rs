@@ -784,6 +784,34 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             );
                         }
                         // end of String only transforms
+                        // start of array only transforms
+                        "join" | "sum" => {
+                            if current_field.field_type != FieldType::Array {
+                                errors.push(ParserError::new(
+                                    format!(
+                                        "Cannot use the {} transform non-array field {}",
+                                        key, current_field_name
+                                    ),
+                                    line_index as u32,
+                                    current_level as u32,
+                                    current_level as u32 + line.len() as u32,
+                                ));
+                            }
+
+                            if key == "join" {
+                                parsing_type = FieldType::String;
+                            }
+
+                            build_transform(
+                                key,
+                                value,
+                                &mut active_transform_builder,
+                                &mut errors,
+                                line_index,
+                                current_level,
+                                line,
+                            );
+                        }
                         _ => {
                             errors.push(ParserError::new(
                                 format!("Unknown transform property: {}", key),
