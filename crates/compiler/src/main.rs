@@ -5,12 +5,15 @@ use core_lib::{
     ast::Form,
     vis_parser::{self, ParserError},
 };
+use directories::ProjectDirs;
 use indexmap::IndexMap;
 use miette::{GraphicalReportHandler, NamedSource, Report, SourceSpan};
-use std::path::Path;
-use tracing::Level;
+use std::{fs::File, path::Path};
+use tracing::{info, Level};
 
 use crate::templater::templater;
+use tracing_subscriber::prelude::*;
+use tracing_subscriber::{fmt, util::SubscriberInitExt, EnvFilter};
 
 mod config;
 mod templater;
@@ -48,9 +51,42 @@ fn main() {
         return;
     }
 
-    templater(result.unwrap(), config);
+    let proj = ProjectDirs::from("com", "verify", "verify").unwrap();
+    let log_dir: &Path = proj
+        .state_dir()
+        .or_else(|| Some(proj.cache_dir()))
+        .or_else(|| Some(proj.data_dir()))
+        .unwrap_or_else(|| Path::new("./logs"));
 
-    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+    std::fs::create_dir_all(log_dir).expect("failed to create log directory");
+
+    // Add date and time to log file name
+    let file = File::create(log_dir.join(format!(
+        "{}-{}.log",
+        chrono::Utc::now().date_naive(),
+        chrono::Utc::now().time().format("%H-%M-%S")
+    )))
+    .expect("Failed to create log file");
+
+    let stdout_layer =
+        fmt::layer()
+            .with_writer(std::io::stdout)
+            .with_filter(tracing_subscriber::EnvFilter::new(if args.debug {
+                "debug"
+            } else {
+                "off"
+            }));
+
+    let file_layer = fmt::layer().with_writer(file).with_ansi(false);
+
+    tracing_subscriber::registry()
+        .with(file_layer)
+        .with(stdout_layer)
+        .init();
+
+    // info!("Starting Mohazi compiler with config: {:?}", config);
+
+    templater(result.unwrap(), config);
 }
 
 fn run_check(input: &String) -> Result<IndexMap<String, IndexMap<String, Form>>, ()> {

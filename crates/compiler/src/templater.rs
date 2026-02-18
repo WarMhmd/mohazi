@@ -117,13 +117,13 @@ trait Templater {
                                 field_name,
                                 self.get_validate_type(&rule)
                             );
-                            println!("result: {:?}", result);
+                            // println!("result: {:?}", result);
                             // write result to output_dir/filename.extension
-                            // let output_path =
-                            //     format!("{}/{}.{}", output_dir, file_name, self.get_extension());
+                            let output_path =
+                                format!("{}/{}.{}", output_dir, file_name, self.get_extension());
 
-                            // std::fs::write(&output_path, result)
-                            //     .expect("Failed to write output file");
+                            std::fs::write(&output_path, result)
+                                .expect("Failed to write output file");
                         } else {
                             eprintln!(
                                 "Template not found for language: {}, validate type: {}",
