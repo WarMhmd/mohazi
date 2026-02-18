@@ -101,7 +101,6 @@ pub enum Level {
     Field,
     Property,
     RulesAndTransformations,
-    ValueAndErrorPair,
 }
 
 // Helper to convert integer depth to Enum
@@ -112,7 +111,6 @@ impl Level {
             1 => Ok(Level::Field),
             2 => Ok(Level::Property),
             3 => Ok(Level::RulesAndTransformations),
-            4 => Ok(Level::ValueAndErrorPair),
             n => Err(format!("Nesting too deep: level {}", n)),
         }
     }
@@ -122,8 +120,7 @@ impl Level {
             Level::Form => Ok(Level::Field),
             Level::Field => Ok(Level::Property),
             Level::Property => Ok(Level::RulesAndTransformations),
-            Level::RulesAndTransformations => Ok(Level::ValueAndErrorPair),
-            Level::ValueAndErrorPair => Err("Error: Nesting too deep".to_string()),
+            Level::RulesAndTransformations => Err("Error: Nesting too deep".to_string()),
         }
     }
 
@@ -133,7 +130,6 @@ impl Level {
             1 => Ok(Level::Field),
             2 => Ok(Level::Property),
             3 => Ok(Level::RulesAndTransformations),
-            4 => Ok(Level::ValueAndErrorPair),
             _ => Err("Invalid level Index".to_string()),
         }
     }
@@ -169,7 +165,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
     let mut errors: Vec<ParserError> = Vec::new();
 
     let mut current_level = Level::Form;
-    let mut levels_vector = vec![0; 5]; // this vector stores the level depth and is indexed
+    let mut levels_vector = vec![0; 4]; // this vector stores the level depth and is indexed
 
     let mut parsing_type = FieldType::String;
     // through the Level enum
@@ -213,23 +209,32 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
         let value = if parts.len() > 1 { parts[1].trim() } else { "" };
 
         if current_spaces > prev_spaces {
-            if prev_level == Level::Property && !is_type_defined {
-                // make sure we don't go deeper if the type is not defined
+            current_level = current_level.get_next_level().unwrap_or_else(|err| {
                 errors.push(ParserError::new(
-                    "Type not defined".to_string(),
-                    (line_index + 1) as u32,
-                    current_spaces as u32,
-                    current_spaces as u32 + line.len() as u32,
+                    err,
+                    line_index as u32,
+                    current_level as u32,
+                    current_level as u32 + line.len() as u32,
                 ));
-                continue;
-            }
-            current_level = current_level.get_next_level().expect("Nested too deep");
+
+                Level::RulesAndTransformations
+            });
+
             levels_vector[current_level as usize] = current_spaces;
         } else if current_spaces < prev_spaces {
             let new_level_idx = levels_vector
                 .iter()
                 .position(|&v| v == current_spaces)
-                .expect("Indentation mismatch: Level not found");
+                .unwrap_or_else(|| {
+                    errors.push(ParserError::new(
+                        String::from("Invalid Nesting"),
+                        line_index as u32,
+                        current_level as u32,
+                        current_level as u32 + line.len() as u32,
+                    ));
+
+                    Level::RulesAndTransformations as usize
+                });
             let new_level = Level::get_level_from_index(new_level_idx).unwrap();
 
             if prev_level == Level::RulesAndTransformations
@@ -423,7 +428,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                     "transform" => {
                         if !value.is_empty() {
                             errors.push(ParserError::new(
-                                format!("Error: rules cannot be set to a single value"),
+                                format!("Error: transforms cannot be set to a single value"),
                                 line_index as u32,
                                 current_level as u32,
                                 current_level as u32 + line.len() as u32,
@@ -510,14 +515,26 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             let mut n_val = serde_yaml_ng::Value::Null;
                             let mut n_err = None;
 
+                            let mut child_level_spaces = 0; // used to track invalid nesting
                             while let Some((peek_index, peek_line)) = iter.peek() {
                                 let p_spaces = raw_spaces(peek_line);
+                                let peek_index = peek_index.clone();
                                 // Stop if indentation is not deeper (Level 4)
                                 if p_spaces <= current_spaces {
                                     break;
                                 }
 
-                                let (_, child_line) = iter.next().unwrap();
+                                if child_level_spaces != 0 && child_level_spaces != p_spaces {
+                                    errors.push(ParserError::new(
+                                        String::from("Invalid Nesting"),
+                                        peek_index as u32,
+                                        current_level as u32,
+                                        current_level as u32 + peek_line.len() as u32,
+                                    ));
+                                }
+                                child_level_spaces = p_spaces;
+
+                                let (_child_index, child_line) = iter.next().unwrap();
                                 let c_parts: Vec<&str> = child_line.trim().splitn(2, ':').collect();
                                 let c_key = c_parts[0].trim();
                                 let c_val = if c_parts.len() > 1 {
@@ -535,7 +552,14 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                     "error" => {
                                         n_err = Some(c_val.replace("'", "").replace("\"", ""))
                                     }
-                                    _ => {}
+                                    _ => {
+                                        errors.push(ParserError::new(
+                                            String::from("Unknown key"),
+                                            peek_index as u32,
+                                            current_level as u32,
+                                            current_level as u32 + line.len() as u32,
+                                        ));
+                                    }
                                 }
                             }
                             (n_val, n_err)
@@ -550,9 +574,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             let mut s_err = None;
 
                             // Peek for sibling error
-                            if let Some((peek_index, peek_line)) = iter.peek() {
+                            if let Some((_peek_index, peek_line)) = iter.peek() {
                                 let p_spaces = raw_spaces(peek_line);
-                                if p_spaces == current_spaces {
+                                if p_spaces <= current_spaces {
                                     let p_trimmed = peek_line.trim();
                                     if p_trimmed.starts_with("error:") {
                                         let err_parts: Vec<&str> =
@@ -562,6 +586,14 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                         );
                                         iter.next(); // Consume the error line!
                                     }
+                                } else {
+                                    errors.push(ParserError::new(
+                                        String::from("Invalid Nesting"),
+                                        line_index as u32,
+                                        current_level as u32,
+                                        current_level as u32 + line.len() as u32,
+                                    ));
+                                    continue;
                                 }
                             }
                             (s_val, s_err)
@@ -593,6 +625,36 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                 "transform" => {
                     let current_form = forms.get_mut(&current_form_name).unwrap();
                     let current_field = current_form.fields.get_mut(&current_field_name).unwrap();
+
+                    if current_field.rules.len() < current_field.transform.len() + 1 {
+                        let placeholder_rule = match parsing_type {
+                            FieldType::String => Rule::String(StringRules::new()),
+                            FieldType::Number => Rule::Number(NumberRules::new()),
+                            FieldType::Boolean => Rule::Boolean(BooleanRules::new()),
+                            FieldType::Array => Rule::Array(ArrayRules::new()),
+                            FieldType::File => Rule::File(FileRules::new()),
+                            FieldType::Enum => Rule::Enum(EnumRules::new()),
+                            // todo[Add]: type
+                            FieldType::Image => todo!(),
+                            FieldType::Mail => todo!(),
+                            FieldType::Password => todo!(),
+                            FieldType::Username => todo!(),
+                            FieldType::Url => todo!(),
+                            FieldType::Uuid => todo!(),
+                            FieldType::HttpUrl => todo!(),
+                            FieldType::Base64 => todo!(),
+                            FieldType::Jwt => todo!(),
+                            FieldType::Hex => todo!(),
+                            FieldType::Cidrv4 => todo!(),
+                            FieldType::Cidrv6 => todo!(),
+                            FieldType::Ulid => todo!(),
+                            FieldType::Cuid2 => todo!(),
+                            FieldType::Hash => todo!(),
+                            FieldType::Date => todo!(),
+                        };
+
+                        current_field.rules.push(placeholder_rule);
+                    }
 
                     // check if the type has already been defined or not
                     if !is_type_defined {
@@ -707,6 +769,10 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 ));
                             }
 
+                            if key == "split" {
+                                parsing_type = FieldType::Array;
+                            }
+
                             build_transform(
                                 key,
                                 value,
@@ -740,7 +806,15 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                     ));
                 }
             },
-            Level::ValueAndErrorPair => continue, // This branch is unreachable
+            _ => {
+                errors.push(ParserError::new(
+                    String::from("Nesting too deep"),
+                    line_index as u32,
+                    current_level as u32,
+                    current_level as u32 + line.len() as u32,
+                ));
+                continue;
+            }
         }
         prev_spaces = current_spaces;
     }

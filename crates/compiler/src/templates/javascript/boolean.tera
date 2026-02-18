@@ -1,0 +1,44 @@
+flag = true;
+
+if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
+
+    {% if required %}
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError }}
+    });
+    flag = false;
+    {% endif %}
+
+} else if (typeof data.{{ FieldName }} !== "boolean") {
+
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError }}
+    });
+    flag = false;
+
+} else {
+
+    {%- if rules.state %}
+    if (data.{{ FieldName }} !== {{ rules.state.value }}) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.state.error }} || {{ defaultError }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.cast == "number" %}
+    data.{{ FieldName }} = Number(data.{{ FieldName }});
+    {%- endif %}
+
+    {%- if transform.cast == "string" %}
+    data.{{ FieldName }} = data.{{ FieldName }}.toString();
+    {%- endif %}
+
+    if (flag) {
+        successData.{{ FieldName }} = data.{{ FieldName }};
+    }
+}

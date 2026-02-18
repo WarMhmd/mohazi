@@ -1,0 +1,107 @@
+
+flag = true;
+
+if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
+
+    {% if required %}
+    result.errors.push({
+        path: "{{ FieldNamePath }}",
+        message: "{{ defaultError }}"
+    });
+    flag = false;
+    {% endif %}
+
+} else if (!Array.isArray(data.{{ FieldName }})) {
+
+    result.errors.push({
+        path: "{{ FieldNamePath }}",
+        message: "{{ defaultError }}"
+    });
+    flag = false;
+
+} else {
+
+    {%- if rules.length %}
+    if (data.{{ FieldName }}.length !== {{ rules.length.value }}) {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ rules.length.error | default(value=defaultError) }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.minLength %}
+    if (data.{{ FieldName }}.length < {{ rules.minLength.value }}) {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ rules.minLength.error | default(value=defaultError) }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.maxLength %}
+    if (data.{{ FieldName }}.length > {{ rules.maxLength.value }}) {
+        result.errors.push({
+            path: "{{ FieldNamePath }}",
+            message: "{{ rules.maxLength.error | default(value=defaultError) }}"
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    for (let i = 0; i < data.{{ FieldName }}.length; i++) {
+
+        let previousFlag = flag;
+
+        flag = true;
+
+        let itemPath = "{{ FieldNamePath }}" + "[" + i + "]";
+
+        {% set original_FieldName = FieldName %}
+        {% set original_FieldNamePath = FieldNamePath %}
+
+        {% set FieldName = original_FieldName ~ "[i]" %}
+        {% set FieldNamePath = "itemPath" %}
+
+        {% if rules.type == "string" %}
+            {% include "types/string.tera" %}
+        {% endif %}
+
+        {% if rules.type == "number" %}
+            {% include "types/number.tera" %}
+        {% endif %}
+
+        {% if rules.type == "boolean" %}
+            {% include "types/boolean.tera" %}
+        {% endif %}
+
+        {% if rules.type == "file" %}
+            {% include "types/file.tera" %}
+        {% endif %}
+
+        let itemFlag = flag;
+        flag = previousFlag && itemFlag;
+
+
+        {% set FieldName = original_FieldName %}
+        {% set FieldNamePath = original_FieldNamePath %}
+    }
+
+    {%- if transform.join %}
+    if (flag) {
+        data.{{ FieldName }} = data.{{ FieldName }}.join("{{ transform.join }}");
+    }
+    {%- endif %}
+
+    {%- if transform.sum %}
+    if (flag) {
+        data.{{ FieldName }} = data.{{ FieldName }}.reduce((a, b) => a + b, 0);
+    }
+    {%- endif %}
+
+    if (flag) {
+        successData.{{ FieldName }} = data.{{ FieldName }};
+    }
+}
