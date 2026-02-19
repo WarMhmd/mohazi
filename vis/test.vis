@@ -1,14 +1,11 @@
 login: 
-	username: 
-        type: string
-        required: true
-        rules:
-            maxLength: 4,
-            error: "This is maxLength error"
-        defaultError: "Invalid username."
-        rules: 
-            minLength: 3
-            error: "Username must be at least 3 characters."	
-        transform:
-            cast: number
-	
+	id:
+		type: file
+		required: true
+		defaultError: "Invalid ID."
+		rules:
+			extension: ["txt", "csv"]
+			maxSize: 1024
+			error: "ID must be a positive number."
+		
+		

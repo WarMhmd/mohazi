@@ -4,6 +4,7 @@ use std::any::{self, Any};
 use core_lib::ast::{Field, FieldType, Form, Rule, StringRules, StringTransform, Transform};
 use indexmap::{map::Entry, IndexMap};
 use tera::{Context, Tera};
+use tracing::info;
 
 use crate::config::{self, Language, LanguageConfig};
 
@@ -69,6 +70,8 @@ trait Templater {
                         .collect();
                     let mut iter = transform_rules_combined.iter().peekable();
 
+                    let mut final_result = String::new();
+
                     while let Some(rule) = iter.next() {
                         let rule = match rule {
                             TransformRule::Rule(r) => r,
@@ -99,7 +102,7 @@ trait Templater {
                                 &rule,
                                 transform,
                             );
-                            println!("transform: {:?}", transform);
+                            info!("transform: {:?}", transform);
                             let result = tera.render(
                                 format!("{}.tera", self.get_validate_type(&rule)).as_str(),
                                 &context,
@@ -111,20 +114,19 @@ trait Templater {
                                 break;
                             }
                             let result = result.unwrap();
-                            println!(
-                                "Generated code for file: {}, form: {}, field: {}, rule: {}",
-                                file_name,
-                                form_name,
-                                field_name,
-                                self.get_validate_type(&rule)
-                            );
+                            if !final_result.is_empty() {
+                                final_result.push_str("\n");
+                                final_result.push_str("\n");
+                            }
+                            final_result.push_str(&result);
+                            // info!(
+                            //     "Generated code for file: {}, form: {}, field: {}, rule: {}",
+                            //     file_name,
+                            //     form_name,
+                            //     field_name,
+                            //     self.get_validate_type(&rule)
+                            // );
                             // println!("result: {:?}", result);
-                            // write result to output_dir/filename.extension
-                            let output_path =
-                                format!("{}/{}.{}", output_dir, file_name, self.get_extension());
-
-                            std::fs::write(&output_path, result)
-                                .expect("Failed to write output file");
                         } else {
                             eprintln!(
                                 "Template not found for language: {}, validate type: {}",
@@ -133,6 +135,12 @@ trait Templater {
                             );
                         }
                     }
+
+                    let output_path =
+                        format!("{}/{}.{}", output_dir, file_name, self.get_extension());
+
+                    std::fs::write(&output_path, final_result)
+                        .expect("Failed to write output file");
                 }
             }
         }
@@ -187,7 +195,7 @@ trait Templater {
 
         context.insert("transform", &string_transform);
 
-        println!("Context for field '{}': {:?}", field_name, context);
+        info!("Context for field '{}': {:?}", field_name, context);
 
         context
     }
@@ -222,7 +230,13 @@ impl Templater for JavascriptTemplater {
     fn get_validate_type(&self, rule: &Rule) -> String {
         match rule {
             Rule::String(_) => "string".to_string(),
-            _ => panic!("Unsupported rule type for StringTemplater"),
+            Rule::Number(_) => "number".to_string(),
+            Rule::Boolean(_) => "boolean".to_string(),
+            Rule::Array(_) => "array".to_string(),
+            Rule::File(_) => "file".to_string(),
+            Rule::Enum(_) => "enum".to_string(),
+            //todo[Add]: Type
+            _ => panic!("Unsupported rule type for JavascriptTemplater"),
         }
     }
 }

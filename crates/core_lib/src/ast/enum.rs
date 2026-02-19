@@ -14,13 +14,13 @@ use serde::de::{self};
 #[serde(rename_all = "camelCase")]
 pub struct EnumRules {
     #[serde(rename = "values", alias = "value")]
-    values: Option<RuleType<Vec<StringOrVec>>>,
+    values: Option<RuleType<Vec<String>>>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 enum StringOrVec {
     String(String),
-    Vec(Vec<String>),
+    Vector(Vec<String>),
 }
 
 impl RuleTrait for EnumRules {
