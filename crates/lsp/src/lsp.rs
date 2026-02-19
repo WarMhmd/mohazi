@@ -205,6 +205,15 @@ impl LanguageServer for Backend {
                         ])));
                     }
                     "array" => {
+                        if prefix.ends_with("type: ") || prefix.ends_with("field_type: ") {
+                            // check the macro implementation to understand
+                            // todo[Add]: type
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("string", "String type"),
+                                ("number", "Number type"),
+                                ("boolean", "Boolean type"),
+                            ])));
+                        }
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("type", "Rule: Check if the array elements are of a specific type"),
                             ("minLength", "Rule: Check if the array length is greater than or equal to some value"),

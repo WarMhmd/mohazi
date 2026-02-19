@@ -874,8 +874,6 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
         }
     }
 
-    println!("level vector: {:?}", levels_vector);
-
     // collect rules togather
     if errors.is_empty() {
         Ok(forms)
