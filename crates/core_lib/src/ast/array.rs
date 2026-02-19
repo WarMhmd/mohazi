@@ -54,13 +54,13 @@ impl RuleTrait for ArrayRules {
                     error,
                 });
             }
-            "min_length" => {
+            "min_length" | "minLength" => {
                 self.min_length = Some(RuleType {
                     value: parse_val(value)?,
                     error,
                 });
             }
-            "max_length" => {
+            "max_length" | "maxLength" => {
                 self.max_length = Some(RuleType {
                     value: parse_val(value)?,
                     error,
