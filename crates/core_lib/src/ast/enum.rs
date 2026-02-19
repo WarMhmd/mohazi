@@ -1,3 +1,6 @@
+use std::ops::Deref;
+use std::vec;
+
 use serde::{Deserialize, Serialize};
 use serde_yaml_ng::Value;
 
@@ -14,7 +17,7 @@ use serde::de::{self};
 #[serde(rename_all = "camelCase")]
 pub struct EnumRules {
     #[serde(rename = "values", alias = "value")]
-    values: Option<RuleType<Vec<StringOrVec>>>,
+    values: Option<RuleType<StringOrVec>>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
@@ -36,8 +39,21 @@ impl RuleTrait for EnumRules {
     ) -> Result<(), String> {
         match key {
             "values" | "value" => {
+                println!("value: {:?}", value);
+                let parsed_value: StringOrVec = match &value {
+                    Value::Sequence(values) => {
+                        let mut vector_of_strings: Vec<String> = Vec::new();
+                        for value in values {
+                            let string_value = value.as_str().unwrap();
+                            vector_of_strings.push(string_value.to_string());
+                        }
+                        StringOrVec::Vec(vector_of_strings)
+                    }
+                    Value::String(s) => StringOrVec::String(s.to_string()),
+                    _ => todo!(),
+                };
                 self.values = Some(RuleType {
-                    value: parse_val(value)?,
+                    value: parsed_value,
                     error,
                 });
             }
