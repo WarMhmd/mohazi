@@ -1,0 +1,196 @@
+bool flag = true;
+
+if (!data.TryGetValue("{{ FieldName }}", out var rawValue) || rawValue == null)
+{
+    {% if required %}
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ requiredError }}
+    });
+    flag = false;
+    {% endif %}
+}
+else if (rawValue is not string value)
+{
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError }}
+    });
+    flag = false;
+}
+else
+{
+
+    {%- if rules.length %}
+    if (value.Length != {{ rules.length.value }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.length.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.minLength %}
+    if (value.Length < {{ rules.minLength.value }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.minLength.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.maxLength %}
+    if (value.Length > {{ rules.maxLength.value }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.maxLength.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.pattern %}
+    if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"{{ rules.pattern.value }}"))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.pattern.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.startsWith %}
+    if (!value.StartsWith({{ rules.startsWith.value }}))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.startsWith.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.endsWith %}
+    if (!value.EndsWith({{ rules.endsWith.value }}))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.endsWith.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.includes %}
+    if (!value.Contains("{{ rules.includes.value }}"))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.includes.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.uppercase %}
+    if (!string.Equals(value, value.ToUpperInvariant(), StringComparison.Ordinal))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.uppercase.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.lowercase %}
+    if (!string.Equals(value, value.ToLowerInvariant(), StringComparison.Ordinal))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.lowercase.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.trim %}
+    value = value.Trim();
+    {%- endif %}
+
+    {%- if transform.toLowercase %}
+    value = value.ToLowerInvariant();
+    {%- endif %}
+
+    {%- if transform.toUppercase %}
+    value = value.ToUpperInvariant();
+    {%- endif %}
+
+    {%- if transform.split %}
+    var splitValue = value.Split(
+        new[] { {{ transform.split }} },
+        StringSplitOptions.None
+    );
+    data[{{ FieldName }}] = splitValue;
+    {%- endif %}
+
+    {%- if transform.cast == "number" %}
+    if (double.TryParse(value, System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out var numberValue))
+    {
+        data[{{ FieldName }}] = numberValue;
+    }
+    else
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ defaultError }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.cast == "boolean" %}
+    if (value == "true")
+    {
+        data[{{ FieldName }}] = true;
+    }
+    else if (value == "false")
+    {
+        data[{{ FieldName }}] = false;
+    }
+    else
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ defaultError }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    if (flag)
+    {
+        successData[{{ FieldName }}] = data[{{ FieldName }}];
+    }
+}

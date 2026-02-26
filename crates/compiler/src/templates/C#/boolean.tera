@@ -1,0 +1,51 @@
+bool flag = true;
+
+if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
+{
+    {% if required %}
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError }}
+    });
+    flag = false;
+    {% endif %}
+}
+else if (!bool.TryParse(rawValue.ToString(), out var value))
+{
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError }}
+    });
+    flag = false;
+}
+else
+{
+    {%- if rules.state %}
+    if (value != {{ rules.state.value | lower }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.state.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.cast == "number" %}
+    if (flag)
+        data[{{ FieldName }}] = value ? 1 : 0;
+    {%- endif %}
+
+    {%- if transform.cast == "string" %}
+    if (flag)
+        data[{{ FieldName }}] = value.ToString().ToLower();
+    {%- endif %}
+
+    if (flag)
+    {
+        successData[{{ FieldName }}] = data[{{ FieldName }}];
+    }
+}
