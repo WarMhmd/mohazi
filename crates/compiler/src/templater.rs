@@ -174,13 +174,18 @@ trait Templater {
 
         // Tera templates access rule/transform fields directly (e.g. rules.minLength.value,
         // transform.trim). That doesn't work when passing Rust enums, so pass the inner structs.
-        let string_rules: Option<&StringRules> = match rule {
-            Rule::String(rules) => Some(rules),
+        let rules: Option<serde_json::Value> = match rule {
+            Rule::String(rules) => Some(serde_json::to_value(rules).unwrap()),
+            Rule::Number(rules) => Some(serde_json::to_value(rules).unwrap()),
+            Rule::Boolean(rules) => Some(serde_json::to_value(rules).unwrap()),
+            Rule::Array(rules) => Some(serde_json::to_value(rules).unwrap()),
+            Rule::File(rules) => Some(serde_json::to_value(rules).unwrap()),
+            Rule::Enum(rules) => Some(serde_json::to_value(rules).unwrap()),
             _ => None,
         };
-        context.insert("rules", &string_rules);
+        context.insert("rules", &rules);
 
-        let string_transform: StringTransform = match transform {
+        let string_transform: Option<serde_json::Value> = match transform {
             Some(Transform::String(t)) => {
                 let mut t = t.clone();
                 t.cast = match &t.cast {
@@ -188,9 +193,57 @@ trait Templater {
                     Some(FieldType::Boolean) => Some(FieldType::Boolean),
                     _ => None,
                 };
-                t
+                Some(serde_json::to_value(t).unwrap())
             }
-            _ => StringTransform::default(),
+            Some(Transform::Number(t)) => {
+                let mut t = t.clone();
+                t.cast = match &t.cast {
+                    Some(FieldType::String) => Some(FieldType::String),
+                    Some(FieldType::Boolean) => Some(FieldType::Boolean),
+                    _ => None,
+                };
+                Some(serde_json::to_value(t).unwrap())
+            }
+            Some(Transform::Boolean(t)) => {
+                let mut t = t.clone();
+                t.cast = match &t.cast {
+                    Some(FieldType::String) => Some(FieldType::String),
+                    Some(FieldType::Number) => Some(FieldType::Number),
+                    _ => None,
+                };
+                Some(serde_json::to_value(t).unwrap())
+            }
+            Some(Transform::Array(t)) => {
+                let mut t = t.clone();
+                t.cast = match &t.cast {
+                    Some(FieldType::String) => Some(FieldType::String),
+                    Some(FieldType::Number) => Some(FieldType::Number),
+                    Some(FieldType::Boolean) => Some(FieldType::Boolean),
+                    _ => None,
+                };
+                Some(serde_json::to_value(t).unwrap())
+            }
+            Some(Transform::File(t)) => {
+                let mut t = t.clone();
+                t.cast = match &t.cast {
+                    Some(FieldType::String) => Some(FieldType::String),
+                    Some(FieldType::Number) => Some(FieldType::Number),
+                    Some(FieldType::Boolean) => Some(FieldType::Boolean),
+                    _ => None,
+                };
+                Some(serde_json::to_value(t).unwrap())
+            }
+            Some(Transform::Enum(t)) => {
+                let mut t = t.clone();
+                t.cast = match &t.cast {
+                    Some(FieldType::String) => Some(FieldType::String),
+                    Some(FieldType::Number) => Some(FieldType::Number),
+                    Some(FieldType::Boolean) => Some(FieldType::Boolean),
+                    _ => None,
+                };
+                Some(serde_json::to_value(t).unwrap())
+            }
+            _ => None,
         };
 
         context.insert("transform", &string_transform);

@@ -1,11 +1,10 @@
 login: 
 	id:
-		type: file
+		type: boolean
 		required: true
 		defaultError: "Invalid ID."
-		rules:
-			extension: ["txt", "csv"]
-			maxSize: 1024
+		rules:	
+			state: false
 			error: "ID must be a positive number."
 		
 		
