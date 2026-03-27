@@ -39,7 +39,6 @@ impl RuleTrait for EnumRules {
     ) -> Result<(), String> {
         match key {
             "values" | "value" => {
-                println!("value: {:?}", value);
                 let parsed_value: StringOrVec = match &value {
                     Value::Sequence(values) => {
                         let mut vector_of_strings: Vec<String> = Vec::new();
@@ -50,7 +49,12 @@ impl RuleTrait for EnumRules {
                         StringOrVec::Vec(vector_of_strings)
                     }
                     Value::String(s) => StringOrVec::String(s.to_string()),
-                    _ => todo!(),
+                    Value::Null => {
+                        // This is important because the LSP reads data in real-time
+                        println!("This is nulling");
+                        StringOrVec::Vec(vec![])
+                    }
+                    _ => unreachable!(),
                 };
                 self.values = Some(RuleType {
                     value: parsed_value,
