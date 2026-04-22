@@ -1,0 +1,27 @@
+{
+  "name": "@uj_project/verify",
+  "version": "0.1.0",
+  "description": "Native CLI tool for verification",
+  "main": "bin/verify.js",
+  "bin": {
+    "verify": "bin/verify.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "verify",
+    "compiler",
+    "cli"
+  ],
+  "author": "",
+  "license": "ISC",
+  "optionalDependencies": {
+    "@uj_project/verify-win32-x64": "0.1.0",
+    "@uj_project/verify-win32-arm64": "0.1.0",
+    "@uj_project/verify-darwin-x64": "0.1.0",
+    "@uj_project/verify-darwin-arm64": "0.1.0",
+    "@uj_project/verify-linux-x64": "0.1.0",
+    "@uj_project/verify-linux-arm64": "0.1.0"
+  }
+}
