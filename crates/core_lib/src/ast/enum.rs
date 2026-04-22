@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use std::vec;
 
 use serde::{Deserialize, Serialize};
@@ -11,7 +10,6 @@ use crate::ast::TransformTrait;
 
 use super::FieldType;
 use super::RuleType;
-use serde::de::{self};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -46,13 +44,12 @@ impl RuleTrait for EnumRules {
                             let string_value = value.as_str().unwrap();
                             vector_of_strings.push(string_value.to_string());
                         }
-                        StringOrVec::Vec(vector_of_strings)
+                        StringOrVec::Vector(vector_of_strings)
                     }
                     Value::String(s) => StringOrVec::String(s.to_string()),
                     Value::Null => {
                         // This is important because the LSP reads data in real-time
-                        println!("This is nulling");
-                        StringOrVec::Vec(vec![])
+                        StringOrVec::Vector(vec![])
                     }
                     _ => unreachable!(),
                 };
