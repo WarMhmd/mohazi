@@ -205,6 +205,15 @@ impl LanguageServer for Backend {
                         ])));
                     }
                     "array" => {
+                        if prefix.ends_with("type: ") || prefix.ends_with("field_type: ") {
+                            // check the macro implementation to understand
+                            // todo[Add]: type
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("string", "String type"),
+                                ("number", "Number type"),
+                                ("boolean", "Boolean type"),
+                            ])));
+                        }
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("type", "Rule: Check if the array elements are of a specific type"),
                             ("minLength", "Rule: Check if the array length is greater than or equal to some value"),
@@ -572,8 +581,23 @@ impl Backend {
             let line = lines[i];
             let trimmed_line = line.trim();
 
+            // two cases for choosing types: 1) direct cast or type 2) indirect transforms (join,
+            // split)
             if trimmed_line.starts_with("type:") || trimmed_line.starts_with("cast:") {
+                // case 1
                 parsing_type = line.splitn(2, ":").last().unwrap().trim().to_string();
+                break;
+            }
+
+            if trimmed_line.starts_with("join:") {
+                // case 2
+                parsing_type = "string".to_string();
+                break;
+            }
+
+            if trimmed_line.starts_with("split:") {
+                // case 2
+                parsing_type = "array".to_string();
                 break;
             }
         }

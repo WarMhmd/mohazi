@@ -136,8 +136,29 @@ impl Level {
 }
 
 /// helper function to get the number of spaces at the start of a line
-pub fn raw_spaces(line: &str) -> usize {
-    line.chars().take_while(|c| c.is_whitespace()).count()
+pub fn raw_spaces(line: &str) -> Result<usize, &'static str> {
+    let mut count = 0;
+    let mut seen_space = false;
+    let mut seen_tab = false;
+
+    for c in line.chars() {
+        if c == ' ' {
+            seen_space = true;
+            count += 1;
+        } else if c == '\t' {
+            seen_tab = true;
+            count += 1;
+        } else {
+            break; // End of indentation whitespace
+        }
+
+        // The trap: If both flags ever become true, they mixed them!
+        if seen_space && seen_tab {
+            return Err("Inconsistent indentation: Cannot mix tabs and spaces on the same line.");
+        }
+    }
+
+    Ok(count)
 }
 
 // Parser errors type
@@ -199,7 +220,18 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
     let mut is_type_defined = false; // This variable is used to know if the type has been defined
 
     while let Some((line_index, line)) = iter.next() {
-        let current_spaces = raw_spaces(line);
+        let current_spaces = match raw_spaces(line) {
+            Ok(spaces) => spaces,
+            Err(msg) => {
+                errors.push(ParserError::new(
+                    msg.to_string(),
+                    line_index as u32,
+                    current_level as u32, // Or a generic column 0
+                    current_level as u32 + line.len() as u32,
+                ));
+                continue;
+            }
+        };
         let trimmed = line.trim();
         if trimmed.is_empty() || trimmed.starts_with('#') {
             continue;
@@ -346,7 +378,15 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
             Level::Property => {
                 let property_name = key;
                 let current_form = forms.get_mut(&current_form_name).unwrap();
-                let current_field = current_form.fields.get_mut(&current_field_name).unwrap();
+                let current_field = current_form
+                    .fields
+                    .get_mut(&current_field_name)
+                    //.unwrap()
+                    .expect(&format!(
+                        "crashed at line: {}\nNext line: {}",
+                        line,
+                        iter.clone().peekable().peek().unwrap().1,
+                    ));
 
                 match property_name {
                     // match all possible properties
@@ -491,35 +531,46 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
 
                     // B. PARSE (Variations 1, 2, 3)
                     let (final_val, final_err): (serde_yaml_ng::Value, Option<String>) = {
-                        if value.starts_with('{') {
-                            // Variation 1: Inline JSON
-                            // <key>: { value: <value>, error: <error> }
-                            let rt_result: Result<RuleType<serde_yaml_ng::Value>, Vec<String>> =
-                                serde_yaml_ng::from_str(value)
-                                    .map_err(|e| vec![format!("Invalid inline rule: {}", e)]);
-                            let Ok(rt) = rt_result else {
-                                errors.push(ParserError::new(
-                                    format!("Invalid inline rule: {}", rt_result.unwrap_err()[0]),
-                                    line_index as u32,
-                                    current_level as u32,
-                                    current_level as u32 + line.len() as u32,
-                                ));
-                                continue;
-                            };
-                            (rt.value, rt.error)
-                        } else if value.is_empty() {
-                            // Variation 3: Nested Block (Lookahead)
-                            // <key>:
-                            //    value: <value>
-                            //    error: <error>
+                        let trimmed_val = value.trim();
+
+                        if trimmed_val.starts_with('{') {
+                            // VARIATION 1: Inline JSON
+                            let rt_result: Result<RuleType<serde_yaml_ng::Value>, _> =
+                                serde_yaml_ng::from_str(trimmed_val);
+                            match rt_result {
+                                Ok(rt) => (rt.value, rt.error),
+                                Err(e) => {
+                                    errors.push(ParserError::new(
+                                        format!("Invalid inline rule: {}", e),
+                                        line_index as u32,
+                                        current_level as u32,
+                                        current_level as u32 + line.len() as u32,
+                                    ));
+                                    continue;
+                                }
+                            }
+                        } else if trimmed_val.is_empty() {
+                            // VARIATION 3: Nested Block (Borrow-Safe)
                             let mut n_val = serde_yaml_ng::Value::Null;
                             let mut n_err = None;
+                            let mut child_level_spaces = 0;
 
-                            let mut child_level_spaces = 0; // used to track invalid nesting
-                            while let Some((peek_index, peek_line)) = iter.peek() {
-                                let p_spaces = raw_spaces(peek_line);
-                                let peek_index = peek_index.clone();
-                                // Stop if indentation is not deeper (Level 4)
+                            loop {
+                                // Scope the peek so the borrow is dropped immediately
+                                let peek_info = if let Some(&(peek_index, peek_line)) = iter.peek()
+                                {
+                                    match raw_spaces(peek_line) {
+                                        Ok(spaces) => Some((peek_index, spaces)),
+                                        Err(_) => None,
+                                    }
+                                } else {
+                                    None
+                                };
+
+                                let Some((peek_index, p_spaces)) = peek_info else {
+                                    break;
+                                };
+
                                 if p_spaces <= current_spaces {
                                     break;
                                 }
@@ -529,71 +580,85 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                         String::from("Invalid Nesting"),
                                         peek_index as u32,
                                         current_level as u32,
-                                        current_level as u32 + peek_line.len() as u32,
+                                        current_level as u32 + p_spaces as u32,
                                     ));
                                 }
                                 child_level_spaces = p_spaces;
 
-                                let (_child_index, child_line) = iter.next().unwrap();
-                                let c_parts: Vec<&str> = child_line.trim().splitn(2, ':').collect();
+                                // Safe to consume now
+                                let (_, child_line) = iter.next().unwrap();
+                                let c_parts: Vec<&str> = child_line.splitn(2, ':').collect();
                                 let c_key = c_parts[0].trim();
-                                let c_val = if c_parts.len() > 1 {
-                                    c_parts[1].trim()
-                                } else {
-                                    ""
-                                };
+                                let c_val_clean = if c_parts.len() > 1 { c_parts[1] } else { "" }
+                                    .split('#')
+                                    .next()
+                                    .unwrap_or("")
+                                    .trim();
 
                                 match c_key {
                                     "value" => {
-                                        n_val = serde_yaml_ng::from_str(c_val).unwrap_or(
-                                            serde_yaml_ng::Value::String(c_val.to_string()),
+                                        n_val = serde_yaml_ng::from_str(c_val_clean).unwrap_or_else(
+                                            |_| {
+                                                serde_yaml_ng::Value::String(
+                                                    c_val_clean.to_string(),
+                                                )
+                                            },
                                         )
                                     }
-                                    "error" => {
-                                        n_err = Some(c_val.replace("'", "").replace("\"", ""))
-                                    }
-                                    _ => {
-                                        errors.push(ParserError::new(
-                                            String::from("Unknown key"),
-                                            peek_index as u32,
-                                            current_level as u32,
-                                            current_level as u32 + line.len() as u32,
-                                        ));
-                                    }
+                                    "error" => n_err = Some(c_val_clean.replace(['\'', '"'], "")),
+                                    _ => errors.push(ParserError::new(
+                                        format!("Unknown nested key '{}'", c_key),
+                                        peek_index as u32,
+                                        current_level as u32,
+                                        current_level as u32 + child_line.len() as u32,
+                                    )),
                                 }
                             }
                             (n_val, n_err)
                         } else {
-                            // Variation 2: Value + Sibling Error
-                            // <key>: <value>
-                            // error: <error>
-                            let clean_val_str = value.trim().trim_end_matches(',');
-                            let s_val: serde_yaml_ng::Value =
-                                serde_yaml_ng::from_str(clean_val_str)
-                                    .unwrap_or(serde_yaml_ng::Value::String(value.to_string()));
-                            let mut s_err = None;
+                            // VARIATION 2: Sibling Error (Borrow-Safe)
+                            let clean_val_str = trimmed_val
+                                .trim_end_matches(',')
+                                .split('#')
+                                .next()
+                                .unwrap_or("")
+                                .trim();
+                            let s_val =
+                                serde_yaml_ng::from_str(clean_val_str).unwrap_or_else(|_| {
+                                    serde_yaml_ng::Value::String(clean_val_str.to_string())
+                                });
 
-                            // Peek for sibling error
-                            if let Some((_peek_index, peek_line)) = iter.peek() {
-                                let p_spaces = raw_spaces(peek_line);
-                                if p_spaces <= current_spaces {
-                                    let p_trimmed = peek_line.trim();
-                                    if p_trimmed.starts_with("error:") {
-                                        let err_parts: Vec<&str> =
-                                            p_trimmed.splitn(2, ':').collect();
-                                        s_err = Some(
-                                            err_parts[1].trim().replace("'", "").replace("\"", ""),
-                                        );
-                                        iter.next(); // Consume the error line!
+                            let mut s_err = None;
+                            let mut consume_error = false;
+                            let mut extracted_err = None;
+
+                            // Scope the peek
+                            if let Some(&(_, peek_line)) = iter.peek() {
+                                if let Ok(p_spaces) = raw_spaces(peek_line) {
+                                    if p_spaces == current_spaces {
+                                        let p_parts: Vec<&str> = peek_line.splitn(2, ':').collect();
+                                        if p_parts[0].trim() == "error" {
+                                            consume_error = true;
+                                            let raw_err =
+                                                if p_parts.len() > 1 { p_parts[1] } else { "" };
+                                            extracted_err = Some(
+                                                raw_err
+                                                    .split('#')
+                                                    .next()
+                                                    .unwrap_or("")
+                                                    .trim()
+                                                    .to_string(),
+                                            );
+                                        }
                                     }
-                                } else {
-                                    errors.push(ParserError::new(
-                                        String::from("Invalid Nesting"),
-                                        line_index as u32,
-                                        current_level as u32,
-                                        current_level as u32 + line.len() as u32,
-                                    ));
-                                    continue;
+                                }
+                            }
+
+                            // Consume outside the peek scope
+                            if consume_error {
+                                iter.next();
+                                if let Some(err_str) = extracted_err {
+                                    s_err = Some(err_str.replace(['\'', '"'], ""));
                                 }
                             }
                             (s_val, s_err)
@@ -784,6 +849,34 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             );
                         }
                         // end of String only transforms
+                        // start of array only transforms
+                        "join" | "sum" => {
+                            if current_field.field_type != FieldType::Array {
+                                errors.push(ParserError::new(
+                                    format!(
+                                        "Cannot use the {} transform non-array field {}",
+                                        key, current_field_name
+                                    ),
+                                    line_index as u32,
+                                    current_level as u32,
+                                    current_level as u32 + line.len() as u32,
+                                ));
+                            }
+
+                            if key == "join" {
+                                parsing_type = FieldType::String;
+                            }
+
+                            build_transform(
+                                key,
+                                value,
+                                &mut active_transform_builder,
+                                &mut errors,
+                                line_index,
+                                current_level,
+                                line,
+                            );
+                        }
                         _ => {
                             errors.push(ParserError::new(
                                 format!("Unknown transform property: {}", key),
@@ -845,8 +938,6 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
             });
         }
     }
-
-    println!("level vector: {:?}", levels_vector);
 
     // collect rules togather
     if errors.is_empty() {
