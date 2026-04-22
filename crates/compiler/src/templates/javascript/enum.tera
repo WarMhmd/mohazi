@@ -1,53 +1,29 @@
-flag = true;
-
 if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
-
-    {% if required %}
-    result.errors.push({
-        path: "{{ FieldNamePath }}",
-        message: "{{ defaultError }}"
-    });
-    flag = false;
-    {% endif %}
-
+	{%- if required %}
+	result.errors.push({
+		path: {{ FieldNamePath }},
+		message: {{ defaultError | json_encode | safe }}
+	});
+	flag = false;
+	{%- endif %}
 } else {
-
-    {% if rules.values %}
-
-    {% if rules.values is string %}
-    var EnumValues = "{{ rules.values }}".split(",").map(function(item) {
-        return item.trim();
-    });
-    {% else %}
-    var EnumValues = {{ rules.values}};
-    {% endif %}
-
-    if (!EnumValues.includes(data.{{ FieldName }})) {
-        result.errors.push({
-            path: "{{ FieldNamePath }}",
-            message: "{{ defaultError }}"
-        });
-        flag = false;
-    }
-
-    {% endif %}
-
-    {% if transform.cast == "number" %}
-    data.{{ FieldName }} = Number(data.{{ FieldName }});
-    if (Number.isNaN(data.{{ FieldName }})) {
-        result.errors.push({
-            path: "{{ FieldNamePath }}",
-            message: "{{ defaultError }}"
-        });
-        flag = false;
-    }
-    {% endif %}
-
-    {% if transform.cast == "string" %}
-    data.{{ FieldName }} = String(data.{{ FieldName }});
-    {% endif %}
-
-    if (flag) {
-        successData.{{ FieldName }} = data.{{ FieldName }};
-    }
+	const value = String(data.{{ FieldName }});
+	let found = false;
+	{%- for val in rules.values %}
+	if (value === {{ val | json_encode | safe }}) {
+		found = true;
+	}
+	{%- endfor %}
+	if (!found) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.values_error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	} else {
+		data.{{ FieldName }} = value;
+		if (flag) {
+			successData.{{ FieldName }} = data.{{ FieldName }};
+		}
+	}
 }

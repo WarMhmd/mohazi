@@ -1,138 +1,132 @@
-flag = true;
-
 if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
-
-    {% if required %}
-    result.errors.push({
-        path: {{ FieldNamePath }},
-        message: {{ defaultError }}
-    });
-    flag = false;
-    {% endif %}
-
-} else if (typeof data.{{ FieldName }} !== "number" || Number.isNaN(data.{{ FieldName }})) {
-
-    result.errors.push({
-        path: {{ FieldNamePath }},
-        message: {{ defaultError }}
-    });
-    flag = false;
-
+	{%- if required %}
+	result.errors.push({
+		path: {{ FieldNamePath }},
+		message: {{ defaultError | json_encode | safe }}
+	});
+	flag = false;
+	{%- endif %}
+} else if (typeof data.{{ FieldName }} !== "number") {
+	result.errors.push({
+		path: {{ FieldNamePath }},
+		message: {{ defaultError | json_encode | safe }}
+	});
+	flag = false;
+} else if (Number.isNaN(data.{{ FieldName }})) {
+	result.errors.push({
+		path: {{ FieldNamePath }},
+		message: {{ defaultError | json_encode | safe }}
+	});
+	flag = false;
 } else {
-
-    {%- if rules.lt %}
-    if (data.{{ FieldName }} >= {{ rules.lt.value }}) {
-        result.errors.push({
-            path: {{ FieldNamePath }},
-            message: {{ rules.lt.error }} || {{ defaultError }}
-        });
-        flag = false;
-    }
-    {%- endif %}
-
-    {%- if rules.max %}
-    if (data.{{ FieldName }} > {{ rules.max.value }}) {
-        result.errors.push({
-            path: {{ FieldNamePath }},
-            message: {{ rules.max.error }} || {{ defaultError }}
-        });
-        flag = false;
-    }
-    {%- endif %}
-
-    {%- if rules.gt %}
-    if (data.{{ FieldName }} <= {{ rules.gt.value }}) {
-        result.errors.push({
-            path: {{ FieldNamePath }},
-            message: {{ rules.gt.error }} || {{ defaultError }}
-        });
-        flag = false;
-    }
-    {%- endif %}
-
-    {%- if rules.min %}
-    if (data.{{ FieldName }} < {{ rules.min.value }}) {
-        result.errors.push({
-            path: {{ FieldNamePath }},
-            message: {{ rules.min.error }} || {{ defaultError }}
-        });
-        flag = false;
-    }
-    {%- endif %}
-
-    {%- if rules.equal %}
-    if (data.{{ FieldName }} !== {{ rules.equal.value }}) {
-        result.errors.push({
-            path: {{ FieldNamePath }},
-            message: {{ rules.equal.error }} || {{ defaultError }}
-        });
-        flag = false;
-    }
-    {%- endif %}
-
-    {%- if rules.positive %}
-    if (data.{{ FieldName }} <= 0) {
-        result.errors.push({
-            path: {{ FieldNamePath }},
-            message: {{ rules.positive.error }} || {{ defaultError }}
-        });
-        flag = false;
-    }
-    {%- endif %}
-
-    {%- if rules.nonpositive %}
-    if (data.{{ FieldName }} > 0) {
-        result.errors.push({
-            path: {{ FieldNamePath }},
-            message: {{ rules.nonpositive.error }} || {{ defaultError }}
-        });
-        flag = false;
-    }
-    {%- endif %}
-
-    {%- if rules.negative %}
-    if (data.{{ FieldName }} >= 0) {
-        result.errors.push({
-            path: {{ FieldNamePath }},
-            message: {{ rules.negative.error }} || {{ defaultError }}
-        });
-        flag = false;
-    }
-    {%- endif %}
-
-    {%- if rules.nonnegative %}
-    if (data.{{ FieldName }} < 0) {
-        result.errors.push({
-            path: {{ FieldNamePath }},
-            message: {{ rules.nonnegative.error }} || {{ defaultError }}
-        });
-        flag = false;
-    }
-    {%- endif %}
-
-    {%- if rules.multiple_of %}
-    if (data.{{ FieldName }} % {{ rules.multiple_of.value }} !== 0) {
-        result.errors.push({
-            path: {{ FieldNamePath }},
-            message: {{ rules.multiple_of.error }} || {{ defaultError }}
-        });
-        flag = false;
-    }
-    {%- endif %}
-
-    {%- if transform.cast == "string" %}
-    data.{{ FieldName }} = data.{{ FieldName }}.toString();
-    {%- endif %}
-
-    {%- if transform.cast == "boolean" %}
-    data.{{ FieldName }} = Boolean(data.{{ FieldName }});
-    {%- endif %}
-
-    {%- if transform.cast == "hex" %}
-    data.{{ FieldName }} = data.{{ FieldName }}.toString(16);
-    {%- endif %}
-
-    if (flag) {
-        successData.{{ FieldName }} = data.{{ FieldName }};
-    }
+	{%- if rules.lt is defined %}
+	if (data.{{ FieldName }} >= {{ rules.lt.value }}) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.lt.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if rules.max is defined %}
+	if (data.{{ FieldName }} > {{ rules.max.value }}) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.max.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if rules.gt is defined %}
+	if (data.{{ FieldName }} <= {{ rules.gt.value }}) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.gt.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if rules.min is defined %}
+	if (data.{{ FieldName }} < {{ rules.min.value }}) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.min.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if rules.equal is defined %}
+	if (data.{{ FieldName }} !== {{ rules.equal.value }}) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.equal.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if rules.positive is defined %}
+	if (data.{{ FieldName }} <= 0) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.positive.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if rules.nonpositive is defined %}
+	if (data.{{ FieldName }} > 0) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.nonpositive.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if rules.negative is defined %}
+	if (data.{{ FieldName }} >= 0) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.negative.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if rules.nonnegative is defined %}
+	if (data.{{ FieldName }} < 0) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.nonnegative.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if rules.multipleOf is defined %}
+	if (data.{{ FieldName }} % {{ rules.multipleOf.value }} !== 0) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.multipleOf.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if transform.cast is defined and transform.cast == "string" %}
+	data.{{ FieldName }} = String(data.{{ FieldName }});
+	{%- endif %}
+	{%- if transform.cast is defined and transform.cast == "boolean" %}
+	data.{{ FieldName }} = Boolean(data.{{ FieldName }});
+	{%- endif %}
+	{%- if transform.cast is defined and transform.cast == "hex" %}
+	if (!Number.isInteger(data.{{ FieldName }})) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ defaultError | json_encode | safe }}
+		});
+		flag = false;
+	} else {
+		data.{{ FieldName }} = data.{{ FieldName }}.toString(16);
+	}
+	{%- endif %}
+	if (flag) {
+		successData.{{ FieldName }} = data.{{ FieldName }};
+	}
 }

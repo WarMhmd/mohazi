@@ -1,94 +1,46 @@
-flag = true;
-
 if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
-
-    {% if required %}
-    result.errors.push({
-        path: "{{ FieldNamePath }}",
-        message: "{{ defaultError }}"
-    });
-    flag = false;
-    {% endif %}
-
-} else if (
-    typeof data.{{ FieldName }} !== "object" ||
-    typeof data.{{ FieldName }}.name !== "string" ||
-    typeof data.{{ FieldName }}.size !== "number"
-) {
-
-    result.errors.push({
-        path: "{{ FieldNamePath }}",
-        message: "{{ defaultError }}"
-    });
-    flag = false;
-
+	{%- if required %}
+	result.errors.push({
+		path: {{ FieldNamePath }},
+		message: {{ defaultError | json_encode | safe }}
+	});
+	flag = false;
+	{%- endif %}
+} else if (typeof data.{{ FieldName }} !== "string") {
+	result.errors.push({
+		path: {{ FieldNamePath }},
+		message: {{ defaultError | json_encode | safe }}
+	});
+	flag = false;
 } else {
-
-    {% if rules.extension %}
-    const parts = data.{{ FieldName }}.name.split(".");
-    const fileExt = parts.length > 1 ? parts.pop().toLowerCase() : "";
-
-    const allowedExtensions = "{{ rules.extension.value }}"
-        .split(",")
-        .map(function(item) { return item.trim().toLowerCase(); });
-
-    if (!allowedExtensions.includes(fileExt)) {
-        result.errors.push({
-            path: "{{ FieldNamePath }}",
-            message: "{{ rules.extension.error | default(value=defaultError) }}"
-        });
-        flag = false;
-    }
-    {% endif %}
-
-    {% if rules.maxSize %}
-    if (data.{{ FieldName }}.size > ({{ rules.maxSize.value }} * 1024)) {
-        result.errors.push({
-            path: "{{ FieldNamePath }}",
-            message: "{{ rules.maxSize.error | default(value=defaultError) }}"
-        });
-        flag = false;
-    }
-    {% endif %}
-
-    {% if rules.minSize %}
-    if (data.{{ FieldName }}.size < ({{ rules.minSize.value }} * 1024)) {
-        result.errors.push({
-            path: "{{ FieldNamePath }}",
-            message: "{{ rules.minSize.error | default(value=defaultError) }}"
-        });
-        flag = false;
-    }
-    {% endif %}
-
-    {% if transform.cast == "Image" %}
-    const mimeType = (data.{{ FieldName }}.type || "").toLowerCase();
-    if (!mimeType.startsWith("image/")) {
-        result.errors.push({
-            path: "{{ FieldNamePath }}",
-            message: "{{ defaultError }}"
-        });
-        flag = false;
-    }
-    {% endif %}
-
-    {% if transform.cast == "String" %}
-    if (flag) data.{{ FieldName }} = data.{{ FieldName }}.name;
-    {% endif %}
-
-    {% if transform.cast == "Number" %}
-    if (flag) data.{{ FieldName }} = data.{{ FieldName }}.size;
-    {% endif %}
-
-    {% if transform.cast == "Boolean" %}
-    if (flag) data.{{ FieldName }} = true;
-    {% endif %}
-
-    {% if transform.cast == "Array" %}
-    if (flag) data.{{ FieldName }} = [data.{{ FieldName }}];
-    {% endif %}
-
-    if (flag) {
-        successData.{{ FieldName }} = data.{{ FieldName }};
-    }
+	{%- if rules.maxSize is defined %}
+	if (getFileSize(data.{{ FieldName }}) > {{ rules.maxSize.value }}) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.maxSize.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if rules.minSize is defined %}
+	if (getFileSize(data.{{ FieldName }}) < {{ rules.minSize.value }}) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.minSize.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if rules.signatures is defined %}
+	if (!await validateFileSignature(data.{{ FieldName }}, {{ rules.signatures | json_encode | safe }})) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.signatures_error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	if (flag) {
+		successData.{{ FieldName }} = data.{{ FieldName }};
+	}
 }

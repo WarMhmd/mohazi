@@ -1,10 +1,7 @@
-use core::panic;
-use std::any::{self, Any};
-
-use core_lib::ast::{Field, FieldType, Form, Rule, StringRules, StringTransform, Transform};
-use indexmap::{map::Entry, IndexMap};
+use core_lib::ast::{Field, FieldType, Form, Rule, Transform};
+use indexmap::IndexMap;
+use serde_json::{Map, Value};
 use tera::{Context, Tera};
-use tracing::info;
 
 use crate::config::{self, Language, LanguageConfig};
 
@@ -15,281 +12,252 @@ pub fn templater(files: IndexMap<String, IndexMap<String, Form>>, config: config
         if !language_config.enabled {
             continue;
         }
+
         println!("Templating for language: {:?}", language);
-        match language {
-            Language::Javascript => {
-                let tera = match Tera::new("./crates/compiler/src/templates/javascript/*.tera") {
-                    Ok(t) => t,
-                    Err(e) => {
-                        eprintln!("Error parsing templates: {}", e);
-                        return;
-                    }
-                };
-                JavascriptTemplater::new().template(&files, tera, &language_config.output);
-            }
-            _ => {
-                eprintln!("Unsupported language: {:?}", language);
-            }
+        if let Some(templater) = LanguageTemplater::from_language(language) {
+            templater.template(&files, &language_config.output);
+        } else {
+            eprintln!("Unsupported language: {:?}", language);
         }
     }
 }
 
-enum TransformRule {
-    Rule(Rule),
-    Transform(Transform),
-}
-trait Templater {
-    fn new() -> Self;
-    fn template(
-        &self,
-        files: &IndexMap<String, IndexMap<String, Form>>,
-        tera: Tera,
-        output_dir: &String,
-    ) {
-        // check if output_dir exists, if not create it
-        if !std::path::Path::new(output_dir).exists() {
-            std::fs::create_dir_all(output_dir).expect("Failed to create output directory");
-        }
-
-        for (file_name, forms) in files.iter() {
-            for (form_name, form) in forms.iter() {
-                for entry in form.fields.iter() {
-                    let (field_name, field): (&String, &Field) = entry;
-                    let path = format!("{}.{}", form_name, field_name);
-                    // go_though_list will have one rule then one transform and so on
-                    let transform_rules_combined: Vec<TransformRule> = field
-                        .rules
-                        .iter()
-                        .map(|r| TransformRule::Rule(r.clone()))
-                        .chain(
-                            field
-                                .transform
-                                .iter()
-                                .map(|t| TransformRule::Transform(t.clone())),
-                        )
-                        .collect();
-                    let mut iter = transform_rules_combined.iter().peekable();
-
-                    let mut final_result = String::new();
-
-                    while let Some(rule) = iter.next() {
-                        let rule = match rule {
-                            TransformRule::Rule(r) => r,
-                            _ => panic!("Expected rule but found transform"),
-                        };
-
-                        let transform = match iter.peek() {
-                            Some(TransformRule::Transform(t)) => {
-                                iter.next();
-                                Some(t)
-                            }
-                            _ => None,
-                        };
-
-                        // check if template exists for this language and rule
-                        if self.check_template_exits(
-                            &self.get_language(),
-                            &self.get_validate_type(&rule),
-                        ) {
-                            let context = self.get_context(
-                                field_name,
-                                &path,
-                                field.required,
-                                &field
-                                    .default_error
-                                    .as_ref()
-                                    .unwrap_or(&"Invalid value".to_string()),
-                                &rule,
-                                transform,
-                            );
-                            info!("transform: {:?}", transform);
-                            let result = tera.render(
-                                format!("{}.tera", self.get_validate_type(&rule)).as_str(),
-                                &context,
-                            );
-
-                            if result.is_err() {
-                                eprintln!("Error rendering template for language: {}, validate type: {}, error: {:?}", self
-									.get_language(), self.get_validate_type(&rule), result.err().unwrap());
-                                break;
-                            }
-                            let result = result.unwrap();
-                            if !final_result.is_empty() {
-                                final_result.push_str("\n");
-                                final_result.push_str("\n");
-                            }
-                            final_result.push_str(&result);
-                            // info!(
-                            //     "Generated code for file: {}, form: {}, field: {}, rule: {}",
-                            //     file_name,
-                            //     form_name,
-                            //     field_name,
-                            //     self.get_validate_type(&rule)
-                            // );
-                            // println!("result: {:?}", result);
-                        } else {
-                            eprintln!(
-                                "Template not found for language: {}, validate type: {}",
-                                self.get_language(),
-                                self.get_validate_type(&rule)
-                            );
-                        }
-                    }
-
-                    let output_path =
-                        format!("{}/{}.{}", output_dir, file_name, self.get_extension());
-
-                    std::fs::write(&output_path, final_result)
-                        .expect("Failed to write output file");
-                }
-            }
-        }
-    }
-
-    fn check_template_exits(&self, language: &String, validate_type: &String) -> bool {
-        let template_path = format!(
-            "./crates/compiler/src/templates/{}/{}.tera",
-            language, validate_type
-        );
-        println!("Checking if template exists: {}", template_path);
-        std::path::Path::new(&template_path).exists()
-    }
-    // crates\compiler\src\templates\javascript\string.tera
-    // ./templates/javascript/string.tera
-    fn get_context(
-        &self,
-        field_name: &String,
-        path: &String,
-        required: bool,
-        default_error: &String,
-        rule: &Rule,
-        transform: Option<&Transform>,
-    ) -> Context {
-        let mut context = Context::new();
-        context.insert("FieldName", field_name);
-        context.insert("FieldNamePath", path);
-        context.insert("required", &required);
-        context.insert("requiredError", default_error);
-        context.insert("defaultError", default_error);
-
-        // Tera templates access rule/transform fields directly (e.g. rules.minLength.value,
-        // transform.trim). That doesn't work when passing Rust enums, so pass the inner structs.
-        let rules: Option<serde_json::Value> = match rule {
-            Rule::String(rules) => Some(serde_json::to_value(rules).unwrap()),
-            Rule::Number(rules) => Some(serde_json::to_value(rules).unwrap()),
-            Rule::Boolean(rules) => Some(serde_json::to_value(rules).unwrap()),
-            Rule::Array(rules) => Some(serde_json::to_value(rules).unwrap()),
-            Rule::File(rules) => Some(serde_json::to_value(rules).unwrap()),
-            Rule::Enum(rules) => Some(serde_json::to_value(rules).unwrap()),
-            _ => None,
-        };
-        context.insert("rules", &rules);
-
-        let string_transform: Option<serde_json::Value> = match transform {
-            Some(Transform::String(t)) => {
-                let mut t = t.clone();
-                t.cast = match &t.cast {
-                    Some(FieldType::Number) => Some(FieldType::Number),
-                    Some(FieldType::Boolean) => Some(FieldType::Boolean),
-                    _ => None,
-                };
-                Some(serde_json::to_value(t).unwrap())
-            }
-            Some(Transform::Number(t)) => {
-                let mut t = t.clone();
-                t.cast = match &t.cast {
-                    Some(FieldType::String) => Some(FieldType::String),
-                    Some(FieldType::Boolean) => Some(FieldType::Boolean),
-                    _ => None,
-                };
-                Some(serde_json::to_value(t).unwrap())
-            }
-            Some(Transform::Boolean(t)) => {
-                let mut t = t.clone();
-                t.cast = match &t.cast {
-                    Some(FieldType::String) => Some(FieldType::String),
-                    Some(FieldType::Number) => Some(FieldType::Number),
-                    _ => None,
-                };
-                Some(serde_json::to_value(t).unwrap())
-            }
-            Some(Transform::Array(t)) => {
-                let mut t = t.clone();
-                t.cast = match &t.cast {
-                    Some(FieldType::String) => Some(FieldType::String),
-                    Some(FieldType::Number) => Some(FieldType::Number),
-                    Some(FieldType::Boolean) => Some(FieldType::Boolean),
-                    _ => None,
-                };
-                Some(serde_json::to_value(t).unwrap())
-            }
-            Some(Transform::File(t)) => {
-                let mut t = t.clone();
-                t.cast = match &t.cast {
-                    Some(FieldType::String) => Some(FieldType::String),
-                    Some(FieldType::Number) => Some(FieldType::Number),
-                    Some(FieldType::Boolean) => Some(FieldType::Boolean),
-                    _ => None,
-                };
-                Some(serde_json::to_value(t).unwrap())
-            }
-            Some(Transform::Enum(t)) => {
-                let mut t = t.clone();
-                t.cast = match &t.cast {
-                    Some(FieldType::String) => Some(FieldType::String),
-                    Some(FieldType::Number) => Some(FieldType::Number),
-                    Some(FieldType::Boolean) => Some(FieldType::Boolean),
-                    _ => None,
-                };
-                Some(serde_json::to_value(t).unwrap())
-            }
-            _ => None,
-        };
-
-        context.insert("transform", &string_transform);
-
-        info!("Context for field '{}': {:?}", field_name, context);
-
-        context
-    }
-
-    fn get_language(&self) -> String;
-    fn get_extension(&self) -> String;
-
-    fn get_validate_type(&self, rule: &Rule) -> String;
-}
-
-struct JavascriptTemplater {
+struct LanguageTemplater {
     language: String,
     extension: String,
 }
 
-impl Templater for JavascriptTemplater {
-    fn new() -> Self {
-        Self {
-            language: "javascript".to_string(),
-            extension: "js".to_string(),
+impl LanguageTemplater {
+    fn from_language(language: &Language) -> Option<Self> {
+        match language {
+            Language::Javascript => Some(Self {
+                language: "javascript".to_string(),
+                extension: "js".to_string(),
+            }),
+            Language::CSharp => Some(Self {
+                language: "csharp".to_string(),
+                extension: "cs".to_string(),
+            }),
         }
     }
 
-    fn get_language(&self) -> String {
-        self.language.clone()
-    }
+    fn template(&self, files: &IndexMap<String, IndexMap<String, Form>>, output_dir: &String) {
+        if !std::path::Path::new(output_dir).exists() {
+            std::fs::create_dir_all(output_dir).expect("Failed to create output directory");
+        }
 
-    fn get_extension(&self) -> String {
-        self.extension.clone()
-    }
+        let template_glob = format!("./crates/compiler/src/templates/{}/*.tera", self.language);
+        let tera = match Tera::new(&template_glob) {
+            Ok(t) => t,
+            Err(error) => {
+                eprintln!(
+                    "Error parsing templates for language '{}': {}",
+                    self.language, error
+                );
+                return;
+            }
+        };
 
-    fn get_validate_type(&self, rule: &Rule) -> String {
-        match rule {
-            Rule::String(_) => "string".to_string(),
-            Rule::Number(_) => "number".to_string(),
-            Rule::Boolean(_) => "boolean".to_string(),
-            Rule::Array(_) => "array".to_string(),
-            Rule::File(_) => "file".to_string(),
-            Rule::Enum(_) => "enum".to_string(),
-            //todo[Add]: Type
-            _ => panic!("Unsupported rule type for JavascriptTemplater"),
+        for (file_name, forms) in files.iter() {
+            let uses_file_type = has_file_type(forms);
+
+            let mut context = Context::new();
+            context.insert("actions", &build_actions(forms));
+            context.insert("uses_file_type", &uses_file_type);
+
+            let output = match tera.render("base.tera", &context) {
+                Ok(rendered) => rendered,
+                Err(error) => {
+                    eprintln!(
+                        "Error rendering base template for language '{}', file '{}': {:?}",
+                        self.language, file_name, error
+                    );
+                    continue;
+                }
+            };
+
+            let output_path = format!("{}/{}.{}", output_dir, file_name, self.extension);
+            if let Err(error) = std::fs::write(&output_path, output) {
+                eprintln!("Failed to write output file '{}': {}", output_path, error);
+                continue;
+            }
+
+            if uses_file_type {
+                self.write_file_signature_helper(&tera, output_dir);
+            }
         }
     }
+
+    fn write_file_signature_helper(&self, tera: &Tera, output_dir: &str) {
+        let helper_output = match tera.render("file_signature.tera", &Context::new()) {
+            Ok(rendered) => rendered,
+            Err(error) => {
+                eprintln!(
+                    "Error rendering helper template for language '{}': {}",
+                    self.language, error
+                );
+                return;
+            }
+        };
+
+        let helper_dir = format!("{}/utils", output_dir);
+        if let Err(error) = std::fs::create_dir_all(&helper_dir) {
+            eprintln!(
+                "Failed to create helper directory '{}': {}",
+                helper_dir, error
+            );
+            return;
+        }
+
+        let helper_file = format!("{}/file_signature.{}", helper_dir, self.extension);
+        if let Err(error) = std::fs::write(&helper_file, helper_output) {
+            eprintln!("Failed to write helper file '{}': {}", helper_file, error);
+        }
+    }
+}
+
+fn build_actions(forms: &IndexMap<String, Form>) -> Value {
+    let mut actions = Map::new();
+
+    for (action_name, form) in forms.iter() {
+        let mut action_fields = Map::new();
+
+        for (field_name, field) in form.fields.iter() {
+            action_fields.insert(field_name.clone(), build_field(field));
+        }
+
+        actions.insert(action_name.clone(), Value::Object(action_fields));
+    }
+
+    Value::Object(actions)
+}
+
+fn build_field(field: &Field) -> Value {
+    let mut field_obj = Map::new();
+
+    field_obj.insert(
+        "type".to_string(),
+        Value::String(field.field_type.as_str().to_string()),
+    );
+    field_obj.insert("required".to_string(), Value::Bool(field.required));
+
+    if let Some(default_error) = &field.default_error {
+        field_obj.insert(
+            "defaultError".to_string(),
+            Value::String(default_error.clone()),
+        );
+    }
+
+    let merged_rules = merge_rules(&field.rules);
+    if !merged_rules.is_null() {
+        field_obj.insert("rules".to_string(), merged_rules);
+    }
+
+    let merged_transform = merge_transforms(&field.transform);
+    if !merged_transform.is_null() {
+        field_obj.insert("transform".to_string(), merged_transform);
+    }
+
+    Value::Object(field_obj)
+}
+
+fn merge_rules(rules: &[Rule]) -> Value {
+    let mut merged = Map::new();
+
+    for rule in rules {
+        if let Value::Object(rule_obj) = rule_to_value(rule) {
+            for (key, value) in rule_obj {
+                merged.insert(key, value);
+            }
+        }
+    }
+
+    if merged.is_empty() {
+        Value::Null
+    } else {
+        Value::Object(merged)
+    }
+}
+
+fn merge_transforms(transforms: &[Transform]) -> Value {
+    let mut merged = Map::new();
+
+    for transform in transforms {
+        if let Value::Object(transform_obj) = transform_to_value(transform) {
+            for (key, value) in transform_obj {
+                merged.insert(key, value);
+            }
+        }
+    }
+
+    if merged.is_empty() {
+        Value::Null
+    } else {
+        Value::Object(merged)
+    }
+}
+
+fn rule_to_value(rule: &Rule) -> Value {
+    let mut value = match rule {
+        Rule::String(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Number(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Boolean(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Array(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::File(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Enum(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+    };
+
+    prune_nulls(&mut value);
+    value
+}
+
+fn transform_to_value(transform: &Transform) -> Value {
+    let mut value = match transform {
+        Transform::String(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Number(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Boolean(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Array(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::File(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Enum(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+    };
+
+    prune_nulls(&mut value);
+    value
+}
+
+fn prune_nulls(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            map.retain(|_, v| {
+                prune_nulls(v);
+                !v.is_null()
+            });
+        }
+        Value::Array(items) => {
+            items.iter_mut().for_each(prune_nulls);
+        }
+        _ => {}
+    }
+}
+
+fn has_file_type(forms: &IndexMap<String, Form>) -> bool {
+    forms.values().any(|form| {
+        form.fields.values().any(|field| {
+            field.field_type == FieldType::File
+                || field.rules.iter().any(rule_uses_file_type)
+                || field.transform.iter().any(transform_uses_file_type)
+        })
+    })
+}
+
+fn rule_uses_file_type(rule: &Rule) -> bool {
+    match rule {
+        Rule::File(_) => true,
+        Rule::Array(rules) => rules.array_type.value == FieldType::File,
+        _ => false,
+    }
+}
+
+fn transform_uses_file_type(transform: &Transform) -> bool {
+    matches!(transform, Transform::File(_)) || transform.get_cast() == Some(FieldType::File)
 }
