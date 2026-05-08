@@ -1,9 +1,14 @@
 use core_lib::ast::{Field, FieldType, Form, Rule, Transform};
 use indexmap::IndexMap;
+use rust_embed::RustEmbed;
 use serde_json::{Map, Value};
 use tera::{Context, Tera};
 
 use crate::config::{self, Language, LanguageConfig};
+
+#[derive(RustEmbed)]
+#[folder = "src/templates/"]
+struct Templates;
 
 // first String for file name, second String for form name
 pub fn templater(files: IndexMap<String, IndexMap<String, Form>>, config: config::Config) {
@@ -25,38 +30,52 @@ pub fn templater(files: IndexMap<String, IndexMap<String, Form>>, config: config
 struct LanguageTemplater {
     language: String,
     extension: String,
+    tera: Tera,
 }
 
 impl LanguageTemplater {
     fn from_language(language: &Language) -> Option<Self> {
-        match language {
-            Language::Javascript => Some(Self {
-                language: "javascript".to_string(),
-                extension: "js".to_string(),
-            }),
-            Language::CSharp => Some(Self {
-                language: "csharp".to_string(),
-                extension: "cs".to_string(),
-            }),
+        let (lang_name, extension) = match language {
+            Language::Javascript => ("javascript", "js"),
+            Language::CSharp => ("csharp", "cs"),
+        };
+
+        let mut tera = Tera::default();
+        let prefix = format!("{}/", lang_name);
+
+        let mut templates = Vec::new();
+        for file_path in Templates::iter() {
+            if file_path.starts_with(&prefix) && file_path.ends_with(".tera") {
+                if let Some(embedded_file) = Templates::get(&file_path) {
+                    match std::str::from_utf8(embedded_file.data.as_ref()) {
+                        Ok(content) => {
+                            let template_name = file_path.trim_start_matches(&prefix).to_string();
+                            templates.push((template_name, content.to_string()));
+                        }
+                        Err(e) => {
+                            eprintln!("Error reading embedded template '{}': {}", file_path, e);
+                        }
+                    }
+                }
+            }
         }
+
+        if let Err(e) = tera.add_raw_templates(templates) {
+            eprintln!("Error initializing Tera templates for {}: {}", lang_name, e);
+            return None;
+        }
+
+        Some(Self {
+            language: lang_name.to_string(),
+            extension: extension.to_string(),
+            tera,
+        })
     }
 
     fn template(&self, files: &IndexMap<String, IndexMap<String, Form>>, output_dir: &String) {
         if !std::path::Path::new(output_dir).exists() {
             std::fs::create_dir_all(output_dir).expect("Failed to create output directory");
         }
-
-        let template_glob = format!("./crates/compiler/src/templates/{}/*.tera", self.language);
-        let tera = match Tera::new(&template_glob) {
-            Ok(t) => t,
-            Err(error) => {
-                eprintln!(
-                    "Error parsing templates for language '{}': {}",
-                    self.language, error
-                );
-                return;
-            }
-        };
 
         for (file_name, forms) in files.iter() {
             let uses_file_type = has_file_type(forms);
@@ -65,7 +84,7 @@ impl LanguageTemplater {
             context.insert("actions", &build_actions(forms));
             context.insert("uses_file_type", &uses_file_type);
 
-            let output = match tera.render("base.tera", &context) {
+            let output = match self.tera.render("base.tera", &context) {
                 Ok(rendered) => rendered,
                 Err(error) => {
                     eprintln!(
@@ -83,13 +102,13 @@ impl LanguageTemplater {
             }
 
             if uses_file_type {
-                self.write_file_signature_helper(&tera, output_dir);
+                self.write_file_signature_helper(output_dir);
             }
         }
     }
 
-    fn write_file_signature_helper(&self, tera: &Tera, output_dir: &str) {
-        let helper_output = match tera.render("file_signature.tera", &Context::new()) {
+    fn write_file_signature_helper(&self, output_dir: &str) {
+        let helper_output = match self.tera.render("file_signature.tera", &Context::new()) {
             Ok(rendered) => rendered,
             Err(error) => {
                 eprintln!(

@@ -1,7 +1,7 @@
 {
   "name": "@uj_project/verify",
   "version": "0.1.0",
-  "description": "Native CLI tool for verification",
+  "description": "Native CLI tool to verify and compile .vis files",
   "main": "bin/verify.js",
   "bin": {
     "verify": "bin/verify.js"
