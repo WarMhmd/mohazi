@@ -43,6 +43,8 @@ export const validate{{ actionName | capitalize }} = async (data) => {
 			{%- include "file.tera" %}
 		{%- elif field.type == "image" %}
 			{%- include "image.tera" %}
+		{%- elif field.type == "mail" %}
+			{%- include "mail.tera" %}
 		{%- elif field.type == "array" %}
 			{%- include "array.tera" %}
 		{%- elif field.type == "enum" %}

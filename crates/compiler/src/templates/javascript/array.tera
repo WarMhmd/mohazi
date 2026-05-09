@@ -61,6 +61,8 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
 			{%- include "file.tera" %}
 		{%- elif rules.type is defined and rules.type == "image" %}
 			{%- include "image.tera" %}
+		{%- elif rules.type is defined and rules.type == "mail" %}
+			{%- include "mail.tera" %}
 		{%- elif rules.type is defined and rules.type == "enum" %}
 			{%- include "enum.tera" %}
 		{%- elif rules.type is defined and rules.type == "array" %}

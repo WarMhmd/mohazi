@@ -1,7 +1,8 @@
 use crate::ast::{
     ArrayRules, ArrayTransform, BooleanRules, BooleanTransform, EnumRules, EnumTransform, Field,
-    FieldType, FileRules, FileTransform, Form, ImageRules, ImageTransform, NumberRules, NumberTransform, Rule, RuleTrait,
-    RuleType, StringRules, StringTransform, Transform, TransformTrait,
+    FieldType, FileRules, FileTransform, Form, ImageRules, ImageTransform, MailRules,
+    MailTransform, NumberRules, NumberTransform, Rule, RuleTrait, RuleType, StringRules,
+    StringTransform, Transform, TransformTrait,
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -15,6 +16,7 @@ enum ActiveRuleBuilder {
     Array(ArrayRules),
     Enum(EnumRules),
     Image(ImageRules),
+    Mail(MailRules),
     None,
 }
 
@@ -27,6 +29,7 @@ enum ActiveTransformBuilder {
     Array(ArrayTransform),
     Enum(EnumTransform),
     Image(ImageTransform),
+    Mail(MailTransform),
     None,
 }
 
@@ -46,6 +49,7 @@ impl BuilderTrait for ActiveRuleBuilder {
             ActiveRuleBuilder::Array(_) => Some(FieldType::Array),
             ActiveRuleBuilder::Enum(_) => Some(FieldType::Enum),
             ActiveRuleBuilder::Image(_) => Some(FieldType::Image),
+            ActiveRuleBuilder::Mail(_) => Some(FieldType::Mail),
             ActiveRuleBuilder::None => None,
         }
     }
@@ -63,6 +67,7 @@ impl BuilderTrait for ActiveTransformBuilder {
             ActiveTransformBuilder::Array(_) => Some(FieldType::Array),
             ActiveTransformBuilder::Enum(_) => Some(FieldType::Enum),
             ActiveTransformBuilder::Image(_) => Some(FieldType::Image),
+            ActiveTransformBuilder::Mail(_) => Some(FieldType::Mail),
             ActiveTransformBuilder::None => None,
         }
     }
@@ -79,6 +84,7 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
         ActiveRuleBuilder::Array(r) => current_field.rules.push(Rule::Array(r)),
         ActiveRuleBuilder::Enum(r) => current_field.rules.push(Rule::Enum(r)),
         ActiveRuleBuilder::Image(r) => current_field.rules.push(Rule::Image(r)),
+        ActiveRuleBuilder::Mail(r) => current_field.rules.push(Rule::Mail(r)),
         // todo[Add]: Type
         ActiveRuleBuilder::None => {}
     }
@@ -95,6 +101,7 @@ fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Fi
         ActiveTransformBuilder::Array(t) => current_field.transform.push(Transform::Array(t)),
         ActiveTransformBuilder::Enum(t) => current_field.transform.push(Transform::Enum(t)),
         ActiveTransformBuilder::Image(t) => current_field.transform.push(Transform::Image(t)),
+        ActiveTransformBuilder::Mail(t) => current_field.transform.push(Transform::Mail(t)),
         // todo[Add]: Type
         ActiveTransformBuilder::None => {}
     }
@@ -416,6 +423,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             "array" => FieldType::Array,
                             "enum" => FieldType::Enum,
                             "image" => FieldType::Image,
+                            "mail" => FieldType::Mail,
                             _ => {
                                 errors.push(ParserError::new(
                                     format!("Unknown field type {}", value),
@@ -524,6 +532,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Array => ActiveRuleBuilder::Array(ArrayRules::new()),
                             FieldType::Enum => ActiveRuleBuilder::Enum(EnumRules::new()),
                             FieldType::Image => ActiveRuleBuilder::Image(ImageRules::new()),
+                            FieldType::Mail => ActiveRuleBuilder::Mail(MailRules::new()),
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -682,6 +691,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         ActiveRuleBuilder::Array(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Enum(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Image(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Mail(r) => r.set_rule(key, final_val, final_err),
                         // todo[Add]: Type
                         ActiveRuleBuilder::None => Ok(()),
                     };
@@ -709,8 +719,8 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::File => Rule::File(FileRules::new()),
                             FieldType::Enum => Rule::Enum(EnumRules::new()),
                             // todo[Add]: type
-                            FieldType::Image => todo!(),
-                            FieldType::Mail => todo!(),
+                            FieldType::Image => Rule::Image(ImageRules::new()),
+                            FieldType::Mail => Rule::Mail(MailRules::new()),
                             FieldType::Password => todo!(),
                             FieldType::Username => todo!(),
                             FieldType::Url => todo!(),
@@ -759,6 +769,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             }
                             FieldType::Enum => ActiveTransformBuilder::Enum(EnumTransform::new()),
                             FieldType::Image => ActiveTransformBuilder::Image(ImageTransform::new()),
+                            FieldType::Mail => ActiveTransformBuilder::Mail(MailTransform::new()),
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -991,6 +1002,9 @@ fn build_transform(
         }
         ActiveTransformBuilder::Image(image_transform) => {
             image_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Mail(mail_transform) => {
+            mail_transform.set_transform(key, final_val)
         }
         ActiveTransformBuilder::None => Ok(()),
     };

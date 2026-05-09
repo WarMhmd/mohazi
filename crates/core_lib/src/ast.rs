@@ -13,6 +13,7 @@ mod boolean;
 mod r#enum;
 mod file;
 mod image;
+mod mail;
 mod number;
 mod string;
 
@@ -20,6 +21,7 @@ pub use array::{ArrayRules, ArrayTransform};
 pub use boolean::{BooleanRules, BooleanTransform};
 pub use file::{FileRules, FileTransform};
 pub use image::{ImageRules, ImageTransform};
+pub use mail::{MailRules, MailTransform};
 pub use number::{NumberRules, NumberTransform};
 pub use r#enum::{EnumRules, EnumTransform};
 pub use string::{StringRules, StringTransform};
@@ -144,6 +146,11 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Rule::Image(image_rule)
                     }
+                    FieldType::Mail => {
+                        let mail_rule: MailRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Mail(mail_rule)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for rules",
@@ -173,6 +180,11 @@ impl<'de> Deserialize<'de> for Field {
                         let image_transform: ImageTransform =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Transform::Image(image_transform)
+                    }
+                    FieldType::Mail => {
+                        let mail_transform: MailTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Mail(mail_transform)
                     }
                     _ => {
                         return Err(D::Error::custom(format!(
@@ -218,6 +230,7 @@ pub enum Rule {
     Boolean(BooleanRules),
     Array(ArrayRules),
     Image(ImageRules),
+    Mail(MailRules),
     // todo[Add]: Type
 }
 
@@ -240,6 +253,7 @@ impl Rule {
             (Rule::Array(a), Rule::Array(b)) => a.merge(b),
             (Rule::Enum(a), Rule::Enum(b)) => a.merge(b),
             (Rule::Image(a), Rule::Image(b)) => a.merge(b),
+            (Rule::Mail(a), Rule::Mail(b)) => a.merge(b),
             // todo[Add]: Type
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
@@ -264,6 +278,7 @@ pub enum Transform {
     Boolean(BooleanTransform),
     Array(ArrayTransform),
     Image(ImageTransform),
+    Mail(MailTransform),
     // todo[Add]: Type
 }
 
@@ -290,6 +305,7 @@ impl Transform {
             (Transform::Number(a), Transform::Number(b)) => a.merge(b),
             (Transform::File(a), Transform::File(b)) => a.merge(b),
             (Transform::Image(a), Transform::Image(b)) => a.merge(b),
+            (Transform::Mail(a), Transform::Mail(b)) => a.merge(b),
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
     }
@@ -328,6 +344,7 @@ impl Transform {
             Transform::Boolean(b) => b.cast,
             Transform::Array(a) => a.cast,
             Transform::Image(i) => i.cast,
+            Transform::Mail(m) => m.string_transform.cast,
             // todo[Add]: Types more types here
         }
     }
@@ -348,6 +365,9 @@ impl Transform {
             Transform::Image(f) => {
                 match_types!(f.cast, FieldType::File, FieldType::Base64)
             }
+            Transform::Mail(f) => {
+                match_types!(f.string_transform.cast, FieldType::String)
+            }
             // todo[Add]: Types more types here
             Transform::Array(f) => {
                 // create a transform from array_type
@@ -358,6 +378,12 @@ impl Transform {
                     Some(FieldType::Number) => make_transform!(Number, f),
                     Some(FieldType::File) => make_transform!(File, f),
                     Some(FieldType::Image) => make_transform!(Image, f),
+                    Some(FieldType::Mail) => Transform::Mail(MailTransform {
+                        string_transform: StringTransform {
+                            cast: f.cast,
+                            ..Default::default()
+                        }
+                    }),
 
                     // todo[Add]: Types your mock transform here
                     _ => Transform::Array(ArrayTransform {
