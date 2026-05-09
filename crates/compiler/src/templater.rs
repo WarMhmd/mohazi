@@ -224,6 +224,7 @@ fn rule_to_value(rule: &Rule) -> Value {
         Rule::Array(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
         Rule::File(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
         Rule::Enum(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Image(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
     };
 
     prune_nulls(&mut value);
@@ -238,6 +239,7 @@ fn transform_to_value(transform: &Transform) -> Value {
         Transform::Array(t) => serde_json::to_value(t).unwrap_or(Value::Null),
         Transform::File(t) => serde_json::to_value(t).unwrap_or(Value::Null),
         Transform::Enum(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Image(t) => serde_json::to_value(t).unwrap_or(Value::Null),
     };
 
     prune_nulls(&mut value);
@@ -263,6 +265,7 @@ fn has_file_type(forms: &IndexMap<String, Form>) -> bool {
     forms.values().any(|form| {
         form.fields.values().any(|field| {
             field.field_type == FieldType::File
+                || field.field_type == FieldType::Image
                 || field.rules.iter().any(rule_uses_file_type)
                 || field.transform.iter().any(transform_uses_file_type)
         })
@@ -272,11 +275,14 @@ fn has_file_type(forms: &IndexMap<String, Form>) -> bool {
 fn rule_uses_file_type(rule: &Rule) -> bool {
     match rule {
         Rule::File(_) => true,
-        Rule::Array(rules) => rules.array_type.value == FieldType::File,
+        Rule::Image(_) => true,
+        Rule::Array(rules) => rules.array_type.value == FieldType::File || rules.array_type.value == FieldType::Image,
         _ => false,
     }
 }
 
 fn transform_uses_file_type(transform: &Transform) -> bool {
-    matches!(transform, Transform::File(_)) || transform.get_cast() == Some(FieldType::File)
+    matches!(transform, Transform::File(_) | Transform::Image(_))
+        || transform.get_cast() == Some(FieldType::File)
+        || transform.get_cast() == Some(FieldType::Image)
 }

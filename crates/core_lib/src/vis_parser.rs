@@ -1,6 +1,6 @@
 use crate::ast::{
     ArrayRules, ArrayTransform, BooleanRules, BooleanTransform, EnumRules, EnumTransform, Field,
-    FieldType, FileRules, FileTransform, Form, NumberRules, NumberTransform, Rule, RuleTrait,
+    FieldType, FileRules, FileTransform, Form, ImageRules, ImageTransform, NumberRules, NumberTransform, Rule, RuleTrait,
     RuleType, StringRules, StringTransform, Transform, TransformTrait,
 };
 use indexmap::IndexMap;
@@ -14,6 +14,7 @@ enum ActiveRuleBuilder {
     Boolean(BooleanRules),
     Array(ArrayRules),
     Enum(EnumRules),
+    Image(ImageRules),
     None,
 }
 
@@ -25,6 +26,7 @@ enum ActiveTransformBuilder {
     Boolean(BooleanTransform),
     Array(ArrayTransform),
     Enum(EnumTransform),
+    Image(ImageTransform),
     None,
 }
 
@@ -43,6 +45,7 @@ impl BuilderTrait for ActiveRuleBuilder {
             ActiveRuleBuilder::Boolean(_) => Some(FieldType::Boolean),
             ActiveRuleBuilder::Array(_) => Some(FieldType::Array),
             ActiveRuleBuilder::Enum(_) => Some(FieldType::Enum),
+            ActiveRuleBuilder::Image(_) => Some(FieldType::Image),
             ActiveRuleBuilder::None => None,
         }
     }
@@ -59,6 +62,7 @@ impl BuilderTrait for ActiveTransformBuilder {
             ActiveTransformBuilder::Boolean(_) => Some(FieldType::Boolean),
             ActiveTransformBuilder::Array(_) => Some(FieldType::Array),
             ActiveTransformBuilder::Enum(_) => Some(FieldType::Enum),
+            ActiveTransformBuilder::Image(_) => Some(FieldType::Image),
             ActiveTransformBuilder::None => None,
         }
     }
@@ -74,6 +78,7 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
         ActiveRuleBuilder::Boolean(r) => current_field.rules.push(Rule::Boolean(r)),
         ActiveRuleBuilder::Array(r) => current_field.rules.push(Rule::Array(r)),
         ActiveRuleBuilder::Enum(r) => current_field.rules.push(Rule::Enum(r)),
+        ActiveRuleBuilder::Image(r) => current_field.rules.push(Rule::Image(r)),
         // todo[Add]: Type
         ActiveRuleBuilder::None => {}
     }
@@ -89,6 +94,7 @@ fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Fi
         ActiveTransformBuilder::Boolean(t) => current_field.transform.push(Transform::Boolean(t)),
         ActiveTransformBuilder::Array(t) => current_field.transform.push(Transform::Array(t)),
         ActiveTransformBuilder::Enum(t) => current_field.transform.push(Transform::Enum(t)),
+        ActiveTransformBuilder::Image(t) => current_field.transform.push(Transform::Image(t)),
         // todo[Add]: Type
         ActiveTransformBuilder::None => {}
     }
@@ -409,6 +415,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             "boolean" | "bool" => FieldType::Boolean,
                             "array" => FieldType::Array,
                             "enum" => FieldType::Enum,
+                            "image" => FieldType::Image,
                             _ => {
                                 errors.push(ParserError::new(
                                     format!("Unknown field type {}", value),
@@ -516,6 +523,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Boolean => ActiveRuleBuilder::Boolean(BooleanRules::new()),
                             FieldType::Array => ActiveRuleBuilder::Array(ArrayRules::new()),
                             FieldType::Enum => ActiveRuleBuilder::Enum(EnumRules::new()),
+                            FieldType::Image => ActiveRuleBuilder::Image(ImageRules::new()),
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -673,6 +681,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         ActiveRuleBuilder::Boolean(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Array(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Enum(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Image(r) => r.set_rule(key, final_val, final_err),
                         // todo[Add]: Type
                         ActiveRuleBuilder::None => Ok(()),
                     };
@@ -749,6 +758,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 ActiveTransformBuilder::Array(ArrayTransform::new())
                             }
                             FieldType::Enum => ActiveTransformBuilder::Enum(EnumTransform::new()),
+                            FieldType::Image => ActiveTransformBuilder::Image(ImageTransform::new()),
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -978,6 +988,9 @@ fn build_transform(
         }
         ActiveTransformBuilder::Enum(enum_transform) => {
             enum_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Image(image_transform) => {
+            image_transform.set_transform(key, final_val)
         }
         ActiveTransformBuilder::None => Ok(()),
     };

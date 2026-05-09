@@ -25,7 +25,12 @@ login:
 			maxLength: 
 				value: 100
 				error: 'Password must be at most 100 characters long.'
-
+	profile:
+		type: image
+		required: true
+		rules:
+			width: 512
+			height: 512
 register:
 	username:
 		type: string

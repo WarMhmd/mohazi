@@ -12,12 +12,14 @@ mod array;
 mod boolean;
 mod r#enum;
 mod file;
+mod image;
 mod number;
 mod string;
 
 pub use array::{ArrayRules, ArrayTransform};
 pub use boolean::{BooleanRules, BooleanTransform};
 pub use file::{FileRules, FileTransform};
+pub use image::{ImageRules, ImageTransform};
 pub use number::{NumberRules, NumberTransform};
 pub use r#enum::{EnumRules, EnumTransform};
 pub use string::{StringRules, StringTransform};
@@ -132,6 +134,16 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Rule::Number(number_rule)
                     }
+                    FieldType::File => {
+                        let file_rule: FileRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::File(file_rule)
+                    }
+                    FieldType::Image => {
+                        let image_rule: ImageRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Image(image_rule)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for rules",
@@ -151,6 +163,16 @@ impl<'de> Deserialize<'de> for Field {
                         let number_transform: NumberTransform =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Transform::Number(number_transform)
+                    }
+                    FieldType::File => {
+                        let file_transform: FileTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::File(file_transform)
+                    }
+                    FieldType::Image => {
+                        let image_transform: ImageTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Image(image_transform)
                     }
                     _ => {
                         return Err(D::Error::custom(format!(
@@ -195,6 +217,7 @@ pub enum Rule {
     Enum(EnumRules),
     Boolean(BooleanRules),
     Array(ArrayRules),
+    Image(ImageRules),
     // todo[Add]: Type
 }
 
@@ -216,6 +239,7 @@ impl Rule {
             (Rule::Boolean(a), Rule::Boolean(b)) => a.merge(b),
             (Rule::Array(a), Rule::Array(b)) => a.merge(b),
             (Rule::Enum(a), Rule::Enum(b)) => a.merge(b),
+            (Rule::Image(a), Rule::Image(b)) => a.merge(b),
             // todo[Add]: Type
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
@@ -239,6 +263,7 @@ pub enum Transform {
     Enum(EnumTransform),
     Boolean(BooleanTransform),
     Array(ArrayTransform),
+    Image(ImageTransform),
     // todo[Add]: Type
 }
 
@@ -264,6 +289,7 @@ impl Transform {
             (Transform::String(a), Transform::String(b)) => a.merge(b),
             (Transform::Number(a), Transform::Number(b)) => a.merge(b),
             (Transform::File(a), Transform::File(b)) => a.merge(b),
+            (Transform::Image(a), Transform::Image(b)) => a.merge(b),
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
     }
@@ -301,6 +327,7 @@ impl Transform {
             Transform::Enum(e) => e.cast,
             Transform::Boolean(b) => b.cast,
             Transform::Array(a) => a.cast,
+            Transform::Image(i) => i.cast,
             // todo[Add]: Types more types here
         }
     }
@@ -318,6 +345,9 @@ impl Transform {
             Transform::Boolean(f) => match_types!(f.cast, FieldType::Number, FieldType::String),
             Transform::Enum(f) => match_types!(f.cast, FieldType::Number, FieldType::String,),
             Transform::File(f) => match_types!(f.cast, FieldType::Image, FieldType::Base64,),
+            Transform::Image(f) => {
+                match_types!(f.cast, FieldType::File, FieldType::Base64)
+            }
             // todo[Add]: Types more types here
             Transform::Array(f) => {
                 // create a transform from array_type
@@ -327,6 +357,7 @@ impl Transform {
                     Some(FieldType::Enum) => make_transform!(Enum, f),
                     Some(FieldType::Number) => make_transform!(Number, f),
                     Some(FieldType::File) => make_transform!(File, f),
+                    Some(FieldType::Image) => make_transform!(Image, f),
 
                     // todo[Add]: Types your mock transform here
                     _ => Transform::Array(ArrayTransform {

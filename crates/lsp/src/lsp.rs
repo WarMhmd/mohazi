@@ -204,6 +204,22 @@ impl LanguageServer for Backend {
                             ),
                         ])));
                     }
+                    "image" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("width", "Rule: Check if the image width is equal to some value"),
+                            ("height", "Rule: Check if the image height is equal to some value"),
+                            ("minWidth", "Rule: Check if the image width is greater than or equal to some value"),
+                            ("maxWidth", "Rule: Check if the image width is less than or equal to some value"),
+                            ("minHeight", "Rule: Check if the image height is greater than or equal to some value"),
+                            ("maxHeight", "Rule: Check if the image height is less than or equal to some value"),
+                            ("ratio", "Rule: Check if the image aspect ratio matches some value (e.g. 1:1, 16:9)"),
+                            ("extension", "Rule: Check if the file has a specific extension"),
+                            ("mime", "Rule: Check if the file has a specific mime type"),
+                            ("maxSize", "Rule: Check if the file size is less than or equal to some value"),
+                            ("minSize", "Rule: Check if the file size is greater than or equal to some value"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
+                        ])));
+                    }
                     "array" => {
                         if prefix.ends_with("type: ") || prefix.ends_with("field_type: ") {
                             // check the macro implementation to understand
@@ -302,6 +318,20 @@ impl LanguageServer for Backend {
                             ("sum", "Transform: Sum array elements"),
                         ])));
                     }
+                    "image" => {
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("file", "Cast: image to file"),
+                                ("base64", "Cast: image to base64"),
+                            ])));
+                        }
+
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                            ("rename", "Transform: Rename image file"),
+                        ])));
+                    }
                     "" => {
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("cast", "Transform: Cast type"),
@@ -327,6 +357,7 @@ impl LanguageServer for Backend {
                         ("array", "Array type"),
                         ("enum", "Enum type"),
                         ("file", "File type"),
+                        ("image", "Image type"),
                     ])));
                 }
 
@@ -401,6 +432,7 @@ impl LanguageServer for Backend {
             "array" => get_docs("types", "array").unwrap(),
             "boolean" => get_docs("types", "boolean").unwrap(),
             "enum" => get_docs("types", "enum").unwrap(),
+            "image" => get_docs("types", "image").unwrap(),
 
             // Rules
             "min" => get_docs("rules", "min").unwrap(),
@@ -410,6 +442,14 @@ impl LanguageServer for Backend {
             "length" => get_docs("rules", "length").unwrap(),
             "uppercase" => get_docs("rules", "uppercase").unwrap(),
             "lowercase" => get_docs("rules", "lowercase").unwrap(),
+            "width" => get_docs("rules", "width").unwrap(),
+            "height" => get_docs("rules", "height").unwrap(),
+            "minWidth" => get_docs("rules", "minWidth").unwrap(),
+            "maxWidth" => get_docs("rules", "maxWidth").unwrap(),
+            "minHeight" => get_docs("rules", "minHeight").unwrap(),
+            "maxHeight" => get_docs("rules", "maxHeight").unwrap(),
+            "ratio" => get_docs("rules", "ratio").unwrap(),
+            "mime" => get_docs("rules", "mime").unwrap(),
             // "type" => get_docs("rules", "array-type").unwrap(), // special case, handled in the
             // first type
             "endsWith" => get_docs("rules", "endsWith").unwrap(),
