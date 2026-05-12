@@ -15,9 +15,9 @@ use super::RuleType;
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct StringRules {
-    #[serde(alias = "min", alias = "min_length")]
+    #[serde(alias = "minLength", alias = "min_length")]
     pub min_length: Option<RuleType<u128>>,
-    #[serde(alias = "max", alias = "max_length")]
+    #[serde(alias = "maxLength", alias = "max_length")]
     pub max_length: Option<RuleType<u128>>,
     pub length: Option<RuleType<u128>>,
     #[serde(alias = "pattern", alias = "regex")]
@@ -29,6 +29,7 @@ pub struct StringRules {
     pub includes: Option<RuleType<String>>,
     pub uppercase: Option<RuleType<bool>>,
     pub lowercase: Option<RuleType<bool>>,
+    // TODO: Add length
 }
 
 impl RuleTrait for StringRules {
