@@ -54,13 +54,13 @@ else
 		flag = false;
 	}
 	{%- endif %}
-	{%- if rules.pattern is defined %}
-	if (!System.Text.RegularExpressions.Regex.IsMatch(value, {{ rules.pattern.value | json_encode | safe }}))
+	{%- if rules.regex is defined %}
+	if (!System.Text.RegularExpressions.Regex.IsMatch(value, {{ rules.regex.value | json_encode | safe }}))
 	{
 		result.Errors.Add(new ValidationError
 		{
 			Path = {{ FieldNamePath }},
-			Message = {{ rules.pattern.error | default(value=defaultError) | json_encode | safe }}
+			Message = {{ rules.regex.error | default(value=defaultError) | json_encode | safe }}
 		});
 		flag = false;
 	}
