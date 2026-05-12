@@ -13,11 +13,11 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
 	});
 	flag = false;
 } else {
-	{%- if rules.equal is defined %}
-	if (data.{{ FieldName }} !== {{ rules.equal.value | lower }}) {
+	{%- if rules.state is defined %}
+	if (data.{{ FieldName }} !== {{ rules.state.value | lower }}) {
 		result.errors.push({
 			path: {{ FieldNamePath }},
-			message: {{ rules.equal.error | default(value=defaultError) | json_encode | safe }}
+			message: {{ rules.state.error | default(value=defaultError) | json_encode | safe }}
 		});
 		flag = false;
 	}

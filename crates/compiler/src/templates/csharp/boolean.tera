@@ -20,13 +20,13 @@ else if (rawValue is not bool value)
 }
 else
 {
-	{%- if rules.equal is defined %}
-	if (value != {{ rules.equal.value | lower }})
+	{%- if rules.state is defined %}
+	if (value != {{ rules.state.value | lower }})
 	{
 		result.Errors.Add(new ValidationError
 		{
 			Path = {{ FieldNamePath }},
-			Message = {{ rules.equal.error | default(value=defaultError) | json_encode | safe }}
+			Message = {{ rules.state.error | default(value=defaultError) | json_encode | safe }}
 		});
 		flag = false;
 	}
