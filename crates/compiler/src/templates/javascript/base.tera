@@ -1,6 +1,9 @@
 {%- if uses_file_type %}
 import { validateFileSignature } from "./utils/file_signature.js";
 {%- endif %}
+{%- if uses_uuid_type %}
+import { validateUuid, getUuidVersion } from "./utils/uuid_validator.js";
+{%- endif %}
 
 {%- for actionName, action in actions %}
 
@@ -47,6 +50,8 @@ export const validate{{ actionName | capitalize }} = async (data) => {
 			{%- include "mail.tera" %}
 		{%- elif field.type == "username" %}
 			{%- include "username.tera" %}
+		{%- elif field.type == "uuid" %}
+			{%- include "uuid.tera" %}
 		{%- elif field.type == "array" %}
 			{%- include "array.tera" %}
 		{%- elif field.type == "enum" %}

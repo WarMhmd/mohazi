@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-{%- if uses_file_type %}
+{%- if uses_file_type or uses_uuid_type %}
 using Generated.Validation.Utils;
+{%- endif %}
+{%- if uses_file_type %}
 using Utils.FileSignatureValidator;
 {%- endif %}
 
@@ -56,6 +58,8 @@ namespace Generated.Validation
 					{%- include "mail.tera" %}
 				{%- elif field.type == "username" %}
 					{%- include "username.tera" %}
+				{%- elif field.type == "uuid" %}
+					{%- include "uuid.tera" %}
 				{%- elif field.type == "array" %}
 					{%- include "array.tera" %}
 				{%- elif field.type == "enum" %}

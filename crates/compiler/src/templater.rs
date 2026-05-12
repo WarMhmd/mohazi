@@ -79,10 +79,12 @@ impl LanguageTemplater {
 
         for (file_name, forms) in files.iter() {
             let uses_file_type = has_file_type(forms);
+            let uses_uuid_type = has_uuid_type(forms);
 
             let mut context = Context::new();
             context.insert("actions", &build_actions(forms));
             context.insert("uses_file_type", &uses_file_type);
+            context.insert("uses_uuid_type", &uses_uuid_type);
 
             let output = match self.tera.render("base.tera", &context) {
                 Ok(rendered) => rendered,
@@ -103,6 +105,10 @@ impl LanguageTemplater {
 
             if uses_file_type {
                 self.write_file_signature_helper(output_dir);
+            }
+
+            if uses_uuid_type {
+                self.write_uuid_helper(output_dir);
             }
         }
     }
@@ -131,6 +137,33 @@ impl LanguageTemplater {
         let helper_file = format!("{}/file_signature.{}", helper_dir, self.extension);
         if let Err(error) = std::fs::write(&helper_file, helper_output) {
             eprintln!("Failed to write helper file '{}': {}", helper_file, error);
+        }
+    }
+
+    fn write_uuid_helper(&self, output_dir: &str) {
+        let helper_output = match self.tera.render("uuid_validator.tera", &Context::new()) {
+            Ok(rendered) => rendered,
+            Err(error) => {
+                eprintln!(
+                    "Error rendering UUID helper template for language '{}': {}",
+                    self.language, error
+                );
+                return;
+            }
+        };
+
+        let helper_dir = format!("{}/utils", output_dir);
+        if let Err(error) = std::fs::create_dir_all(&helper_dir) {
+            eprintln!(
+                "Failed to create helper directory '{}': {}",
+                helper_dir, error
+            );
+            return;
+        }
+
+        let helper_file = format!("{}/uuid_validator.{}", helper_dir, self.extension);
+        if let Err(error) = std::fs::write(&helper_file, helper_output) {
+            eprintln!("Failed to write UUID helper file '{}': {}", helper_file, error);
         }
     }
 }
@@ -227,6 +260,7 @@ fn rule_to_value(rule: &Rule) -> Value {
         Rule::Image(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
         Rule::Mail(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
         Rule::Username(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Uuid(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
     };
 
     prune_nulls(&mut value);
@@ -244,6 +278,7 @@ fn transform_to_value(transform: &Transform) -> Value {
         Transform::Image(t) => serde_json::to_value(t).unwrap_or(Value::Null),
         Transform::Mail(t) => serde_json::to_value(t).unwrap_or(Value::Null),
         Transform::Username(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Uuid(t) => serde_json::to_value(t).unwrap_or(Value::Null),
     };
 
     prune_nulls(&mut value);
@@ -289,4 +324,26 @@ fn transform_uses_file_type(transform: &Transform) -> bool {
     matches!(transform, Transform::File(_) | Transform::Image(_))
         || transform.get_cast() == Some(FieldType::File)
         || transform.get_cast() == Some(FieldType::Image)
+}
+
+fn has_uuid_type(forms: &IndexMap<String, Form>) -> bool {
+    forms.values().any(|form| {
+        form.fields.values().any(|field| {
+            field.field_type == FieldType::Uuid
+                || field.rules.iter().any(rule_uses_uuid_type)
+                || field.transform.iter().any(transform_uses_uuid_type)
+        })
+    })
+}
+
+fn rule_uses_uuid_type(rule: &Rule) -> bool {
+    match rule {
+        Rule::Uuid(_) => true,
+        Rule::Array(rules) => rules.array_type.value == FieldType::Uuid,
+        _ => false,
+    }
+}
+
+fn transform_uses_uuid_type(transform: &Transform) -> bool {
+    matches!(transform, Transform::Uuid(_)) || transform.get_cast() == Some(FieldType::Uuid)
 }

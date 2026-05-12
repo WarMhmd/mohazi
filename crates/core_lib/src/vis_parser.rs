@@ -2,7 +2,8 @@ use crate::ast::{
     ArrayRules, ArrayTransform, BooleanRules, BooleanTransform, EnumRules, EnumTransform, Field,
     FieldType, FileRules, FileTransform, Form, ImageRules, ImageTransform, MailRules,
     MailTransform, NumberRules, NumberTransform, Rule, RuleTrait, RuleType, StringRules,
-    StringTransform, Transform, TransformTrait, UsernameRules, UsernameTransform,
+    StringTransform, Transform, TransformTrait, UsernameRules, UsernameTransform, UuidRules,
+    UuidTransform,
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -18,6 +19,7 @@ enum ActiveRuleBuilder {
     Image(ImageRules),
     Mail(MailRules),
     Username(UsernameRules),
+    Uuid(UuidRules),
     None,
 }
 
@@ -32,6 +34,7 @@ enum ActiveTransformBuilder {
     Image(ImageTransform),
     Mail(MailTransform),
     Username(UsernameTransform),
+    Uuid(UuidTransform),
     None,
 }
 
@@ -53,6 +56,7 @@ impl BuilderTrait for ActiveRuleBuilder {
             ActiveRuleBuilder::Image(_) => Some(FieldType::Image),
             ActiveRuleBuilder::Mail(_) => Some(FieldType::Mail),
             ActiveRuleBuilder::Username(_) => Some(FieldType::Username),
+            ActiveRuleBuilder::Uuid(_) => Some(FieldType::Uuid),
             ActiveRuleBuilder::None => None,
         }
     }
@@ -72,6 +76,7 @@ impl BuilderTrait for ActiveTransformBuilder {
             ActiveTransformBuilder::Image(_) => Some(FieldType::Image),
             ActiveTransformBuilder::Mail(_) => Some(FieldType::Mail),
             ActiveTransformBuilder::Username(_) => Some(FieldType::Username),
+            ActiveTransformBuilder::Uuid(_) => Some(FieldType::Uuid),
             ActiveTransformBuilder::None => None,
         }
     }
@@ -90,6 +95,7 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
         ActiveRuleBuilder::Image(r) => current_field.rules.push(Rule::Image(r)),
         ActiveRuleBuilder::Mail(r) => current_field.rules.push(Rule::Mail(r)),
         ActiveRuleBuilder::Username(r) => current_field.rules.push(Rule::Username(r)),
+        ActiveRuleBuilder::Uuid(r) => current_field.rules.push(Rule::Uuid(r)),
         // todo[Add]: Type
         ActiveRuleBuilder::None => {}
     }
@@ -108,6 +114,7 @@ fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Fi
         ActiveTransformBuilder::Image(t) => current_field.transform.push(Transform::Image(t)),
         ActiveTransformBuilder::Mail(t) => current_field.transform.push(Transform::Mail(t)),
         ActiveTransformBuilder::Username(t) => current_field.transform.push(Transform::Username(t)),
+        ActiveTransformBuilder::Uuid(t) => current_field.transform.push(Transform::Uuid(t)),
         // todo[Add]: Type
         ActiveTransformBuilder::None => {}
     }
@@ -431,6 +438,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             "image" => FieldType::Image,
                             "mail" => FieldType::Mail,
                             "username" => FieldType::Username,
+                            "uuid" => FieldType::Uuid,
                             _ => {
                                 errors.push(ParserError::new(
                                     format!("Unknown field type {}", value),
@@ -543,6 +551,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Username => {
                                 ActiveRuleBuilder::Username(UsernameRules::new())
                             }
+                            FieldType::Uuid => ActiveRuleBuilder::Uuid(UuidRules::new()),
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -703,6 +712,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         ActiveRuleBuilder::Image(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Mail(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Username(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Uuid(r) => r.set_rule(key, final_val, final_err),
                         // todo[Add]: Type
                         ActiveRuleBuilder::None => Ok(()),
                     };
@@ -733,9 +743,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Image => Rule::Image(ImageRules::new()),
                             FieldType::Mail => Rule::Mail(MailRules::new()),
                             FieldType::Username => Rule::Username(UsernameRules::new()),
+                            FieldType::Uuid => Rule::Uuid(UuidRules::new()),
                             FieldType::Password => todo!(),
                             FieldType::Url => todo!(),
-                            FieldType::Uuid => todo!(),
                             FieldType::HttpUrl => todo!(),
                             FieldType::Base64 => todo!(),
                             FieldType::Jwt => todo!(),
@@ -784,6 +794,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Username => {
                                 ActiveTransformBuilder::Username(UsernameTransform::new())
                             }
+                            FieldType::Uuid => ActiveTransformBuilder::Uuid(UuidTransform::new()),
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -859,6 +870,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         | "uppercase" => {
                             if current_field.field_type != FieldType::String
                                 && current_field.field_type != FieldType::Username
+                                && current_field.field_type != FieldType::Uuid
                             {
                                 errors.push(ParserError::new(
                                     format!(
@@ -1024,6 +1036,9 @@ fn build_transform(
         }
         ActiveTransformBuilder::Username(username_transform) => {
             username_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Uuid(uuid_transform) => {
+            uuid_transform.set_transform(key, final_val)
         }
         ActiveTransformBuilder::None => Ok(()),
     };

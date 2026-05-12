@@ -250,6 +250,71 @@ impl LanguageServer for Backend {
                             ("error", "Rule Error: set custom error message for the previous rule"),
                         ])));
                     }
+                    "uuid" => {
+                        if prefix.ends_with("version: ") {
+                            return Ok(Some(CompletionResponse::Array(vec![
+                                CompletionItem {
+                                    label: "v4".to_string(),
+                                    detail: Some("Recommended: Randomly generated UUID".to_string()),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v7".to_string(),
+                                    detail: Some("Recommended: Time-sortable UUID".to_string()),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v1".to_string(),
+                                    detail: Some("Deprecated: Time + MAC Address".to_string()),
+                                    tags: Some(vec![CompletionItemTag::DEPRECATED]),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v2".to_string(),
+                                    detail: Some("Deprecated: DCE Security".to_string()),
+                                    tags: Some(vec![CompletionItemTag::DEPRECATED]),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v3".to_string(),
+                                    detail: Some("Deprecated: Name-based (MD5)".to_string()),
+                                    tags: Some(vec![CompletionItemTag::DEPRECATED]),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v5".to_string(),
+                                    detail: Some("Deprecated: Name-based (SHA-1)".to_string()),
+                                    tags: Some(vec![CompletionItemTag::DEPRECATED]),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v6".to_string(),
+                                    detail: Some("Deprecated: Reordered Time".to_string()),
+                                    tags: Some(vec![CompletionItemTag::DEPRECATED]),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v8".to_string(),
+                                    detail: Some("Deprecated: Custom".to_string()),
+                                    tags: Some(vec![CompletionItemTag::DEPRECATED]),
+                                    ..Default::default()
+                                },
+                            ])));
+                        }
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("version", "Rule: UUID Version (v4, v7 recommended)"),
+                            ("minLength", "Rule: Minimum string length"),
+                            ("maxLength", "Rule: Maximum string length"),
+                            ("length", "Rule: Set the string length"),
+                            ("regex", "Rule: Match custom regex pattern"),
+                            ("pattern", "Rule: Match custom regex pattern"),
+                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            ("endsWith", "Rule: Check if the string ends with a suffix"),
+                            ("uppercase", "Rule: Check if the string is written in uppercase"),
+                            ("lowercase", "Rule: Check if the string is written in lowercase"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
+                        ])));
+                    }
                     "array" => {
                         if prefix.ends_with("type: ") || prefix.ends_with("field_type: ") {
                             // check the macro implementation to understand
@@ -258,6 +323,7 @@ impl LanguageServer for Backend {
                                 ("string", "String type"),
                                 ("number", "Number type"),
                                 ("boolean", "Boolean type"),
+                                ("uuid", "UUID type"),
                             ])));
                         }
                         return Ok(Some(CompletionResponse::Array(completion_items![
@@ -360,6 +426,21 @@ impl LanguageServer for Backend {
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("cast", "Transform: Cast type"),
                             ("rename", "Transform: Rename image file"),
+                        ])));
+                    }
+                    "uuid" => {
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("string", "Cast: uuid to string"),
+                            ])));
+                        }
+
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                            ("trim", "Transform: Remove whitespace"),
+                            ("toLowerCase", "Transform: Convert to lowercase"),
+                            ("toUpperCase", "Transform: Convert to uppercase"),
                         ])));
                     }
                     "" => {
@@ -467,6 +548,7 @@ impl LanguageServer for Backend {
             "image" => get_docs("types", "image").unwrap(),
             "mail" => get_docs("types", "mail").unwrap(),
             "username" => get_docs("types", "username").unwrap(),
+            "uuid" => get_docs("types", "uuid").unwrap(),
 
             // Rules
             "min" => get_docs("rules", "min").unwrap(),

@@ -17,6 +17,7 @@ mod mail;
 mod number;
 mod string;
 mod username;
+mod uuid;
 
 pub use array::{ArrayRules, ArrayTransform};
 pub use boolean::{BooleanRules, BooleanTransform};
@@ -27,6 +28,7 @@ pub use number::{NumberRules, NumberTransform};
 pub use r#enum::{EnumRules, EnumTransform};
 pub use string::{StringRules, StringTransform};
 pub use username::{UsernameRules, UsernameTransform};
+pub use uuid::{UuidRules, UuidTransform};
 
 /// This trait will be used for each rule to define the merge behaviour
 pub trait Mergeable {
@@ -158,6 +160,11 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Rule::Username(username_rule)
                     }
+                    FieldType::Uuid => {
+                        let uuid_rule: UuidRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Uuid(uuid_rule)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for rules",
@@ -244,6 +251,7 @@ pub enum Rule {
     Image(ImageRules),
     Mail(MailRules),
     Username(UsernameRules),
+    Uuid(UuidRules),
     // todo[Add]: Type
 }
 
@@ -268,6 +276,7 @@ impl Rule {
             (Rule::Image(a), Rule::Image(b)) => a.merge(b),
             (Rule::Mail(a), Rule::Mail(b)) => a.merge(b),
             (Rule::Username(a), Rule::Username(b)) => a.merge(b),
+            (Rule::Uuid(a), Rule::Uuid(b)) => a.merge(b),
             // todo[Add]: Type
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
@@ -294,6 +303,7 @@ pub enum Transform {
     Image(ImageTransform),
     Mail(MailTransform),
     Username(UsernameTransform),
+    Uuid(UuidTransform),
     // todo[Add]: Type
 }
 
@@ -322,6 +332,7 @@ impl Transform {
             (Transform::Image(a), Transform::Image(b)) => a.merge(b),
             (Transform::Mail(a), Transform::Mail(b)) => a.merge(b),
             (Transform::Username(a), Transform::Username(b)) => a.merge(b),
+            (Transform::Uuid(a), Transform::Uuid(b)) => a.merge(b),
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
     }
@@ -362,6 +373,7 @@ impl Transform {
             Transform::Image(i) => i.cast,
             Transform::Mail(m) => m.string_transform.cast,
             Transform::Username(u) => u.string_transform.cast,
+            Transform::Uuid(u) => u.string_transform.cast,
             // todo[Add]: Types more types here
         }
     }
@@ -388,6 +400,9 @@ impl Transform {
             Transform::Username(f) => {
                 match_types!(f.string_transform.cast, FieldType::String)
             }
+            Transform::Uuid(f) => {
+                match_types!(f.string_transform.cast, FieldType::String)
+            }
             // todo[Add]: Types more types here
             Transform::Array(f) => {
                 // create a transform from array_type
@@ -405,6 +420,12 @@ impl Transform {
                         }
                     }),
                     Some(FieldType::Username) => Transform::Username(UsernameTransform {
+                        string_transform: StringTransform {
+                            cast: f.cast,
+                            ..Default::default()
+                        }
+                    }),
+                    Some(FieldType::Uuid) => Transform::Uuid(UuidTransform {
                         string_transform: StringTransform {
                             cast: f.cast,
                             ..Default::default()
