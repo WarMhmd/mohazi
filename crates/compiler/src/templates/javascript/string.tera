@@ -40,11 +40,11 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
 		flag = false;
 	}
 	{%- endif %}
-	{%- if rules.pattern is defined %}
-	if (!new RegExp({{ rules.pattern.value | json_encode | safe }}).test(data.{{ FieldName }})) {
+	{%- if rules.regex is defined %}
+	if (!new RegExp({{ rules.regex.value | json_encode | safe }}).test(data.{{ FieldName }})) {
 		result.errors.push({
 			path: {{ FieldNamePath }},
-			message: {{ rules.pattern.error | default(value=defaultError) | json_encode | safe }}
+			message: {{ rules.regex.error | default(value=defaultError) | json_encode | safe }}
 		});
 		flag = false;
 	}
