@@ -2,7 +2,7 @@ use crate::ast::{
     ArrayRules, ArrayTransform, BooleanRules, BooleanTransform, EnumRules, EnumTransform, Field,
     FieldType, FileRules, FileTransform, Form, ImageRules, ImageTransform, MailRules,
     MailTransform, NumberRules, NumberTransform, Rule, RuleTrait, RuleType, StringRules,
-    StringTransform, Transform, TransformTrait,
+    StringTransform, Transform, TransformTrait, UsernameRules, UsernameTransform,
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -17,6 +17,7 @@ enum ActiveRuleBuilder {
     Enum(EnumRules),
     Image(ImageRules),
     Mail(MailRules),
+    Username(UsernameRules),
     None,
 }
 
@@ -30,6 +31,7 @@ enum ActiveTransformBuilder {
     Enum(EnumTransform),
     Image(ImageTransform),
     Mail(MailTransform),
+    Username(UsernameTransform),
     None,
 }
 
@@ -50,6 +52,7 @@ impl BuilderTrait for ActiveRuleBuilder {
             ActiveRuleBuilder::Enum(_) => Some(FieldType::Enum),
             ActiveRuleBuilder::Image(_) => Some(FieldType::Image),
             ActiveRuleBuilder::Mail(_) => Some(FieldType::Mail),
+            ActiveRuleBuilder::Username(_) => Some(FieldType::Username),
             ActiveRuleBuilder::None => None,
         }
     }
@@ -68,6 +71,7 @@ impl BuilderTrait for ActiveTransformBuilder {
             ActiveTransformBuilder::Enum(_) => Some(FieldType::Enum),
             ActiveTransformBuilder::Image(_) => Some(FieldType::Image),
             ActiveTransformBuilder::Mail(_) => Some(FieldType::Mail),
+            ActiveTransformBuilder::Username(_) => Some(FieldType::Username),
             ActiveTransformBuilder::None => None,
         }
     }
@@ -85,6 +89,7 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
         ActiveRuleBuilder::Enum(r) => current_field.rules.push(Rule::Enum(r)),
         ActiveRuleBuilder::Image(r) => current_field.rules.push(Rule::Image(r)),
         ActiveRuleBuilder::Mail(r) => current_field.rules.push(Rule::Mail(r)),
+        ActiveRuleBuilder::Username(r) => current_field.rules.push(Rule::Username(r)),
         // todo[Add]: Type
         ActiveRuleBuilder::None => {}
     }
@@ -102,6 +107,7 @@ fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Fi
         ActiveTransformBuilder::Enum(t) => current_field.transform.push(Transform::Enum(t)),
         ActiveTransformBuilder::Image(t) => current_field.transform.push(Transform::Image(t)),
         ActiveTransformBuilder::Mail(t) => current_field.transform.push(Transform::Mail(t)),
+        ActiveTransformBuilder::Username(t) => current_field.transform.push(Transform::Username(t)),
         // todo[Add]: Type
         ActiveTransformBuilder::None => {}
     }
@@ -424,6 +430,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             "enum" => FieldType::Enum,
                             "image" => FieldType::Image,
                             "mail" => FieldType::Mail,
+                            "username" => FieldType::Username,
                             _ => {
                                 errors.push(ParserError::new(
                                     format!("Unknown field type {}", value),
@@ -533,10 +540,13 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Enum => ActiveRuleBuilder::Enum(EnumRules::new()),
                             FieldType::Image => ActiveRuleBuilder::Image(ImageRules::new()),
                             FieldType::Mail => ActiveRuleBuilder::Mail(MailRules::new()),
+                            FieldType::Username => {
+                                ActiveRuleBuilder::Username(UsernameRules::new())
+                            }
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
-                                    format!("Unknown field type {}", value),
+                                    format!("Unknown field type {:?}", parsing_type),
                                     line_index as u32,
                                     current_level as u32,
                                     current_level as u32 + line.len() as u32,
@@ -692,6 +702,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         ActiveRuleBuilder::Enum(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Image(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Mail(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Username(r) => r.set_rule(key, final_val, final_err),
                         // todo[Add]: Type
                         ActiveRuleBuilder::None => Ok(()),
                     };
@@ -721,8 +732,8 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             // todo[Add]: type
                             FieldType::Image => Rule::Image(ImageRules::new()),
                             FieldType::Mail => Rule::Mail(MailRules::new()),
+                            FieldType::Username => Rule::Username(UsernameRules::new()),
                             FieldType::Password => todo!(),
-                            FieldType::Username => todo!(),
                             FieldType::Url => todo!(),
                             FieldType::Uuid => todo!(),
                             FieldType::HttpUrl => todo!(),
@@ -770,6 +781,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Enum => ActiveTransformBuilder::Enum(EnumTransform::new()),
                             FieldType::Image => ActiveTransformBuilder::Image(ImageTransform::new()),
                             FieldType::Mail => ActiveTransformBuilder::Mail(MailTransform::new()),
+                            FieldType::Username => {
+                                ActiveTransformBuilder::Username(UsernameTransform::new())
+                            }
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -843,7 +857,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         "split" | "trim" | "to_lowercase" | "to_lower_case" | "toLowerCase"
                         | "lowercase" | "to_uppercase" | "to_upper_case" | "toUpperCase"
                         | "uppercase" => {
-                            if current_field.field_type != FieldType::String {
+                            if current_field.field_type != FieldType::String
+                                && current_field.field_type != FieldType::Username
+                            {
                                 errors.push(ParserError::new(
                                     format!(
                                         "Cannot use the {} transform non-string field {}",
@@ -1005,6 +1021,9 @@ fn build_transform(
         }
         ActiveTransformBuilder::Mail(mail_transform) => {
             mail_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Username(username_transform) => {
+            username_transform.set_transform(key, final_val)
         }
         ActiveTransformBuilder::None => Ok(()),
     };

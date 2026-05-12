@@ -16,6 +16,7 @@ mod image;
 mod mail;
 mod number;
 mod string;
+mod username;
 
 pub use array::{ArrayRules, ArrayTransform};
 pub use boolean::{BooleanRules, BooleanTransform};
@@ -25,6 +26,7 @@ pub use mail::{MailRules, MailTransform};
 pub use number::{NumberRules, NumberTransform};
 pub use r#enum::{EnumRules, EnumTransform};
 pub use string::{StringRules, StringTransform};
+pub use username::{UsernameRules, UsernameTransform};
 
 /// This trait will be used for each rule to define the merge behaviour
 pub trait Mergeable {
@@ -151,6 +153,11 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Rule::Mail(mail_rule)
                     }
+                    FieldType::Username => {
+                        let username_rule: UsernameRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Username(username_rule)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for rules",
@@ -185,6 +192,11 @@ impl<'de> Deserialize<'de> for Field {
                         let mail_transform: MailTransform =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Transform::Mail(mail_transform)
+                    }
+                    FieldType::Username => {
+                        let username_transform: UsernameTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Username(username_transform)
                     }
                     _ => {
                         return Err(D::Error::custom(format!(
@@ -231,6 +243,7 @@ pub enum Rule {
     Array(ArrayRules),
     Image(ImageRules),
     Mail(MailRules),
+    Username(UsernameRules),
     // todo[Add]: Type
 }
 
@@ -254,6 +267,7 @@ impl Rule {
             (Rule::Enum(a), Rule::Enum(b)) => a.merge(b),
             (Rule::Image(a), Rule::Image(b)) => a.merge(b),
             (Rule::Mail(a), Rule::Mail(b)) => a.merge(b),
+            (Rule::Username(a), Rule::Username(b)) => a.merge(b),
             // todo[Add]: Type
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
@@ -279,6 +293,7 @@ pub enum Transform {
     Array(ArrayTransform),
     Image(ImageTransform),
     Mail(MailTransform),
+    Username(UsernameTransform),
     // todo[Add]: Type
 }
 
@@ -306,6 +321,7 @@ impl Transform {
             (Transform::File(a), Transform::File(b)) => a.merge(b),
             (Transform::Image(a), Transform::Image(b)) => a.merge(b),
             (Transform::Mail(a), Transform::Mail(b)) => a.merge(b),
+            (Transform::Username(a), Transform::Username(b)) => a.merge(b),
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
     }
@@ -345,6 +361,7 @@ impl Transform {
             Transform::Array(a) => a.cast,
             Transform::Image(i) => i.cast,
             Transform::Mail(m) => m.string_transform.cast,
+            Transform::Username(u) => u.string_transform.cast,
             // todo[Add]: Types more types here
         }
     }
@@ -368,6 +385,9 @@ impl Transform {
             Transform::Mail(f) => {
                 match_types!(f.string_transform.cast, FieldType::String)
             }
+            Transform::Username(f) => {
+                match_types!(f.string_transform.cast, FieldType::String)
+            }
             // todo[Add]: Types more types here
             Transform::Array(f) => {
                 // create a transform from array_type
@@ -379,6 +399,12 @@ impl Transform {
                     Some(FieldType::File) => make_transform!(File, f),
                     Some(FieldType::Image) => make_transform!(Image, f),
                     Some(FieldType::Mail) => Transform::Mail(MailTransform {
+                        string_transform: StringTransform {
+                            cast: f.cast,
+                            ..Default::default()
+                        }
+                    }),
+                    Some(FieldType::Username) => Transform::Username(UsernameTransform {
                         string_transform: StringTransform {
                             cast: f.cast,
                             ..Default::default()

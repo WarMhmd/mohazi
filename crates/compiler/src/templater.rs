@@ -226,6 +226,7 @@ fn rule_to_value(rule: &Rule) -> Value {
         Rule::Enum(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
         Rule::Image(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
         Rule::Mail(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Username(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
     };
 
     prune_nulls(&mut value);
@@ -242,6 +243,7 @@ fn transform_to_value(transform: &Transform) -> Value {
         Transform::Enum(t) => serde_json::to_value(t).unwrap_or(Value::Null),
         Transform::Image(t) => serde_json::to_value(t).unwrap_or(Value::Null),
         Transform::Mail(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Username(t) => serde_json::to_value(t).unwrap_or(Value::Null),
     };
 
     prune_nulls(&mut value);

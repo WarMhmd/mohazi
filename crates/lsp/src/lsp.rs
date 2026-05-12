@@ -236,6 +236,20 @@ impl LanguageServer for Backend {
                             ("error", "Rule Error: set custom error message for the previous rule"),
                         ])));
                     }
+                    "username" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("minLength", "Rule: Minimum string length"),
+                            ("maxLength", "Rule: Maximum string length"),
+                            ("length", "Rule: Set the string length"),
+                            ("regex", "Rule: Match custom regex pattern"),
+                            ("pattern", "Rule: Match custom regex pattern"),
+                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            ("endsWith", "Rule: Check if the string ends with a suffix"),
+                            ("uppercase", "Rule: Check if the string is written in uppercase"),
+                            ("lowercase", "Rule: Check if the string is written in lowercase"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
+                        ])));
+                    }
                     "array" => {
                         if prefix.ends_with("type: ") || prefix.ends_with("field_type: ") {
                             // check the macro implementation to understand
@@ -375,6 +389,7 @@ impl LanguageServer for Backend {
                         ("file", "File type"),
                         ("image", "Image type"),
                         ("mail", "Mail type"),
+                        ("username", "Username type"),
                     ])));
                 }
 
@@ -451,6 +466,7 @@ impl LanguageServer for Backend {
             "enum" => get_docs("types", "enum").unwrap(),
             "image" => get_docs("types", "image").unwrap(),
             "mail" => get_docs("types", "mail").unwrap(),
+            "username" => get_docs("types", "username").unwrap(),
 
             // Rules
             "min" => get_docs("rules", "min").unwrap(),

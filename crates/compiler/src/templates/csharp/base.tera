@@ -54,6 +54,8 @@ namespace Generated.Validation
 					{%- include "image.tera" %}
 				{%- elif field.type == "mail" %}
 					{%- include "mail.tera" %}
+				{%- elif field.type == "username" %}
+					{%- include "username.tera" %}
 				{%- elif field.type == "array" %}
 					{%- include "array.tera" %}
 				{%- elif field.type == "enum" %}
