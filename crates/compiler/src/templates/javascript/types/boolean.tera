@@ -1,0 +1,39 @@
+flag = true;
+
+if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
+    {%- if required %}
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError }}
+    });
+    flag = false;
+    {%- endif %}
+} else if (typeof data.{{ FieldName }} !== "boolean") {
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError }}
+    });
+    flag = false;
+} else {
+    {%- if rules.state is defined %}
+    if (data.{{ FieldName }} !== {{ rules.state.value }}) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.state.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "number" %}
+    data.{{ FieldName }} = Number(data.{{ FieldName }});
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "string" %}
+    data.{{ FieldName }} = data.{{ FieldName }}.toString();
+    {%- endif %}
+
+    if (flag) {
+        successData.{{ FieldName }} = data.{{ FieldName }};
+    }
+}

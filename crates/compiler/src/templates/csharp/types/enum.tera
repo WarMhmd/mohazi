@@ -1,0 +1,81 @@
+bool flag = true;
+
+if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
+{
+    {%- if required %}
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError }}
+    });
+    flag = false;
+    {%- endif %}
+}
+else
+{
+    data[{{ FieldName }}] = rawValue;
+
+    {%- if rules.allowedValues is defined %}
+
+    {%- if rules.allowedValues.value is string %}
+    var enumValues = {{ rules.allowedValues.value }}
+        .Split(',')
+        .Select(x => x.Trim())
+        .ToArray();
+
+    if (!enumValues.Contains(rawValue?.ToString()))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.allowedValues.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- else %}
+    var enumValues = new object?[] { {{ rules.allowedValues.value | join(sep=", ") }} };
+
+    if (!enumValues.Contains(rawValue))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.allowedValues.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "number" %}
+    if (flag)
+    {
+        if (double.TryParse(rawValue?.ToString(), out var numberValue))
+        {
+            data[{{ FieldName }}] = numberValue;
+        }
+        else
+        {
+            result.Errors.Add(new ValidationError
+            {
+                Path = {{ FieldNamePath }},
+                Message = {{ defaultError }}
+            });
+            flag = false;
+        }
+    }
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "string" %}
+    if (flag)
+    {
+        data[{{ FieldName }}] = rawValue?.ToString();
+    }
+    {%- endif %}
+
+    if (flag)
+    {
+        successData[{{ FieldName }}] = data[{{ FieldName }}];
+    }
+}

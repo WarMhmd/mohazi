@@ -1,74 +1,79 @@
-{%- if uses_file_type %}
+{% if uses_file_type -%}
 import { validateFileSignature } from "./utils/file_signature.js";
 {%- endif %}
-{%- if uses_uuid_type %}
+{% if uses_uuid_type -%}
 import { validateUuid, getUuidVersion } from "./utils/uuid_validator.js";
 {%- endif %}
 
 {%- for actionName, action in actions %}
 
 export const validate{{ actionName | capitalize }} = async (data) => {
-	let result = {
-		success: false,
-		errors: [],
-		data: data
-	};
+    let result = {
+        success: false,
+        errors: [],
+        data: data
+    };
 
-	const successData = {};
-	let flag = true;
+    const successData = {};
+    let flag = true;
 
-	{%- for fieldName, field in action %}
-	{
-		flag = true;
-		{% set FieldName = fieldName %}
-		{%- set FieldNamePath = '"' ~ fieldName ~ '"' %}
-		{%- set required = field.required %}
-		{%- set rawDefaultError = field.defaultError | default(value="Invalid value.") %}
-		{%- set defaultError = rawDefaultError %}
-		{%- if field.rules is defined %}
-			{%- set rules = field.rules %}
-		{%- else %}
-			{%- set rules = "" %}
-		{%- endif %}
-		{%- if field.transform is defined %}
-			{%- set transform = field.transform %}
-		{%- else %}
-			{%- set transform = "" %}
-		{%- endif %}
-		{%- set isNested = false %}
-		{%- if field.type == "string" %}
-			{%- include "string.tera" %}
-		{%- elif field.type == "number" %}
-			{%- include "number.tera" %}
-		{%- elif field.type == "boolean" %}
-			{%- include "boolean.tera" %}
-		{%- elif field.type == "file" %}
-			{%- include "file.tera" %}
-		{%- elif field.type == "image" %}
-			{%- include "image.tera" %}
-		{%- elif field.type == "mail" %}
-			{%- include "mail.tera" %}
-		{%- elif field.type == "username" %}
-			{%- include "username.tera" %}
-		{%- elif field.type == "uuid" %}
-			{%- include "uuid.tera" %}
-		{%- elif field.type == "array" %}
-			{%- include "array.tera" %}
-		{%- elif field.type == "enum" %}
-			{%- include "enum.tera" %}
-		{%- endif %}
-	}
-	{%- endfor %}
+    {%- for fieldName, field in action %}
+    {
+        flag = true;
 
-	if (result.errors.length === 0) {
-		result = {
-			success: true,
-			errors: [],
-			data: successData
-		};
-	}
+        {%- set FieldName = fieldName -%}
+        {%- set FieldNamePath = '"' ~ fieldName ~ '"' -%}
+        {%- set required = field.required -%}
+        {%- set rawDefaultError = field.defaultError | default(value="Invalid value.") -%}
+        {%- set defaultError = '"' ~ rawDefaultError ~ '"' -%}
 
-	return result;
+        {%- if field.rules is defined -%}
+            {%- set rules = field.rules -%}
+        {%- else -%}
+            {%- set rules = "" -%}
+        {%- endif -%}
+
+        {%- if field.transform is defined -%}
+            {%- set transform = field.transform -%}
+        {%- else -%}
+            {%- set transform = "" -%}
+        {%- endif -%}
+
+        {%- set isNested = false -%}
+
+        {%- if field.type == "string" -%}
+            {%- include "types/string.tera" -%}
+        {%- elif field.type == "number" -%}
+            {%- include "types/number.tera" -%}
+        {%- elif field.type == "boolean" -%}
+            {%- include "types/boolean.tera" -%}
+        {%- elif field.type == "file" -%}
+            {%- include "types/file.tera" -%}
+        {%- elif field.type == "array" -%}
+            {%- include "types/array.tera" -%}
+        {%- elif field.type == "enum" -%}
+            {%- include "types/enum.tera" -%}
+        {%- elif field.type == "image" -%}
+            {%- include "types/image.tera" -%}
+        {%- elif field.type == "mail" -%}
+            {%- include "types/mail.tera" -%}
+        {%- elif field.type == "username" -%}
+            {%- include "types/username.tera" -%}
+        {%- elif field.type == "uuid" -%}
+            {%- include "types/uuid.tera" -%}
+        {%- endif -%}
+    }
+    {%- endfor %}
+
+    if (result.errors.length === 0) {
+        result = {
+            success: true,
+            errors: [],
+            data: successData
+        };
+    }
+
+    return result;
 };
 
 {%- endfor %}

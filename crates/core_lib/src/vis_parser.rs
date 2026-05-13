@@ -1,5 +1,5 @@
 use crate::ast::{
-    ArrayRules, ArrayTransform, BooleanRules, BooleanTransform, EnumRules, EnumTransform, Field,
+    ArrayRules, ArrayTransform, Base64Rules, Base64Transform, BooleanRules, BooleanTransform, Field,
     FieldType, FileRules, FileTransform, Form, ImageRules, ImageTransform, MailRules,
     MailTransform, NumberRules, NumberTransform, Rule, RuleTrait, RuleType, StringRules,
     StringTransform, Transform, TransformTrait, UsernameRules, UsernameTransform, UuidRules,
@@ -20,6 +20,7 @@ enum ActiveRuleBuilder {
     Mail(MailRules),
     Username(UsernameRules),
     Uuid(UuidRules),
+    Base64(Base64Rules),
     None,
 }
 
@@ -35,6 +36,7 @@ enum ActiveTransformBuilder {
     Mail(MailTransform),
     Username(UsernameTransform),
     Uuid(UuidTransform),
+    Base64(Base64Transform),
     None,
 }
 
@@ -57,6 +59,7 @@ impl BuilderTrait for ActiveRuleBuilder {
             ActiveRuleBuilder::Mail(_) => Some(FieldType::Mail),
             ActiveRuleBuilder::Username(_) => Some(FieldType::Username),
             ActiveRuleBuilder::Uuid(_) => Some(FieldType::Uuid),
+            ActiveRuleBuilder::Base64(_) => Some(FieldType::Base64),
             ActiveRuleBuilder::None => None,
         }
     }
@@ -77,6 +80,7 @@ impl BuilderTrait for ActiveTransformBuilder {
             ActiveTransformBuilder::Mail(_) => Some(FieldType::Mail),
             ActiveTransformBuilder::Username(_) => Some(FieldType::Username),
             ActiveTransformBuilder::Uuid(_) => Some(FieldType::Uuid),
+            ActiveTransformBuilder::Base64(_) => Some(FieldType::Base64),
             ActiveTransformBuilder::None => None,
         }
     }
@@ -96,6 +100,7 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
         ActiveRuleBuilder::Mail(r) => current_field.rules.push(Rule::Mail(r)),
         ActiveRuleBuilder::Username(r) => current_field.rules.push(Rule::Username(r)),
         ActiveRuleBuilder::Uuid(r) => current_field.rules.push(Rule::Uuid(r)),
+        ActiveRuleBuilder::Base64(r) => current_field.rules.push(Rule::Base64(r)),
         // todo[Add]: Type
         ActiveRuleBuilder::None => {}
     }
@@ -115,6 +120,7 @@ fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Fi
         ActiveTransformBuilder::Mail(t) => current_field.transform.push(Transform::Mail(t)),
         ActiveTransformBuilder::Username(t) => current_field.transform.push(Transform::Username(t)),
         ActiveTransformBuilder::Uuid(t) => current_field.transform.push(Transform::Uuid(t)),
+        ActiveTransformBuilder::Base64(t) => current_field.transform.push(Transform::Base64(t)),
         // todo[Add]: Type
         ActiveTransformBuilder::None => {}
     }

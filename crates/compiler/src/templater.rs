@@ -114,7 +114,7 @@ impl LanguageTemplater {
     }
 
     fn write_file_signature_helper(&self, output_dir: &str) {
-        let helper_output = match self.tera.render("file_signature.tera", &Context::new()) {
+        let helper_output = match self.tera.render("utils/file_signature.tera", &Context::new()) {
             Ok(rendered) => rendered,
             Err(error) => {
                 eprintln!(
@@ -141,7 +141,7 @@ impl LanguageTemplater {
     }
 
     fn write_uuid_helper(&self, output_dir: &str) {
-        let helper_output = match self.tera.render("uuid_validator.tera", &Context::new()) {
+        let helper_output = match self.tera.render("utils/uuid_validator.tera", &Context::new()) {
             Ok(rendered) => rendered,
             Err(error) => {
                 eprintln!(

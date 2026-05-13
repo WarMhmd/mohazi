@@ -1,0 +1,156 @@
+bool flag = true;
+
+if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
+{
+    {%- if required %}
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError }}
+    });
+    flag = false;
+    {%- endif %}
+}
+else if (rawValue is not FileInput fileObj ||
+         string.IsNullOrWhiteSpace(fileObj.Name))
+{
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError }}
+    });
+    flag = false;
+}
+else
+{
+    data[{{ FieldName }}] = fileObj;
+
+    var fileName = fileObj.Name;
+    var nameParts = fileName.Split('.');
+    var fileExt = nameParts.Length > 1
+        ? nameParts[^1].ToLowerInvariant()
+        : "";
+
+    var hasDangerousChars = fileName.Any(ch =>
+        ch < 32 ||
+        (ch >= 127 && ch <= 159) ||
+        ch == '/' ||
+        ch == '\\' ||
+        ch == ':');
+
+    if (hasDangerousChars)
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = "Invalid characters in filename."
+        });
+        flag = false;
+    }
+
+    {%- if rules.Extension is defined %}
+    var allowedExtensions = "{{ rules.Extension.value }}"
+        .Split(',')
+        .Select(item => item.Trim().ToLowerInvariant())
+        .ToArray();
+
+    if (!allowedExtensions.Contains(fileExt))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.Extension.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.maxSize is defined %}
+    if (fileObj.Size > ({{ rules.maxSize.value }} * 1024))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.maxSize.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.minSize is defined %}
+    if (fileObj.Size < ({{ rules.minSize.value }} * 1024))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.minSize.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "Image" %}
+    var mimeType = (fileObj.ContentType ?? string.Empty).ToLowerInvariant();
+
+    if (!mimeType.StartsWith("image/"))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ defaultError }}
+        });
+        flag = false;
+    }
+
+    var validImageExts = new[] { "jpg", "jpeg", "png", "gif", "webp", "pdf", "zip" };
+    if (!validImageExts.Contains(fileExt))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = "File extension does not match allowed image formats."
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    if (flag)
+    {
+        var isValidSignature = await FileSignatureValidator.ValidateFileSignatureAsync(fileObj, fileExt);
+
+        if (!isValidSignature)
+        {
+            result.Errors.Add(new ValidationError
+            {
+                Path = {{ FieldNamePath }},
+                Message = "File content does not match its extension."
+            });
+            flag = false;
+        }
+    }
+
+    {%- if transform.cast is defined and transform.cast == "String" %}
+    if (flag)
+        data[{{ FieldName }}] = fileName;
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "Number" %}
+    if (flag)
+        data[{{ FieldName }}] = fileObj.Size;
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "Boolean" %}
+    if (flag)
+        data[{{ FieldName }}] = true;
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "Array" %}
+    if (flag)
+        data[{{ FieldName }}] = new List<FileInput> { fileObj };
+    {%- endif %}
+
+    if (flag)
+    {
+        successData[{{ FieldName }}] = data[{{ FieldName }}];
+    }
+}

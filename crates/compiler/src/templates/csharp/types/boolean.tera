@@ -1,0 +1,51 @@
+bool flag = true;
+
+if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
+{
+    {%- if required %}
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError }}
+    });
+    flag = false;
+    {%- endif %}
+}
+else if (rawValue is not bool value)
+{
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError }}
+    });
+    flag = false;
+}
+else
+{
+    data[{{ FieldName }}] = value;
+
+    {%- if rules.state is defined %}
+    if (value != {{ rules.state.value }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.state.error | default(value=defaultError) }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "number" %}
+    data[{{ FieldName }}] = value ? 1 : 0;
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "string" %}
+    data[{{ FieldName }}] = value.ToString().ToLowerInvariant();
+    {%- endif %}
+
+    if (flag)
+    {
+        successData[{{ FieldName }}] = data[{{ FieldName }}];
+    }
+}
