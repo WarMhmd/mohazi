@@ -6,7 +6,7 @@ if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
     result.Errors.Add(new ValidationError
     {
         Path = {{ FieldNamePath }},
-        Message = {{ defaultError }}
+        Message = {{ defaultError | json_encode | safe }}
     });
     flag = false;
     {%- endif %}
@@ -28,7 +28,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.allowedValues.error | default(value=defaultError) }}
+            Message = {{ rules.allowedValues.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -40,7 +40,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.allowedValues.error | default(value=defaultError) }}
+            Message = {{ rules.allowedValues.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -60,7 +60,7 @@ else
             result.Errors.Add(new ValidationError
             {
                 Path = {{ FieldNamePath }},
-                Message = {{ defaultError }}
+                Message = {{ defaultError | json_encode | safe }}
             });
             flag = false;
         }
@@ -73,9 +73,4 @@ else
         data[{{ FieldName }}] = rawValue?.ToString();
     }
     {%- endif %}
-
-    if (flag)
-    {
-        successData[{{ FieldName }}] = data[{{ FieldName }}];
-    }
 }

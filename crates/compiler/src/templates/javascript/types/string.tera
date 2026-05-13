@@ -4,14 +4,14 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     {%- if required %}
     result.errors.push({
         path: {{ FieldNamePath }},
-        message: {{ defaultError }}
+        message: {{ defaultError | json_encode | safe }}
     });
     flag = false;
     {%- endif %}
 } else if (typeof data.{{ FieldName }} !== "string") {
     result.errors.push({
         path: {{ FieldNamePath }},
-        message: {{ defaultError }}
+        message: {{ defaultError | json_encode | safe }}
     });
     flag = false;
 } else {
@@ -19,7 +19,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (data.{{ FieldName }}.length !== {{ rules.length.value }}) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.length.error | default(value=defaultError) }}
+            message: {{ rules.length.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -29,7 +29,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (data.{{ FieldName }}.length < {{ rules.minLength.value }}) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.minLength.error | default(value=defaultError) }}
+            message: {{ rules.minLength.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -39,7 +39,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (data.{{ FieldName }}.length > {{ rules.maxLength.value }}) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.maxLength.error | default(value=defaultError) }}
+            message: {{ rules.maxLength.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -49,7 +49,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (!/{{ rules.pattern.value }}/.test(data.{{ FieldName }})) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.pattern.error | default(value=defaultError) }}
+            message: {{ rules.pattern.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -59,7 +59,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (!data.{{ FieldName }}.startsWith("{{ rules.startsWith.value }}")) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.startsWith.error | default(value=defaultError) }}
+            message: {{ rules.startsWith.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -69,7 +69,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (!data.{{ FieldName }}.endsWith("{{ rules.endsWith.value }}")) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.endsWith.error | default(value=defaultError) }}
+            message: {{ rules.endsWith.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -79,7 +79,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (!data.{{ FieldName }}.includes("{{ rules.includes.value }}")) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.includes.error | default(value=defaultError) }}
+            message: {{ rules.includes.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -89,7 +89,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (data.{{ FieldName }} !== data.{{ FieldName }}.toUpperCase()) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.uppercase.error | default(value=defaultError) }}
+            message: {{ rules.uppercase.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -99,7 +99,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (data.{{ FieldName }} !== data.{{ FieldName }}.toLowerCase()) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.lowercase.error | default(value=defaultError) }}
+            message: {{ rules.lowercase.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -126,7 +126,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (Number.isNaN(data.{{ FieldName }})) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ defaultError }}
+            message: {{ defaultError | json_encode | safe }}
         });
         flag = false;
     }
@@ -140,13 +140,9 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     } else {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ defaultError }}
+            message: {{ defaultError | json_encode | safe }}
         });
         flag = false;
     }
     {%- endif %}
-
-    if (flag) {
-        successData.{{ FieldName }} = data.{{ FieldName }};
-    }
 }

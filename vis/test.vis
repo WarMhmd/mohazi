@@ -25,6 +25,12 @@ login:
 			maxLength: 
 				value: 100
 				error: 'Password must be at most 100 characters long.'
+	password_hash:
+		type: hash
+		required: true
+		rules:
+			algorithm: 'Argon2id'
+			minLength: 10
 	profile:
 		type: image
 		required: true

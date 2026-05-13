@@ -4,14 +4,14 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     {%- if required %}
     result.errors.push({
         path: {{ FieldNamePath }},
-        message: {{ defaultError }}
+        message: {{ defaultError | json_encode | safe }}
     });
     flag = false;
     {%- endif %}
 } else if (!Array.isArray(data.{{ FieldName }})) {
     result.errors.push({
         path: {{ FieldNamePath }},
-        message: {{ defaultError }}
+        message: {{ defaultError | json_encode | safe }}
     });
     flag = false;
 } else {
@@ -19,7 +19,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (data.{{ FieldName }}.length !== {{ rules.length.value }}) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.length.error | default(value=defaultError) }}
+            message: {{ rules.length.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -29,7 +29,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (data.{{ FieldName }}.length < {{ rules.minLength.value }}) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.minLength.error | default(value=defaultError) }}
+            message: {{ rules.minLength.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -39,7 +39,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (data.{{ FieldName }}.length > {{ rules.maxLength.value }}) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.maxLength.error | default(value=defaultError) }}
+            message: {{ rules.maxLength.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -72,6 +72,8 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
             {%- include "types/enum.tera" -%}
         {%- elif rules.type is defined and rules.type == "array" -%}
             {%- include "array.tera" -%}
+        {%- elif rules.type is defined and rules.type == "hash" -%}
+            {%- include "types/hash.tera" -%}
         {%- endif %}
 
         data.{{ original_FieldName }}[i] = data[itemPath];
@@ -96,8 +98,4 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
         data.{{ FieldName }} = data.{{ FieldName }}.reduce((a, b) => a + b, 0);
     }
     {%- endif %}
-
-    if (flag) {
-        successData.{{ FieldName }} = data.{{ FieldName }};
-    }
 }

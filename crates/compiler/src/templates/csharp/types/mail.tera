@@ -196,8 +196,4 @@ else
 		flag = false;
 	}
 	{%- endif %}
-	if (flag)
-	{
-		successData[{{ FieldName }}] = data[{{ FieldName }}];
-	}
 }

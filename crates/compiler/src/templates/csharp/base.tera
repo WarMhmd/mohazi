@@ -29,8 +29,7 @@ namespace Generated.Validation
                 {%- set FieldName = '"' ~ fieldName ~ '"' -%}
                 {%- set FieldNamePath = '"' ~ fieldName ~ '"' -%}
                 {%- set required = field.required | default(value=false) -%}
-                {%- set rawDefaultError = field.defaultError | default(value="Invalid value.") -%}
-                {%- set defaultError = '"' ~ rawDefaultError ~ '"' -%}
+                {%- set defaultError = field.defaultError | default(value="Invalid value.") -%}
 
                 {%- if field.rules is defined -%}
                     {%- set rules = field.rules -%}
@@ -66,7 +65,14 @@ namespace Generated.Validation
                     {%- include "types/username.tera" -%}
                 {%- elif field.type == "uuid" -%}
                     {%- include "types/uuid.tera" -%}
+                {%- elif field.type == "hash" -%}
+                    {%- include "types/hash.tera" -%}
                 {%- endif -%}
+
+                if (flag)
+                {
+                    successData[{{ FieldName }}] = data[{{ FieldName }}];
+                }
             }
             {%- endfor %}
 

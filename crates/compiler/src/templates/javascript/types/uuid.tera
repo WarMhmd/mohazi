@@ -150,7 +150,4 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
 		flag = false;
 	}
 	{%- endif %}
-	if (flag) {
-		successData.{{ FieldName }} = data.{{ FieldName }};
-	}
 }

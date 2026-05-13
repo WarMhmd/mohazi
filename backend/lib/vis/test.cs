@@ -49,7 +49,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = "password",
-            Message = Password must be at least 8 characters long.
+            Message = "Password must be at least 8 characters long."
         });
         flag = false;
     }
@@ -58,23 +58,75 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = "password",
-            Message = Password must be at most 100 characters long.
+            Message = "Password must be at most 100 characters long."
         });
         flag = false;
     }
+}if (flag)
+                {
+                    successData["password"] = data["password"];
+                }
+            }
+            {
+                flag = true;bool flag = true;
 
-    if (flag)
+if (!data.TryGetValue("password_hash", out var rawValue) || rawValue == null)
+{
+    result.Errors.Add(new ValidationError
     {
-        successData["password"] = data["password"];
+        Path = "password_hash",
+        Message = "Invalid value."
+    });
+    flag = false;
+}
+else if (rawValue is not string value)
+{
+    result.Errors.Add(new ValidationError
+    {
+        Path = "password_hash",
+        Message = "Invalid value."
+    });
+    flag = false;
+}
+else
+{
+    data["password_hash"] = value;
+    if (value.Length < 10)
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = "password_hash",
+            Message = "Invalid value."
+        });
+        flag = false;
     }
-}}
+}
+if (flag)
+{
+    string pattern = null;
+    pattern = @"^\$argon2(id|i|d)\$v=\d+\$m=\d+,t=\d+,p=\d+\$[A-Za-z0-9+/]+={0,2}\$[A-Za-z0-9+/]+={0,2}$";
+    
+    if (pattern != null && !System.Text.RegularExpressions.Regex.IsMatch(data["password_hash"]?.ToString() ?? "", pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = "password_hash",
+            Message = "Invalid value."
+        });
+        flag = false;
+    }
+}if (flag)
+                {
+                    successData["password_hash"] = data["password_hash"];
+                }
+            }
             {
                 flag = true;if (!data.TryGetValue("profile", out var rawValue) || rawValue == null)
 {
 	result.Errors.Add(new ValidationError
 	{
 		Path = "profile",
-		Message = "\"Invalid value.\""
+		Message = "Invalid value."
 	});
 	flag = false;
 }
@@ -83,7 +135,7 @@ else if (rawValue is not string filePath)
 	result.Errors.Add(new ValidationError
 	{
 		Path = "profile",
-		Message = "\"Invalid value.\""
+		Message = "Invalid value."
 	});
 	flag = false;
 }
@@ -105,7 +157,7 @@ else
 			result.Errors.Add(new ValidationError
 			{
 				Path = "profile",
-				Message = "\"Invalid value.\""
+				Message = "Invalid value."
 			});
 			flag = false;
 		}
@@ -132,14 +184,13 @@ else
 				flag = false;
 			}
 		}
-
-		if (flag)
-		{
-			successData["profile"] = data["profile"];
-		}
 	}
 }
-}
+if (flag)
+                {
+                    successData["profile"] = data["profile"];
+                }
+            }
             {
                 flag = true;bool flag = true;
 
@@ -169,7 +220,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = "username",
-            Message = Username must be at least 3 characters long.
+            Message = "Username must be at least 3 characters long."
         });
         flag = false;
     }
@@ -178,16 +229,15 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = "username",
-            Message = Username must be at most 20 characters long.
+            Message = "Username must be at most 20 characters long."
         });
         flag = false;
     }
-
-    if (flag)
-    {
-        successData["username"] = data["username"];
-    }
-}}
+}if (flag)
+                {
+                    successData["username"] = data["username"];
+                }
+            }
 
             if (result.Errors.Count == 0)
             {
@@ -236,12 +286,11 @@ else if (rawValue is not string value)
 else
 {
     data["email"] = value;
-
-    if (flag)
-    {
-        successData["email"] = data["email"];
-    }
-}}
+}if (flag)
+                {
+                    successData["email"] = data["email"];
+                }
+            }
             {
                 flag = true;bool flag = true;
 
@@ -271,7 +320,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = "password",
-            Message = Password must be at least 8 characters long.
+            Message = "Password must be at least 8 characters long."
         });
         flag = false;
     }
@@ -280,16 +329,15 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = "password",
-            Message = Password must be at most 100 characters long.
+            Message = "Password must be at most 100 characters long."
         });
         flag = false;
     }
-
-    if (flag)
-    {
-        successData["password"] = data["password"];
-    }
-}}
+}if (flag)
+                {
+                    successData["password"] = data["password"];
+                }
+            }
             {
                 flag = true;bool flag = true;
 
@@ -319,7 +367,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = "username",
-            Message = Username must be at least 3 characters long.
+            Message = "Username must be at least 3 characters long."
         });
         flag = false;
     }
@@ -328,16 +376,15 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = "username",
-            Message = Username must be at most 20 characters long.
+            Message = "Username must be at most 20 characters long."
         });
         flag = false;
     }
-
-    if (flag)
-    {
-        successData["username"] = data["username"];
-    }
-}}
+}if (flag)
+                {
+                    successData["username"] = data["username"];
+                }
+            }
 
             if (result.Errors.Count == 0)
             {

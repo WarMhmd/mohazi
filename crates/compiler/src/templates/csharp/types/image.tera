@@ -148,10 +148,5 @@ else
 			}
 			{%- endif %}
 		}
-
-		if (flag)
-		{
-			successData[{{ FieldName }}] = data[{{ FieldName }}];
-		}
 	}
 }

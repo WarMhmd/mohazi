@@ -315,6 +315,21 @@ impl LanguageServer for Backend {
                             ("error", "Rule Error: set custom error message for the previous rule"),
                         ])));
                     }
+                    "hash" => {
+                        if prefix.ends_with("algorithm: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("Argon2id", "Algorithm: Argon2id hash"),
+                                ("Bcrypt", "Algorithm: Bcrypt hash"),
+                                ("SHA-256", "Algorithm: SHA-256 hash"),
+                                ("SHA-512", "Algorithm: SHA-512 hash"),
+                                ("BLAKE3", "Algorithm: BLAKE3 hash"),
+                            ])));
+                        }
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("algorithm", "Rule: Select validation algorithm (Argon2id, Bcrypt, SHA-256, SHA-512, BLAKE3)"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
+                        ])));
+                    }
                     "array" => {
                         if prefix.ends_with("type: ") || prefix.ends_with("field_type: ") {
                             // check the macro implementation to understand
@@ -443,6 +458,21 @@ impl LanguageServer for Backend {
                             ("toUpperCase", "Transform: Convert to uppercase"),
                         ])));
                     }
+                    "hash" => {
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("string", "Cast: hash to string"),
+                            ])));
+                        }
+
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                            ("trim", "Transform: Remove whitespace"),
+                            ("toLowerCase", "Transform: Convert to lowercase"),
+                            ("toUpperCase", "Transform: Convert to uppercase"),
+                        ])));
+                    }
                     "" => {
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("cast", "Transform: Cast type"),
@@ -471,6 +501,9 @@ impl LanguageServer for Backend {
                         ("image", "Image type"),
                         ("mail", "Mail type"),
                         ("username", "Username type"),
+                        ("uuid", "UUID type"),
+                        ("base64", "Base64 type"),
+                        ("hash", "Hash type"),
                     ])));
                 }
 
@@ -549,8 +582,10 @@ impl LanguageServer for Backend {
             "mail" => get_docs("types", "mail").unwrap(),
             "username" => get_docs("types", "username").unwrap(),
             "uuid" => get_docs("types", "uuid").unwrap(),
+            "hash" => get_docs("types", "hash").unwrap(),
 
             // Rules
+            "algorithm" => get_docs("rules", "algorithm").unwrap(),
             "min" => get_docs("rules", "min").unwrap(),
             "max" => get_docs("rules", "max").unwrap(),
             "maxLength" => get_docs("rules", "maxLength").unwrap(),

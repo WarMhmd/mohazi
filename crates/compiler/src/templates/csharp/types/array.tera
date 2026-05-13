@@ -6,7 +6,7 @@ if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
     result.Errors.Add(new ValidationError
     {
         Path = {{ FieldNamePath }},
-        Message = {{ defaultError }}
+        Message = {{ defaultError | json_encode | safe }}
     });
     flag = false;
     {%- endif %}
@@ -16,7 +16,7 @@ else if (rawValue is not System.Collections.IEnumerable enumerable || rawValue i
     result.Errors.Add(new ValidationError
     {
         Path = {{ FieldNamePath }},
-        Message = {{ defaultError }}
+        Message = {{ defaultError | json_encode | safe }}
     });
     flag = false;
 }
@@ -30,7 +30,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.length.error | default(value=defaultError) }}
+            Message = {{ rules.length.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -42,7 +42,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.minLength.error | default(value=defaultError) }}
+            Message = {{ rules.minLength.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -54,7 +54,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.maxLength.error | default(value=defaultError) }}
+            Message = {{ rules.maxLength.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -88,6 +88,8 @@ else
             {%- include "types/enum.tera" -%}
         {%- elif rules.type is defined and rules.type == "array" -%}
             {%- include "array.tera" -%}
+        {%- elif rules.type is defined and rules.type == "hash" -%}
+            {%- include "types/hash.tera" -%}
         {%- endif %}
 
         list[i] = data[itemPath];
@@ -116,9 +118,4 @@ else
         data[{{ FieldName }}] = list.Sum(x => Convert.ToDecimal(x));
     }
     {%- endif %}
-
-    if (flag)
-    {
-        successData[{{ FieldName }}] = data[{{ FieldName }}];
-    }
 }

@@ -1,0 +1,15 @@
+# Rust build artifacts
+target/
+
+# Node modules
+node_modules/
+npm/verify/node_modules/
+
+# Environment variables
+.env
+.env.*
+
+# Misc
+.DS_Store
+.git/
+flycheck0/

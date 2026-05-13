@@ -1,0 +1,28 @@
+{%- include "types/string.tera" -%}
+{%- if rules.algorithm is defined %}
+if (flag)
+{
+    string pattern = null;
+    {%- if rules.algorithm.value == "Argon2id" %}
+    pattern = @"^\$argon2(id|i|d)\$v=\d+\$m=\d+,t=\d+,p=\d+\$[A-Za-z0-9+/]+={0,2}\$[A-Za-z0-9+/]+={0,2}$";
+    {%- elif rules.algorithm.value == "Bcrypt" %}
+    pattern = @"^\$2[ayb]\$\d{2}\$[A-Za-z0-9./]{53}$";
+    {%- elif rules.algorithm.value == "SHA-256" %}
+    pattern = @"^[a-fA-F0-9]{64}$";
+    {%- elif rules.algorithm.value == "SHA-512" %}
+    pattern = @"^[a-fA-F0-9]{128}$";
+    {%- elif rules.algorithm.value == "BLAKE3" %}
+    pattern = @"^[a-fA-F0-9]{64}$";
+    {%- endif %}
+    
+    if (pattern != null && !System.Text.RegularExpressions.Regex.IsMatch(data[{{ FieldName }}]?.ToString() ?? "", pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.algorithm.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+}
+{%- endif %}

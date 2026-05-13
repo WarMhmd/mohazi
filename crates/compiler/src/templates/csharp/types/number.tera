@@ -6,7 +6,7 @@ if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
     result.Errors.Add(new ValidationError
     {
         Path = {{ FieldNamePath }},
-        Message = {{ defaultError }}
+        Message = {{ defaultError | json_encode | safe }}
     });
     flag = false;
     {%- endif %}
@@ -27,7 +27,7 @@ else if (
     result.Errors.Add(new ValidationError
     {
         Path = {{ FieldNamePath }},
-        Message = {{ defaultError }}
+        Message = {{ defaultError | json_encode | safe }}
     });
     flag = false;
 }
@@ -37,7 +37,7 @@ else if ((rawValue is double d && double.IsNaN(d)) ||
     result.Errors.Add(new ValidationError
     {
         Path = {{ FieldNamePath }},
-        Message = {{ defaultError }}
+        Message = {{ defaultError | json_encode | safe }}
     });
     flag = false;
 }
@@ -52,7 +52,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.lt.error | default(value=defaultError) }}
+            Message = {{ rules.lt.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -64,7 +64,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.max.error | default(value=defaultError) }}
+            Message = {{ rules.max.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -76,7 +76,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.gt.error | default(value=defaultError) }}
+            Message = {{ rules.gt.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -88,7 +88,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.min.error | default(value=defaultError) }}
+            Message = {{ rules.min.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -100,7 +100,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.equal.error | default(value=defaultError) }}
+            Message = {{ rules.equal.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -112,7 +112,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.positive.error | default(value=defaultError) }}
+            Message = {{ rules.positive.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -124,7 +124,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.nonpositive.error | default(value=defaultError) }}
+            Message = {{ rules.nonpositive.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -136,7 +136,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.negative.error | default(value=defaultError) }}
+            Message = {{ rules.negative.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -148,7 +148,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.nonnegative.error | default(value=defaultError) }}
+            Message = {{ rules.nonnegative.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -160,7 +160,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.multiple_of.error | default(value=defaultError) }}
+            Message = {{ rules.multiple_of.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -182,7 +182,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ defaultError }}
+            Message = {{ defaultError | json_encode | safe }}
         });
         flag = false;
     }
@@ -191,9 +191,4 @@ else
         data[{{ FieldName }}] = ((long)value).ToString("x");
     }
     {%- endif %}
-
-    if (flag)
-    {
-        successData[{{ FieldName }}] = data[{{ FieldName }}];
-    }
 }

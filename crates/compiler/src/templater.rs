@@ -261,6 +261,8 @@ fn rule_to_value(rule: &Rule) -> Value {
         Rule::Mail(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
         Rule::Username(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
         Rule::Uuid(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Base64(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Hash(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
     };
 
     prune_nulls(&mut value);
@@ -279,6 +281,8 @@ fn transform_to_value(transform: &Transform) -> Value {
         Transform::Mail(t) => serde_json::to_value(t).unwrap_or(Value::Null),
         Transform::Username(t) => serde_json::to_value(t).unwrap_or(Value::Null),
         Transform::Uuid(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Base64(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Hash(t) => serde_json::to_value(t).unwrap_or(Value::Null),
     };
 
     prune_nulls(&mut value);

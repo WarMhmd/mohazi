@@ -6,7 +6,7 @@ if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
     result.Errors.Add(new ValidationError
     {
         Path = {{ FieldNamePath }},
-        Message = {{ defaultError }}
+        Message = {{ defaultError | json_encode | safe }}
     });
     flag = false;
     {%- endif %}
@@ -16,7 +16,7 @@ else if (rawValue is not string value)
     result.Errors.Add(new ValidationError
     {
         Path = {{ FieldNamePath }},
-        Message = {{ defaultError }}
+        Message = {{ defaultError | json_encode | safe }}
     });
     flag = false;
 }
@@ -30,7 +30,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.length.error | default(value=defaultError) }}
+            Message = {{ rules.length.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -42,7 +42,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.minLength.error | default(value=defaultError) }}
+            Message = {{ rules.minLength.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -54,7 +54,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.maxLength.error | default(value=defaultError) }}
+            Message = {{ rules.maxLength.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -66,7 +66,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.pattern.error | default(value=defaultError) }}
+            Message = {{ rules.pattern.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -78,7 +78,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.startsWith.error | default(value=defaultError) }}
+            Message = {{ rules.startsWith.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -90,7 +90,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.endsWith.error | default(value=defaultError) }}
+            Message = {{ rules.endsWith.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -102,7 +102,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.includes.error | default(value=defaultError) }}
+            Message = {{ rules.includes.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -114,7 +114,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.uppercase.error | default(value=defaultError) }}
+            Message = {{ rules.uppercase.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -126,7 +126,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.lowercase.error | default(value=defaultError) }}
+            Message = {{ rules.lowercase.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -163,7 +163,7 @@ else
             result.Errors.Add(new ValidationError
             {
                 Path = {{ FieldNamePath }},
-                Message = {{ defaultError }}
+                Message = {{ defaultError | json_encode | safe }}
             });
             flag = false;
         }
@@ -177,7 +177,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ defaultError }}
+            Message = {{ defaultError | json_encode | safe }}
         });
         flag = false;
     }
@@ -197,14 +197,9 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ defaultError }}
+            Message = {{ defaultError | json_encode | safe }}
         });
         flag = false;
     }
     {%- endif %}
-
-    if (flag)
-    {
-        successData[{{ FieldName }}] = data[{{ FieldName }}];
-    }
 }

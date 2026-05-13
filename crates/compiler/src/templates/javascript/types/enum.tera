@@ -5,7 +5,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     {% if required %}
     result.errors.push({
         path: {{ FieldNamePath }},
-        message: {{ defaultError }}
+        message: {{ defaultError | json_encode | safe }}
     });
     flag = false;
     {% endif %}
@@ -25,7 +25,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (!EnumValues.includes(data.{{ FieldName }})) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.allowedValues.error | default(value=defaultError) }}
+            message: {{ rules.allowedValues.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -37,7 +37,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (Number.isNaN(data.{{ FieldName }})) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ defaultError }}
+            message: {{ defaultError | json_encode | safe }}
         });
         flag = false;
     }
@@ -46,8 +46,4 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     {% if transform.cast is defined and transform.cast == "string" %}
     data.{{ FieldName }} = String(data.{{ FieldName }});
     {% endif %}
-
-    if (flag) {
-        successData.{{ FieldName }} = data.{{ FieldName }};
-    }
 }

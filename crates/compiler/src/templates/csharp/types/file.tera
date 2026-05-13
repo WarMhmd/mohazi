@@ -6,7 +6,7 @@ if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
     result.Errors.Add(new ValidationError
     {
         Path = {{ FieldNamePath }},
-        Message = {{ defaultError }}
+        Message = {{ defaultError | json_encode | safe }}
     });
     flag = false;
     {%- endif %}
@@ -17,7 +17,7 @@ else if (rawValue is not FileInput fileObj ||
     result.Errors.Add(new ValidationError
     {
         Path = {{ FieldNamePath }},
-        Message = {{ defaultError }}
+        Message = {{ defaultError | json_encode | safe }}
     });
     flag = false;
 }
@@ -59,7 +59,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.Extension.error | default(value=defaultError) }}
+            Message = {{ rules.Extension.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -71,7 +71,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.maxSize.error | default(value=defaultError) }}
+            Message = {{ rules.maxSize.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -83,7 +83,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ rules.minSize.error | default(value=defaultError) }}
+            Message = {{ rules.minSize.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -97,7 +97,7 @@ else
         result.Errors.Add(new ValidationError
         {
             Path = {{ FieldNamePath }},
-            Message = {{ defaultError }}
+            Message = {{ defaultError | json_encode | safe }}
         });
         flag = false;
     }
@@ -148,9 +148,4 @@ else
     if (flag)
         data[{{ FieldName }}] = new List<FileInput> { fileObj };
     {%- endif %}
-
-    if (flag)
-    {
-        successData[{{ FieldName }}] = data[{{ FieldName }}];
-    }
 }

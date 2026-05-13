@@ -4,14 +4,14 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     {%- if required %}
     result.errors.push({
         path: {{ FieldNamePath }},
-        message: {{ defaultError }}
+        message: {{ defaultError | json_encode | safe }}
     });
     flag = false;
     {%- endif %}
 } else if (typeof data.{{ FieldName }} !== "boolean") {
     result.errors.push({
         path: {{ FieldNamePath }},
-        message: {{ defaultError }}
+        message: {{ defaultError | json_encode | safe }}
     });
     flag = false;
 } else {
@@ -19,7 +19,7 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     if (data.{{ FieldName }} !== {{ rules.state.value }}) {
         result.errors.push({
             path: {{ FieldNamePath }},
-            message: {{ rules.state.error | default(value=defaultError) }}
+            message: {{ rules.state.error | default(value=defaultError) | json_encode | safe }}
         });
         flag = false;
     }
@@ -32,8 +32,4 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
     {%- if transform.cast is defined and transform.cast == "string" %}
     data.{{ FieldName }} = data.{{ FieldName }}.toString();
     {%- endif %}
-
-    if (flag) {
-        successData.{{ FieldName }} = data.{{ FieldName }};
-    }
 }

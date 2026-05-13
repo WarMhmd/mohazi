@@ -13,6 +13,7 @@ mod base64;
 mod boolean;
 mod r#enum;
 mod file;
+mod hash;
 mod image;
 mod mail;
 mod number;
@@ -24,6 +25,7 @@ pub use array::{ArrayRules, ArrayTransform};
 pub use base64::{Base64Rules, Base64Transform};
 pub use boolean::{BooleanRules, BooleanTransform};
 pub use file::{FileRules, FileTransform};
+pub use hash::{HashRules, HashTransform};
 pub use image::{ImageRules, ImageTransform};
 pub use mail::{MailRules, MailTransform};
 pub use number::{NumberRules, NumberTransform};
@@ -265,6 +267,7 @@ pub enum Rule {
     Username(UsernameRules),
     Uuid(UuidRules),
     Base64(Base64Rules),
+    Hash(HashRules),
     // todo[Add]: Type
 }
 
@@ -291,6 +294,7 @@ impl Rule {
             (Rule::Username(a), Rule::Username(b)) => a.merge(b),
             (Rule::Uuid(a), Rule::Uuid(b)) => a.merge(b),
             (Rule::Base64(a), Rule::Base64(b)) => a.merge(b),
+            (Rule::Hash(a), Rule::Hash(b)) => a.merge(b),
             // todo[Add]: Type
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
@@ -318,6 +322,7 @@ pub enum Transform {
     Mail(MailTransform),
     Username(UsernameTransform),
     Uuid(UuidTransform),
+    Hash(HashTransform),
     Base64(Base64Transform),
     // todo[Add]: Type
 }
@@ -391,6 +396,7 @@ impl Transform {
             Transform::Username(u) => u.string_transform.cast,
             Transform::Uuid(u) => u.string_transform.cast,
             Transform::Base64(b) => b.string_transform.cast,
+            Transform::Hash(h) => h.string_transform.cast,
             // todo[Add]: Types more types here
         }
     }
@@ -423,6 +429,9 @@ impl Transform {
             Transform::Base64(f) => {
                 match_types!(f.string_transform.cast, FieldType::String)
             }
+            Transform::Hash(f) => {
+                match_types!(f.string_transform.cast, FieldType::String)
+            }
             // todo[Add]: Types more types here
             Transform::Array(f) => {
                 // create a transform from array_type
@@ -452,6 +461,12 @@ impl Transform {
                         }
                     }),
                     Some(FieldType::Base64) => Transform::Base64(Base64Transform {
+                        string_transform: StringTransform {
+                            cast: f.cast,
+                            ..Default::default()
+                        }
+                    }),
+                    Some(FieldType::Hash) => Transform::Hash(HashTransform {
                         string_transform: StringTransform {
                             cast: f.cast,
                             ..Default::default()
@@ -494,13 +509,13 @@ pub enum FieldType {
     Uuid,
     HttpUrl,
     Base64,
+    Hash,
     Jwt,
     Hex,
     Cidrv4,
     Cidrv6,
     Ulid,
     Cuid2,
-    Hash,
     Date,
 }
 
@@ -521,11 +536,14 @@ impl FieldType {
             "uuid" => Some(FieldType::Uuid),
             "http_url" => Some(FieldType::HttpUrl),
             "base64" => Some(FieldType::Base64),
+            "hash" => Some(FieldType::Hash),
             "jwt" => Some(FieldType::Jwt),
             "hex" => Some(FieldType::Hex),
             "cidrv4" => Some(FieldType::Cidrv4),
             "cidrv6" => Some(FieldType::Cidrv6),
             "ulid" => Some(FieldType::Ulid),
+            "cuid2" => Some(FieldType::Cuid2),
+            "date" => Some(FieldType::Date),
             _ => None,
         }
     }
