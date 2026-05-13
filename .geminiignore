@@ -7,6 +7,7 @@ npm/verify/node_modules/
 
 # Environment variables
 .env
+
 .env.*
 
 # Misc

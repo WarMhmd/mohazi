@@ -1,0 +1,155 @@
+flag = true;
+
+if (data[{{ FieldNamePath }}] === undefined || data[{{ FieldNamePath }}] === null) {
+    {%- if required %}
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+    {%- endif %}
+} else if (typeof data[{{ FieldNamePath }}] !== "string") {
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+} else if (!isStrictBase64(data[{{ FieldNamePath }}], {{ rules.url.value | default(value=false) | json_encode | safe }})) {
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+} else {
+    {%- if rules.minSize is defined or rules.maxSize is defined %}
+    const decodedLength = typeof Buffer !== 'undefined' 
+        ? Buffer.from(data[{{ FieldNamePath }}], {% if rules.url.value | default(value=false) %}'base64url'{% else %}'base64'{% endif %}).length 
+        : atob(data[{{ FieldNamePath }}].replace(/-/g, '+').replace(/_/g, '/')).length;
+    {%- endif %}
+
+    {%- if rules.minSize is defined %}
+    if (decodedLength < {{ rules.minSize.value }}) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.minSize.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.maxSize is defined %}
+    if (decodedLength > {{ rules.maxSize.value }}) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.maxSize.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.length is defined %}
+    if (data[{{ FieldNamePath }}].length !== {{ rules.length.value }}) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.length.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.minLength is defined %}
+    if (data[{{ FieldNamePath }}].length < {{ rules.minLength.value }}) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.minLength.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.maxLength is defined %}
+    if (data[{{ FieldNamePath }}].length > {{ rules.maxLength.value }}) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.maxLength.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.pattern is defined %}
+    if (!/{{ rules.pattern.value }}/.test(data[{{ FieldNamePath }}])) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.pattern.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.startsWith is defined %}
+    if (!data[{{ FieldNamePath }}].startsWith("{{ rules.startsWith.value }}")) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.startsWith.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.endsWith is defined %}
+    if (!data[{{ FieldNamePath }}].endsWith("{{ rules.endsWith.value }}")) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.endsWith.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.includes is defined %}
+    if (!data[{{ FieldNamePath }}].includes("{{ rules.includes.value }}")) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.includes.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.uppercase is defined %}
+    if (data[{{ FieldNamePath }}] !== data[{{ FieldNamePath }}].toUpperCase()) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.uppercase.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.lowercase is defined %}
+    if (data[{{ FieldNamePath }}] !== data[{{ FieldNamePath }}].toLowerCase()) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.lowercase.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.trim is defined and transform.trim %}
+    data[{{ FieldNamePath }}] = data[{{ FieldNamePath }}].trim();
+    {%- endif %}
+
+    {%- if transform.toLowerCase is defined and transform.toLowerCase %}
+    data[{{ FieldNamePath }}] = data[{{ FieldNamePath }}].toLowerCase();
+    {%- endif %}
+
+    {%- if transform.toUpperCase is defined and transform.toUpperCase %}
+    data[{{ FieldNamePath }}] = data[{{ FieldNamePath }}].toUpperCase();
+    {%- endif %}
+
+    {%- if transform.split is defined %}
+    data[{{ FieldNamePath }}] = data[{{ FieldNamePath }}].split("{{ transform.split }}");
+    {%- endif %}
+}

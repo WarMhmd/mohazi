@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-{% if uses_file_type or uses_uuid_type %}
+{% if uses_file_type or uses_uuid_type or uses_base64_type %}
 using Generated.Validation.Utils;
 {% endif %}
 
@@ -65,9 +65,14 @@ namespace Generated.Validation
                     {%- include "types/username.tera" -%}
                 {%- elif field.type == "uuid" -%}
                     {%- include "types/uuid.tera" -%}
+                {%- elif field.type == "cuid2" -%}
+                    {%- include "types/cuid2.tera" -%}
                 {%- elif field.type == "hash" -%}
                     {%- include "types/hash.tera" -%}
+                {%- elif field.type == "base64" -%}
+                    {%- include "types/base64.tera" -%}
                 {%- endif -%}
+
 
                 if (flag)
                 {

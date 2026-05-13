@@ -11,6 +11,7 @@ use std::collections::HashMap;
 mod array;
 mod base64;
 mod boolean;
+mod cuid2;
 mod r#enum;
 mod file;
 mod hash;
@@ -24,6 +25,7 @@ mod uuid;
 pub use array::{ArrayRules, ArrayTransform};
 pub use base64::{Base64Rules, Base64Transform};
 pub use boolean::{BooleanRules, BooleanTransform};
+pub use cuid2::{Cuid2Rules, Cuid2Transform};
 pub use file::{FileRules, FileTransform};
 pub use hash::{HashRules, HashTransform};
 pub use image::{ImageRules, ImageTransform};
@@ -169,6 +171,11 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Rule::Uuid(uuid_rule)
                     }
+                    FieldType::Cuid2 => {
+                        let cuid2_rule: Cuid2Rules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Cuid2(cuid2_rule)
+                    }
                     FieldType::Base64 => {
                         let base64_rule: Base64Rules =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
@@ -266,6 +273,7 @@ pub enum Rule {
     Mail(MailRules),
     Username(UsernameRules),
     Uuid(UuidRules),
+    Cuid2(Cuid2Rules),
     Base64(Base64Rules),
     Hash(HashRules),
     // todo[Add]: Type
@@ -293,6 +301,7 @@ impl Rule {
             (Rule::Mail(a), Rule::Mail(b)) => a.merge(b),
             (Rule::Username(a), Rule::Username(b)) => a.merge(b),
             (Rule::Uuid(a), Rule::Uuid(b)) => a.merge(b),
+            (Rule::Cuid2(a), Rule::Cuid2(b)) => a.merge(b),
             (Rule::Base64(a), Rule::Base64(b)) => a.merge(b),
             (Rule::Hash(a), Rule::Hash(b)) => a.merge(b),
             // todo[Add]: Type
@@ -322,6 +331,7 @@ pub enum Transform {
     Mail(MailTransform),
     Username(UsernameTransform),
     Uuid(UuidTransform),
+    Cuid2(Cuid2Transform),
     Hash(HashTransform),
     Base64(Base64Transform),
     // todo[Add]: Type
@@ -353,6 +363,7 @@ impl Transform {
             (Transform::Mail(a), Transform::Mail(b)) => a.merge(b),
             (Transform::Username(a), Transform::Username(b)) => a.merge(b),
             (Transform::Uuid(a), Transform::Uuid(b)) => a.merge(b),
+            (Transform::Cuid2(a), Transform::Cuid2(b)) => a.merge(b),
             (Transform::Base64(a), Transform::Base64(b)) => a.merge(b),
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
@@ -395,6 +406,7 @@ impl Transform {
             Transform::Mail(m) => m.string_transform.cast,
             Transform::Username(u) => u.string_transform.cast,
             Transform::Uuid(u) => u.string_transform.cast,
+            Transform::Cuid2(u) => u.string_transform.cast,
             Transform::Base64(b) => b.string_transform.cast,
             Transform::Hash(h) => h.string_transform.cast,
             // todo[Add]: Types more types here
@@ -426,6 +438,9 @@ impl Transform {
             Transform::Uuid(f) => {
                 match_types!(f.string_transform.cast, FieldType::String)
             }
+            Transform::Cuid2(f) => {
+                match_types!(f.string_transform.cast, FieldType::String)
+            }
             Transform::Base64(f) => {
                 match_types!(f.string_transform.cast, FieldType::String)
             }
@@ -455,6 +470,12 @@ impl Transform {
                         }
                     }),
                     Some(FieldType::Uuid) => Transform::Uuid(UuidTransform {
+                        string_transform: StringTransform {
+                            cast: f.cast,
+                            ..Default::default()
+                        }
+                    }),
+                    Some(FieldType::Cuid2) => Transform::Cuid2(Cuid2Transform {
                         string_transform: StringTransform {
                             cast: f.cast,
                             ..Default::default()

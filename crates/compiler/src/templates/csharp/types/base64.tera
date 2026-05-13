@@ -1,0 +1,108 @@
+bool flag = true;
+
+if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
+{
+    {%- if required %}
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+    {%- endif %}
+}
+else if (rawValue is not string value)
+{
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+}
+else if (!Base64Validator.IsStrictBase64(value, {{ rules.url.value | default(value=false) | json_encode | safe }})) {
+    result.Errors.Add(new ValidationError {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+} else {
+    {%- if rules.minSize is defined or rules.maxSize is defined %}
+    byte[] decodedBytes = Convert.FromBase64String(value.Replace('-', '+').Replace('_', '/'));
+    {%- endif %}
+
+    {%- if rules.minSize is defined %}
+    if (decodedBytes.Length < {{ rules.minSize.value }}) {
+        result.Errors.Add(new ValidationError {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.minSize.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.maxSize is defined %}
+    if (decodedBytes.Length > {{ rules.maxSize.value }}) {
+        result.Errors.Add(new ValidationError {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.maxSize.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.length is defined %}
+    if (value.Length != {{ rules.length.value }}) {
+        result.Errors.Add(new ValidationError {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.length.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.minLength is defined %}
+    if (value.Length < {{ rules.minLength.value }}) {
+        result.Errors.Add(new ValidationError {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.minLength.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.maxLength is defined %}
+    if (value.Length > {{ rules.maxLength.value }}) {
+        result.Errors.Add(new ValidationError {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.maxLength.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.pattern is defined %}
+    if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"{{ rules.pattern.value }}")) {
+        result.Errors.Add(new ValidationError {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.pattern.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.trim is defined and transform.trim %}
+    value = value.Trim();
+    data[{{ FieldName }}] = value;
+    {%- endif %}
+
+    {%- if transform.toLowerCase is defined and transform.toLowerCase %}
+    value = value.ToLowerInvariant();
+    data[{{ FieldName }}] = value;
+    {%- endif %}
+
+    {%- if transform.toUpperCase is defined and transform.toUpperCase %}
+    value = value.ToUpperInvariant();
+    data[{{ FieldName }}] = value;
+    {%- endif %}
+}

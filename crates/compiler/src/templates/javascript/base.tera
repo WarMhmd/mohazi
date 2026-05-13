@@ -4,6 +4,9 @@ import { validateFileSignature } from "./utils/file_signature.js";
 {% if uses_uuid_type -%}
 import { validateUuid, getUuidVersion } from "./utils/uuid_validator.js";
 {%- endif %}
+{% if uses_base64_type -%}
+import { isStrictBase64 } from "./utils/base64_validator.js";
+{%- endif %}
 
 {%- for actionName, action in actions %}
 
@@ -60,8 +63,12 @@ export const validate{{ actionName | capitalize }} = async (data) => {
             {%- include "types/username.tera" -%}
         {%- elif field.type == "uuid" -%}
             {%- include "types/uuid.tera" -%}
+        {%- elif field.type == "cuid2" -%}
+            {%- include "types/cuid2.tera" -%}
         {%- elif field.type == "hash" -%}
             {%- include "types/hash.tera" -%}
+        {%- elif field.type == "base64" -%}
+            {%- include "types/base64.tera" -%}
         {%- endif -%}
 
         if (flag) {

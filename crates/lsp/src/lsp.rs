@@ -315,6 +315,20 @@ impl LanguageServer for Backend {
                             ("error", "Rule Error: set custom error message for the previous rule"),
                         ])));
                     }
+                    "cuid2" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("minLength", "Rule: Minimum string length"),
+                            ("maxLength", "Rule: Maximum string length"),
+                            ("length", "Rule: Set the string length"),
+                            ("regex", "Rule: Match custom regex pattern"),
+                            ("pattern", "Rule: Match custom regex pattern"),
+                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            ("endsWith", "Rule: Check if the string ends with a suffix"),
+                            ("uppercase", "Rule: Check if the string is written in uppercase"),
+                            ("lowercase", "Rule: Check if the string is written in lowercase"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
+                        ])));
+                    }
                     "hash" => {
                         if prefix.ends_with("algorithm: ") {
                             return Ok(Some(CompletionResponse::Array(completion_items![
@@ -330,6 +344,23 @@ impl LanguageServer for Backend {
                             ("error", "Rule Error: set custom error message for the previous rule"),
                         ])));
                     }
+                    "base64" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("url", "Rule: Check for URL-safe Base64 encoding"),
+                            ("minSize", "Rule: Minimum decoded data size in bytes"),
+                            ("maxSize", "Rule: Maximum decoded data size in bytes"),
+                            ("minLength", "Rule: Minimum string length"),
+                            ("maxLength", "Rule: Maximum string length"),
+                            ("length", "Rule: Set the string length"),
+                            ("regex", "Rule: Match custom regex pattern"),
+                            ("pattern", "Rule: Match custom regex pattern"),
+                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            ("endsWith", "Rule: Check if the string ends with a suffix"),
+                            ("uppercase", "Rule: Check if the string is written in uppercase"),
+                            ("lowercase", "Rule: Check if the string is written in lowercase"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
+                        ])));
+                    }
                     "array" => {
                         if prefix.ends_with("type: ") || prefix.ends_with("field_type: ") {
                             // check the macro implementation to understand
@@ -339,6 +370,8 @@ impl LanguageServer for Backend {
                                 ("number", "Number type"),
                                 ("boolean", "Boolean type"),
                                 ("uuid", "UUID type"),
+                                ("cuid2", "CUID2 type"),
+                                ("base64", "Base64 type"),
                             ])));
                         }
                         return Ok(Some(CompletionResponse::Array(completion_items![
@@ -458,11 +491,41 @@ impl LanguageServer for Backend {
                             ("toUpperCase", "Transform: Convert to uppercase"),
                         ])));
                     }
+                    "cuid2" => {
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("string", "Cast: cuid2 to string"),
+                            ])));
+                        }
+
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                            ("trim", "Transform: Remove whitespace"),
+                            ("toLowerCase", "Transform: Convert to lowercase"),
+                            ("toUpperCase", "Transform: Convert to uppercase"),
+                        ])));
+                    }
                     "hash" => {
                         // setup the cast completion list
                         if prefix.ends_with("cast: ") {
                             return Ok(Some(CompletionResponse::Array(completion_items![
                                 ("string", "Cast: hash to string"),
+                            ])));
+                        }
+
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                            ("trim", "Transform: Remove whitespace"),
+                            ("toLowerCase", "Transform: Convert to lowercase"),
+                            ("toUpperCase", "Transform: Convert to uppercase"),
+                        ])));
+                    }
+                    "base64" => {
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("string", "Cast: base64 to string"),
                             ])));
                         }
 
@@ -502,6 +565,7 @@ impl LanguageServer for Backend {
                         ("mail", "Mail type"),
                         ("username", "Username type"),
                         ("uuid", "UUID type"),
+                        ("cuid2", "CUID2 type"),
                         ("base64", "Base64 type"),
                         ("hash", "Hash type"),
                     ])));
@@ -582,7 +646,9 @@ impl LanguageServer for Backend {
             "mail" => get_docs("types", "mail").unwrap(),
             "username" => get_docs("types", "username").unwrap(),
             "uuid" => get_docs("types", "uuid").unwrap(),
+            "cuid2" => get_docs("types", "cuid2").unwrap(),
             "hash" => get_docs("types", "hash").unwrap(),
+            "base64" => get_docs("types", "base64").unwrap(),
 
             // Rules
             "algorithm" => get_docs("rules", "algorithm").unwrap(),

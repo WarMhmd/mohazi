@@ -1,9 +1,10 @@
 use crate::ast::{
-    ArrayRules, ArrayTransform, Base64Rules, Base64Transform, BooleanRules, BooleanTransform, Field,
-    FieldType, FileRules, FileTransform, Form, HashRules, HashTransform, ImageRules, ImageTransform, MailRules,
+    ArrayRules, ArrayTransform, Base64Rules, Base64Transform, BooleanRules, BooleanTransform,
+    Cuid2Rules, Cuid2Transform, EnumRules, EnumTransform, Field, FieldType, FileRules,
+    FileTransform, Form, HashRules, HashTransform, ImageRules, ImageTransform, MailRules,
     MailTransform, NumberRules, NumberTransform, Rule, RuleTrait, RuleType, StringRules,
     StringTransform, Transform, TransformTrait, UsernameRules, UsernameTransform, UuidRules,
-    UuidTransform, EnumRules, EnumTransform,
+    UuidTransform,
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -20,13 +21,14 @@ enum ActiveRuleBuilder {
     Mail(MailRules),
     Username(UsernameRules),
     Uuid(UuidRules),
+    Cuid2(Cuid2Rules),
     Base64(Base64Rules),
     Hash(HashRules),
     None,
-}
+    }
 
-// todo[Add]: Type
-enum ActiveTransformBuilder {
+    // todo[Add]: Type
+    enum ActiveTransformBuilder {
     String(StringTransform),
     Number(NumberTransform),
     File(FileTransform),
@@ -37,10 +39,12 @@ enum ActiveTransformBuilder {
     Mail(MailTransform),
     Username(UsernameTransform),
     Uuid(UuidTransform),
+    Cuid2(Cuid2Transform),
     Hash(HashTransform),
     Base64(Base64Transform),
     None,
-}
+    }
+
 
 trait BuilderTrait {
     fn get_type(&self) -> Option<FieldType>;
@@ -61,6 +65,7 @@ impl BuilderTrait for ActiveRuleBuilder {
             ActiveRuleBuilder::Mail(_) => Some(FieldType::Mail),
             ActiveRuleBuilder::Username(_) => Some(FieldType::Username),
             ActiveRuleBuilder::Uuid(_) => Some(FieldType::Uuid),
+            ActiveRuleBuilder::Cuid2(_) => Some(FieldType::Cuid2),
             ActiveRuleBuilder::Hash(_) => Some(FieldType::Hash),
             ActiveRuleBuilder::Base64(_) => Some(FieldType::Base64),
             ActiveRuleBuilder::None => None,
@@ -83,6 +88,7 @@ impl BuilderTrait for ActiveTransformBuilder {
             ActiveTransformBuilder::Mail(_) => Some(FieldType::Mail),
             ActiveTransformBuilder::Username(_) => Some(FieldType::Username),
             ActiveTransformBuilder::Uuid(_) => Some(FieldType::Uuid),
+            ActiveTransformBuilder::Cuid2(_) => Some(FieldType::Cuid2),
             ActiveTransformBuilder::Base64(_) => Some(FieldType::Base64),
             ActiveTransformBuilder::Hash(_) => Some(FieldType::Hash),
             ActiveTransformBuilder::None => None,
@@ -104,6 +110,7 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
         ActiveRuleBuilder::Mail(r) => current_field.rules.push(Rule::Mail(r)),
         ActiveRuleBuilder::Username(r) => current_field.rules.push(Rule::Username(r)),
         ActiveRuleBuilder::Uuid(r) => current_field.rules.push(Rule::Uuid(r)),
+        ActiveRuleBuilder::Cuid2(r) => current_field.rules.push(Rule::Cuid2(r)),
         ActiveRuleBuilder::Base64(r) => current_field.rules.push(Rule::Base64(r)),
         ActiveRuleBuilder::Hash(r) => current_field.rules.push(Rule::Hash(r)),
         // todo[Add]: Type
@@ -125,6 +132,7 @@ fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Fi
         ActiveTransformBuilder::Mail(t) => current_field.transform.push(Transform::Mail(t)),
         ActiveTransformBuilder::Username(t) => current_field.transform.push(Transform::Username(t)),
         ActiveTransformBuilder::Uuid(t) => current_field.transform.push(Transform::Uuid(t)),
+        ActiveTransformBuilder::Cuid2(t) => current_field.transform.push(Transform::Cuid2(t)),
         ActiveTransformBuilder::Base64(t) => current_field.transform.push(Transform::Base64(t)),
         ActiveTransformBuilder::Hash(t) => current_field.transform.push(Transform::Hash(t)),
         // todo[Add]: Type
@@ -451,6 +459,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             "mail" => FieldType::Mail,
                             "username" => FieldType::Username,
                             "uuid" => FieldType::Uuid,
+                            "cuid2" => FieldType::Cuid2,
                             "base64" => FieldType::Base64,
                             "hash" => FieldType::Hash,
                             // todo[Add]: Type
@@ -567,6 +576,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 ActiveRuleBuilder::Username(UsernameRules::new())
                             }
                             FieldType::Uuid => ActiveRuleBuilder::Uuid(UuidRules::new()),
+                            FieldType::Cuid2 => ActiveRuleBuilder::Cuid2(Cuid2Rules::new()),
                             FieldType::Base64 => ActiveRuleBuilder::Base64(Base64Rules::new()),
                             FieldType::Hash => ActiveRuleBuilder::Hash(HashRules::new()),
                             // todo[Add]: Type
@@ -730,6 +740,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         ActiveRuleBuilder::Mail(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Username(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Uuid(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Cuid2(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Base64(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Hash(r) => r.set_rule(key, final_val, final_err),
                         // todo[Add]: Type
@@ -773,7 +784,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Cidrv4 => todo!(),
                             FieldType::Cidrv6 => todo!(),
                             FieldType::Ulid => todo!(),
-                            FieldType::Cuid2 => todo!(),
+                            FieldType::Cuid2 => Rule::Cuid2(Cuid2Rules::new()),
                             FieldType::Date => todo!(),
                         };
 
@@ -814,6 +825,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 ActiveTransformBuilder::Username(UsernameTransform::new())
                             }
                             FieldType::Uuid => ActiveTransformBuilder::Uuid(UuidTransform::new()),
+                            FieldType::Cuid2 => ActiveTransformBuilder::Cuid2(Cuid2Transform::new()),
                             FieldType::Base64 => ActiveTransformBuilder::Base64(Base64Transform::new()),
                             FieldType::Hash => ActiveTransformBuilder::Hash(HashTransform::new()),
                             // todo[Add]: Type
@@ -892,7 +904,11 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             if current_field.field_type != FieldType::String
                                 && current_field.field_type != FieldType::Username
                                 && current_field.field_type != FieldType::Uuid
+                                && current_field.field_type != FieldType::Cuid2
+                                && current_field.field_type != FieldType::Base64
+                                && current_field.field_type != FieldType::Mail
                             {
+
                                 errors.push(ParserError::new(
                                     format!(
                                         "Cannot use the {} transform non-string field {}",
@@ -1060,6 +1076,9 @@ fn build_transform(
         }
         ActiveTransformBuilder::Uuid(uuid_transform) => {
             uuid_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Cuid2(cuid2_transform) => {
+            cuid2_transform.set_transform(key, final_val)
         }
         ActiveTransformBuilder::Base64(base64_transform) => {
             base64_transform.set_transform(key, final_val)

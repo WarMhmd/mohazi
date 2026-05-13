@@ -76,20 +76,24 @@ else
         {%- set FieldNamePath = "itemPath" -%}
         {%- set isNested = true -%}
 
-        {%- if rules.type is defined and rules.type == "string" -%}
+        {%- if rules.type is defined and rules.type.value == "string" -%}
             {%- include "types/string.tera" -%}
-        {%- elif rules.type is defined and rules.type == "number" -%}
+        {%- elif rules.type is defined and rules.type.value == "number" -%}
             {%- include "types/number.tera" -%}
-        {%- elif rules.type is defined and rules.type == "boolean" -%}
+        {%- elif rules.type is defined and rules.type.value == "boolean" -%}
             {%- include "types/boolean.tera" -%}
-        {%- elif rules.type is defined and rules.type == "file" -%}
+        {%- elif rules.type is defined and rules.type.value == "file" -%}
             {%- include "types/file.tera" -%}
-        {%- elif rules.type is defined and rules.type == "enum" -%}
+        {%- elif rules.type is defined and rules.type.value == "enum" -%}
             {%- include "types/enum.tera" -%}
-        {%- elif rules.type is defined and rules.type == "array" -%}
+        {%- elif rules.type is defined and rules.type.value == "array" -%}
             {%- include "array.tera" -%}
-        {%- elif rules.type is defined and rules.type == "hash" -%}
+        {%- elif rules.type is defined and rules.type.value == "hash" -%}
             {%- include "types/hash.tera" -%}
+        {%- elif rules.type is defined and rules.type.value == "cuid2" -%}
+            {%- include "types/cuid2.tera" -%}
+        {%- elif rules.type is defined and rules.type.value == "base64" -%}
+            {%- include "types/base64.tera" -%}
         {%- endif %}
 
         list[i] = data[itemPath];
