@@ -61,17 +61,8 @@ if (data.password_hash === undefined || data.password_hash === null) {
     });
     flag = false;
 } else {
-    if (data.password_hash.length < 10) {
-        result.errors.push({
-            path: "password_hash",
-            message: "Invalid value."
-        });
-        flag = false;
-    }
-}
-if (flag) {
     let isValidHash = false;
-    isValidHash = /^\$argon2(id|i|d)\$v=\d+\$m=\d+,t=\d+,p=\d+\$[A-Za-z0-9+/]+={0,2}\$[A-Za-z0-9+/]+={0,2}$/.test(data.password_hash.toString());
+    isValidHash = /^\$argon2(id|i|d)\$v=\d+\$m=\d+,t=\d+,p=\d+\$[A-Za-z0-9+/]+={0,2}\$[A-Za-z0-9+/]+={0,2}$/.test(data.password_hash);
 
     if (!isValidHash) {
         result.errors.push({

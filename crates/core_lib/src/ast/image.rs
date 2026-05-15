@@ -5,7 +5,6 @@ use crate::ast::parse_val;
 use crate::ast::TransformTrait;
 
 use super::FieldType;
-use super::FileRules;
 use super::Mergeable;
 use super::RuleTrait;
 use super::RuleType;
@@ -13,8 +12,12 @@ use super::RuleType;
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ImageRules {
-    #[serde(flatten)]
-    pub file_rules: FileRules,
+    #[serde(rename = "maxSize", alias = "max_size")]
+    pub max_size: Option<RuleType<u64>>,
+    #[serde(rename = "minSize", alias = "min_size")]
+    pub min_size: Option<RuleType<u64>>,
+    #[serde(alias = "mime")]
+    pub extension: Option<RuleType<Vec<String>>>,
     pub width: Option<RuleType<u64>>,
     pub height: Option<RuleType<u64>>,
     #[serde(rename = "minWidth")]
@@ -30,22 +33,21 @@ pub struct ImageRules {
 
 impl RuleTrait for ImageRules {
     fn new() -> Self {
-        let mut file_rules = FileRules::new();
-        file_rules.extension = Some(RuleType {
-            value: vec![
-                "jpg".to_string(),
-                "jpeg".to_string(),
-                "png".to_string(),
-                "webp".to_string(),
-                "avif".to_string(),
-                "heic".to_string(),
-                "heif".to_string(),
-            ],
-            error: None,
-        });
-
         Self {
-            file_rules,
+            max_size: None,
+            min_size: None,
+            extension: Some(RuleType {
+                value: vec![
+                    "jpg".to_string(),
+                    "jpeg".to_string(),
+                    "png".to_string(),
+                    "webp".to_string(),
+                    "avif".to_string(),
+                    "heic".to_string(),
+                    "heif".to_string(),
+                ],
+                error: None,
+            }),
             width: None,
             height: None,
             min_width: None,
@@ -63,6 +65,24 @@ impl RuleTrait for ImageRules {
         error: Option<String>,
     ) -> Result<(), String> {
         match key {
+            "maxSize" | "max_size" => {
+                self.max_size = Some(RuleType {
+                    value: parse_val(value)?,
+                    error,
+                });
+            }
+            "minSize" | "min_size" => {
+                self.min_size = Some(RuleType {
+                    value: parse_val(value)?,
+                    error,
+                });
+            }
+            "extension" | "mime" => {
+                self.extension = Some(RuleType {
+                    value: parse_val(value)?,
+                    error,
+                });
+            }
             "width" => {
                 self.width = Some(RuleType {
                     value: parse_val(value)?,
@@ -105,13 +125,8 @@ impl RuleTrait for ImageRules {
                     error,
                 });
             }
-            // Delegate to FileRules
             _ => {
-                if FileRules::is_valid_key(key) || key == "mime" {
-                    self.file_rules.set_rule(key, value, error)?;
-                } else {
-                    return Err(format!("Unknown rule: {}", key));
-                }
+                return Err(format!("Unknown rule: {}", key));
             }
         }
         Ok(())
@@ -119,17 +134,24 @@ impl RuleTrait for ImageRules {
 
     fn is_valid_key(key: &str) -> bool {
         match key {
-            "width" | "height" | "minWidth" | "min_width" | "maxWidth" | "max_width"
-            | "minHeight" | "min_height" | "maxHeight" | "max_height" | "ratio" | "mime" => true,
-            _ => FileRules::is_valid_key(key),
+            "maxSize" | "max_size" | "minSize" | "min_size" | "extension" | "mime" | "width" | "height" | "minWidth" | "min_width" | "maxWidth" | "max_width"
+            | "minHeight" | "min_height" | "maxHeight" | "max_height" | "ratio" => true,
+            _ => false,
         }
     }
 }
 
 impl Mergeable for ImageRules {
     fn merge(&mut self, other: ImageRules) -> Result<(), String> {
-        self.file_rules.merge(other.file_rules)?;
-
+        if other.max_size.is_some() {
+            self.max_size = other.max_size;
+        }
+        if other.min_size.is_some() {
+            self.min_size = other.min_size;
+        }
+        if other.extension.is_some() {
+            self.extension = other.extension;
+        }
         if other.width.is_some() {
             if self.width.is_some() {
                 return Err("Duplicate rule: width".to_string());

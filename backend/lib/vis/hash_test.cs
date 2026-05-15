@@ -2,14 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-using Generated.Validation.Utils;
-
 
 namespace Generated.Validation
 {
     public static class Validators
     {
-        public static async Task<ValidationResult> ValidateUuid_form(Dictionary<string, object?> data)
+        public static async Task<ValidationResult> ValidateHash_form(Dictionary<string, object?> data)
         {
             var result = new ValidationResult
             {
@@ -23,11 +21,11 @@ namespace Generated.Validation
             {
                 flag = true;bool flag = true;
 
-if (!data.TryGetValue("session_id", out var rawValue) || rawValue == null)
+if (!data.TryGetValue("password_hash", out var rawValue) || rawValue == null)
 {
     result.Errors.Add(new ValidationError
     {
-        Path = "session_id",
+        Path = "password_hash",
         Message = "Invalid value."
     });
     flag = false;
@@ -36,38 +34,30 @@ else if (rawValue is not string value)
 {
     result.Errors.Add(new ValidationError
     {
-        Path = "session_id",
+        Path = "password_hash",
         Message = "Invalid value."
     });
     flag = false;
 }
 else
 {
-    bool uuidFlag = true;
-    if (!UuidValidator.Validate(value))
-    {
-        uuidFlag = false;
-    }
-    else if (UuidValidator.GetVersion(value) != 4)
-    {
-        uuidFlag = false;
-    }
+    string pattern = null;
+    pattern = @"^\$argon2(id|i|d)\$v=\d+\$m=\d+,t=\d+,p=\d+\$[A-Za-z0-9+/]+={0,2}\$[A-Za-z0-9+/]+={0,2}$";
 
-    if (!uuidFlag)
+    if (pattern != null && !System.Text.RegularExpressions.Regex.IsMatch(value, pattern))
     {
         result.Errors.Add(new ValidationError
         {
-            Path = "session_id",
-            Message = "Invalid UUID version"
+            Path = "password_hash",
+            Message = "Invalid value."
         });
         flag = false;
     }
     value = value.Trim();
-    data["session_id"] = value;
-}
-if (flag)
+    data["password_hash"] = value;
+}if (flag)
                 {
-                    successData["session_id"] = data["session_id"];
+                    successData["password_hash"] = data["password_hash"];
                 }
             }
 

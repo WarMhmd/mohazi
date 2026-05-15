@@ -1,10 +1,7 @@
-use std::default;
-
 use serde::{Deserialize, Serialize};
 use serde_yaml_ng::Value;
 
 use crate::ast::TransformTrait;
-use crate::vis_parser::ParserError;
 
 use super::parse_val;
 use super::FieldType;

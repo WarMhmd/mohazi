@@ -1,14 +1,17 @@
 /**
- * Bundled UUID Validator (NPM Equivalent)
+ * Bundled UUID Validator
+ * Derived from official 'uuid' NPM package source
  */
 
-const UUID_REGEX = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i;
+const REGEX = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
 
 export const validateUuid = (uuid) => {
-    return typeof uuid === 'string' && UUID_REGEX.test(uuid);
+    return typeof uuid === 'string' && REGEX.test(uuid);
 };
 
 export const getUuidVersion = (uuid) => {
-    if (!validateUuid(uuid)) return null;
-    return parseInt(uuid.charAt(14), 16);
+    if (!validateUuid(uuid)) {
+        return null;
+    }
+    return parseInt(uuid.slice(14, 15), 16);
 };

@@ -907,6 +907,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 && current_field.field_type != FieldType::Cuid2
                                 && current_field.field_type != FieldType::Base64
                                 && current_field.field_type != FieldType::Mail
+                                && current_field.field_type != FieldType::Hash
                             {
 
                                 errors.push(ParserError::new(

@@ -226,6 +226,21 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Transform::Base64(base64_transform)
                     }
+                    FieldType::Uuid => {
+                        let uuid_transform: UuidTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Uuid(uuid_transform)
+                    }
+                    FieldType::Cuid2 => {
+                        let cuid2_transform: Cuid2Transform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Cuid2(cuid2_transform)
+                    }
+                    FieldType::Hash => {
+                        let hash_transform: HashTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Hash(hash_transform)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for transform",
@@ -378,8 +393,6 @@ macro_rules! match_types {
 
 use paste::paste;
 
-use crate::vis_parser::ParserError;
-
 macro_rules! make_transform {
     // $t: The type name (e.g., String, Boolean)
     // $obj: The object containing the cast field (e.g., f)
@@ -403,12 +416,12 @@ impl Transform {
             Transform::Boolean(b) => b.cast,
             Transform::Array(a) => a.cast,
             Transform::Image(i) => i.cast,
-            Transform::Mail(m) => m.string_transform.cast,
-            Transform::Username(u) => u.string_transform.cast,
-            Transform::Uuid(u) => u.string_transform.cast,
-            Transform::Cuid2(u) => u.string_transform.cast,
-            Transform::Base64(b) => b.string_transform.cast,
-            Transform::Hash(h) => h.string_transform.cast,
+            Transform::Mail(m) => m.cast,
+            Transform::Username(u) => u.cast,
+            Transform::Uuid(u) => u.cast,
+            Transform::Cuid2(u) => u.cast,
+            Transform::Base64(b) => b.cast,
+            Transform::Hash(h) => h.cast,
             // todo[Add]: Types more types here
         }
     }
@@ -430,22 +443,22 @@ impl Transform {
                 match_types!(f.cast, FieldType::File, FieldType::Base64)
             }
             Transform::Mail(f) => {
-                match_types!(f.string_transform.cast, FieldType::String)
+                match_types!(f.cast, FieldType::String)
             }
             Transform::Username(f) => {
-                match_types!(f.string_transform.cast, FieldType::String)
+                match_types!(f.cast, FieldType::String)
             }
             Transform::Uuid(f) => {
-                match_types!(f.string_transform.cast, FieldType::String)
+                match_types!(f.cast, FieldType::String)
             }
             Transform::Cuid2(f) => {
-                match_types!(f.string_transform.cast, FieldType::String)
+                match_types!(f.cast, FieldType::String)
             }
             Transform::Base64(f) => {
-                match_types!(f.string_transform.cast, FieldType::String)
+                match_types!(f.cast, FieldType::String)
             }
             Transform::Hash(f) => {
-                match_types!(f.string_transform.cast, FieldType::String)
+                match_types!(f.cast, FieldType::String)
             }
             // todo[Add]: Types more types here
             Transform::Array(f) => {
@@ -458,40 +471,28 @@ impl Transform {
                     Some(FieldType::File) => make_transform!(File, f),
                     Some(FieldType::Image) => make_transform!(Image, f),
                     Some(FieldType::Mail) => Transform::Mail(MailTransform {
-                        string_transform: StringTransform {
-                            cast: f.cast,
-                            ..Default::default()
-                        }
+                        cast: f.cast,
+                        ..Default::default()
                     }),
                     Some(FieldType::Username) => Transform::Username(UsernameTransform {
-                        string_transform: StringTransform {
-                            cast: f.cast,
-                            ..Default::default()
-                        }
+                        cast: f.cast,
+                        ..Default::default()
                     }),
                     Some(FieldType::Uuid) => Transform::Uuid(UuidTransform {
-                        string_transform: StringTransform {
-                            cast: f.cast,
-                            ..Default::default()
-                        }
+                        cast: f.cast,
+                        ..Default::default()
                     }),
                     Some(FieldType::Cuid2) => Transform::Cuid2(Cuid2Transform {
-                        string_transform: StringTransform {
-                            cast: f.cast,
-                            ..Default::default()
-                        }
+                        cast: f.cast,
+                        ..Default::default()
                     }),
                     Some(FieldType::Base64) => Transform::Base64(Base64Transform {
-                        string_transform: StringTransform {
-                            cast: f.cast,
-                            ..Default::default()
-                        }
+                        cast: f.cast,
+                        ..Default::default()
                     }),
                     Some(FieldType::Hash) => Transform::Hash(HashTransform {
-                        string_transform: StringTransform {
-                            cast: f.cast,
-                            ..Default::default()
-                        }
+                        cast: f.cast,
+                        ..Default::default()
                     }),
 
                     // todo[Add]: Types your mock transform here

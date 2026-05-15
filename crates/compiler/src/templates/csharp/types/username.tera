@@ -1,1 +1,72 @@
-{%- include "string.tera" %}
+bool flag = true;
+
+if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
+{
+    {%- if required %}
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+    {%- endif %}
+}
+else if (rawValue is not string value)
+{
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+}
+else
+{
+    {%- if rules.minLength is defined %}
+    if (value.Length < {{ rules.minLength.value }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.minLength.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.maxLength is defined %}
+    if (value.Length > {{ rules.maxLength.value }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.maxLength.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.regex is defined %}
+    if (!System.Text.RegularExpressions.Regex.IsMatch(value, {{ rules.regex.value | json_encode | safe }}))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.regex.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.trim is defined and transform.trim %}
+    value = value.Trim();
+    data[{{ FieldName }}] = value;
+    {%- else %}
+    data[{{ FieldName }}] = value;
+    {%- endif %}
+
+    {%- if transform.toLowerCase is defined and transform.toLowerCase %}
+    value = value.ToLowerInvariant();
+    data[{{ FieldName }}] = value;
+    {%- endif %}
+}

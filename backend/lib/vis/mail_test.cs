@@ -2,14 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-using Generated.Validation.Utils;
-
 
 namespace Generated.Validation
 {
     public static class Validators
     {
-        public static async Task<ValidationResult> ValidateUuid_form(Dictionary<string, object?> data)
+        public static async Task<ValidationResult> ValidateMail_form(Dictionary<string, object?> data)
         {
             var result = new ValidationResult
             {
@@ -23,11 +21,11 @@ namespace Generated.Validation
             {
                 flag = true;bool flag = true;
 
-if (!data.TryGetValue("session_id", out var rawValue) || rawValue == null)
+if (!data.TryGetValue("user_email", out var rawValue) || rawValue == null)
 {
     result.Errors.Add(new ValidationError
     {
-        Path = "session_id",
+        Path = "user_email",
         Message = "Invalid value."
     });
     flag = false;
@@ -36,38 +34,41 @@ else if (rawValue is not string value)
 {
     result.Errors.Add(new ValidationError
     {
-        Path = "session_id",
+        Path = "user_email",
         Message = "Invalid value."
     });
     flag = false;
 }
 else
 {
-    bool uuidFlag = true;
-    if (!UuidValidator.Validate(value))
-    {
-        uuidFlag = false;
-    }
-    else if (UuidValidator.GetVersion(value) != 4)
-    {
-        uuidFlag = false;
-    }
-
-    if (!uuidFlag)
+    if (!System.Text.RegularExpressions.Regex.IsMatch(value, "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9]?(?:\\.[a-zA-Z0-9]?)*$"))
     {
         result.Errors.Add(new ValidationError
         {
-            Path = "session_id",
-            Message = "Invalid UUID version"
+            Path = "user_email",
+            Message = "Invalid value."
         });
         flag = false;
     }
+
+    if (flag)
+    {
+        var domain = value.Split('@').Last();
+        if (!new List<string>(["gmail.com","outlook.com"]).Contains(domain))
+        {
+            result.Errors.Add(new ValidationError
+            {
+                Path = "user_email",
+                Message = "Email domain not allowed"
+            });
+            flag = false;
+        }
+    }
     value = value.Trim();
-    data["session_id"] = value;
-}
-if (flag)
+    data["user_email"] = value;
+}if (flag)
                 {
-                    successData["session_id"] = data["session_id"];
+                    successData["user_email"] = data["user_email"];
                 }
             }
 

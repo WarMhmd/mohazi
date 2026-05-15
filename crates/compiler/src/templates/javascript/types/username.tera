@@ -1,1 +1,55 @@
-{%- include "string.tera" %}
+flag = true;
+
+if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
+    {%- if required %}
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+    {%- endif %}
+} else if (typeof data.{{ FieldName }} !== "string") {
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+} else {
+    {%- if rules.minLength is defined %}
+    if (data.{{ FieldName }}.length < {{ rules.minLength.value }}) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.minLength.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.maxLength is defined %}
+    if (data.{{ FieldName }}.length > {{ rules.maxLength.value }}) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.maxLength.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.regex is defined %}
+    if (!new RegExp({{ rules.regex.value | json_encode | safe }}).test(data.{{ FieldName }})) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.regex.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.trim is defined and transform.trim %}
+    data.{{ FieldName }} = data.{{ FieldName }}.trim();
+    {%- endif %}
+
+    {%- if transform.toLowerCase is defined and transform.toLowerCase %}
+    data.{{ FieldName }} = data.{{ FieldName }}.toLowerCase();
+    {%- endif %}
+}

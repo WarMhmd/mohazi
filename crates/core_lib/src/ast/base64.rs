@@ -5,27 +5,27 @@ use crate::ast::TransformTrait;
 use crate::ast::Mergeable;
 use crate::ast::RuleTrait;
 use crate::ast::RuleType;
-use crate::ast::StringRules;
-use crate::ast::StringTransform;
 use super::parse_val;
+use super::FieldType;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Base64Rules {
-    #[serde(flatten)]
-    pub string_rules: StringRules,
     pub url: Option<RuleType<bool>>,
+    #[serde(alias = "min_size")]
     pub min_size: Option<RuleType<u128>>,
+    #[serde(alias = "max_size")]
     pub max_size: Option<RuleType<u128>>,
+    pub padding: Option<RuleType<bool>>,
 }
 
 impl RuleTrait for Base64Rules {
     fn new() -> Self {
         Self {
-            string_rules: StringRules::new(),
             url: None,
             min_size: None,
             max_size: None,
+            padding: None,
         }
     }
 
@@ -49,23 +49,27 @@ impl RuleTrait for Base64Rules {
                     error,
                 });
             }
-            _ => return self.string_rules.set_rule(key, value, error),
+            "padding" => {
+                self.padding = Some(RuleType {
+                    value: parse_val(value)?,
+                    error,
+                });
+            }
+            _ => return Err(format!("Unknown base64 rule: {}", key)),
         }
         Ok(())
     }
 
     fn is_valid_key(key: &str) -> bool {
         match key {
-            "url" | "minSize" | "min_size" | "maxSize" | "max_size" => true,
-            _ => StringRules::is_valid_key(key),
+            "url" | "minSize" | "min_size" | "maxSize" | "max_size" | "padding" => true,
+            _ => false,
         }
     }
 }
 
 impl Mergeable for Base64Rules {
     fn merge(&mut self, other: Base64Rules) -> Result<(), String> {
-        self.string_rules.merge(other.string_rules)?;
-        
         if other.url.is_some() {
             if self.url.is_some() {
                 return Err("Duplicate rule: url".to_string());
@@ -84,6 +88,12 @@ impl Mergeable for Base64Rules {
             }
             self.max_size = other.max_size;
         }
+        if other.padding.is_some() {
+            if self.padding.is_some() {
+                return Err("Duplicate rule: padding".to_string());
+            }
+            self.padding = other.padding;
+        }
         Ok(())
     }
 }
@@ -91,28 +101,49 @@ impl Mergeable for Base64Rules {
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Base64Transform {
-    #[serde(flatten)]
-    pub string_transform: StringTransform,
+    pub trim: Option<bool>,
+    pub cast: Option<FieldType>,
 }
 
 impl Mergeable for Base64Transform {
     fn merge(&mut self, other: Self) -> Result<(), String> {
-        self.string_transform.merge(other.string_transform)
+        if other.trim.is_some() {
+            if self.trim.is_some() {
+                return Err("Duplicate transform: trim".to_string());
+            }
+            self.trim = other.trim;
+        }
+        if other.cast.is_some() {
+            if self.cast.is_some() {
+                return Err("Duplicate transform: cast".to_string());
+            }
+            self.cast = other.cast;
+        }
+        Ok(())
     }
 }
 
 impl TransformTrait for Base64Transform {
     fn new() -> Self {
         Self {
-            string_transform: StringTransform::new(),
+            trim: None,
+            cast: None,
         }
     }
 
     fn is_valid_key(key: &str) -> bool {
-        StringTransform::is_valid_key(key)
+        match key {
+            "trim" | "cast" => true,
+            _ => false,
+        }
     }
 
     fn set_transform(&mut self, key: &str, value: Value) -> Result<(), String> {
-        self.string_transform.set_transform(key, value)
+        match key {
+            "trim" => self.trim = Some(parse_val(value)?),
+            "cast" => self.cast = Some(parse_val(value)?),
+            _ => return Err(format!("Unknown base64 transform: {}", key)),
+        }
+        Ok(())
     }
 }

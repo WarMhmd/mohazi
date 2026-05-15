@@ -2,7 +2,7 @@
 
 
 
-export const validateUsername_form = async (data) => {
+export const validateCuid2_form = async (data) => {
     let result = {
         success: false,
         errors: [],
@@ -14,37 +14,44 @@ export const validateUsername_form = async (data) => {
     {
         flag = true;flag = true;
 
-if (data.profile_name === undefined || data.profile_name === null) {
+if (data.id === undefined || data.id === null) {
     result.errors.push({
-        path: "profile_name",
+        path: "id",
         message: "Invalid value."
     });
     flag = false;
-} else if (typeof data.profile_name !== "string") {
+} else if (typeof data.id !== "string") {
     result.errors.push({
-        path: "profile_name",
+        path: "id",
         message: "Invalid value."
     });
     flag = false;
 } else {
-    if (data.profile_name.length < 5) {
+    if (data.id.length < 10) {
         result.errors.push({
-            path: "profile_name",
+            path: "id",
             message: "Invalid value."
         });
         flag = false;
     }
-    if (!new RegExp("^[a-zA-Z0-9](?:[._-]?[a-zA-Z0-9]){2,29}$").test(data.profile_name)) {
+    if (data.id.length > 31) {
         result.errors.push({
-            path: "profile_name",
+            path: "id",
             message: "Invalid value."
         });
         flag = false;
     }
-    data.profile_name = data.profile_name.trim();
+    if (!new RegExp("^c[a-z0-9]+$").test(data.id)) {
+        result.errors.push({
+            path: "id",
+            message: "Invalid value."
+        });
+        flag = false;
+    }
+    data.id = data.id.trim();
 }
 if (flag) {
-            successData.profile_name = data.profile_name;
+            successData.id = data.id;
         }
     }
 

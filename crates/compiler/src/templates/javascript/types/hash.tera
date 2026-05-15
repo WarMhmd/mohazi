@@ -1,17 +1,42 @@
-{%- include "types/string.tera" -%}
-{%- if rules.algorithm is defined %}
-if (flag) {
+flag = true;
+
+if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
+    {%- if required %}
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+    {%- endif %}
+} else if (typeof data.{{ FieldName }} !== "string") {
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+} else {
+    {%- if rules.regex is defined %}
+    if (!new RegExp({{ rules.regex.value | json_encode | safe }}).test(data.{{ FieldName }})) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.regex.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.algorithm is defined %}
     let isValidHash = false;
     {%- if rules.algorithm.value == "Argon2id" %}
-    isValidHash = /^\$argon2(id|i|d)\$v=\d+\$m=\d+,t=\d+,p=\d+\$[A-Za-z0-9+/]+={0,2}\$[A-Za-z0-9+/]+={0,2}$/.test(data.{{ FieldName }}.toString());
+    isValidHash = /^\$argon2(id|i|d)\$v=\d+\$m=\d+,t=\d+,p=\d+\$[A-Za-z0-9+/]+={0,2}\$[A-Za-z0-9+/]+={0,2}$/.test(data.{{ FieldName }});
     {%- elif rules.algorithm.value == "Bcrypt" %}
-    isValidHash = /^\$2[ayb]\$\d{2}\$[A-Za-z0-9.\/]{53}$/.test(data.{{ FieldName }}.toString());
+    isValidHash = /^\$2[ayb]\$\d{2}\$[A-Za-z0-9./]{53}$/.test(data.{{ FieldName }});
     {%- elif rules.algorithm.value == "SHA-256" %}
-    isValidHash = /^[a-fA-F0-9]{64}$/i.test(data.{{ FieldName }}.toString());
+    isValidHash = /^[a-fA-F0-9]{64}$/i.test(data.{{ FieldName }});
     {%- elif rules.algorithm.value == "SHA-512" %}
-    isValidHash = /^[a-fA-F0-9]{128}$/i.test(data.{{ FieldName }}.toString());
+    isValidHash = /^[a-fA-F0-9]{128}$/i.test(data.{{ FieldName }});
     {%- elif rules.algorithm.value == "BLAKE3" %}
-    isValidHash = /^[a-fA-F0-9]{64}$/i.test(data.{{ FieldName }}.toString());
+    isValidHash = /^[a-fA-F0-9]{64}$/i.test(data.{{ FieldName }});
     {%- else %}
     isValidHash = true;
     {%- endif %}
@@ -23,5 +48,9 @@ if (flag) {
         });
         flag = false;
     }
+    {%- endif %}
+
+    {%- if transform.trim is defined and transform.trim %}
+    data.{{ FieldName }} = data.{{ FieldName }}.trim();
+    {%- endif %}
 }
-{%- endif %}

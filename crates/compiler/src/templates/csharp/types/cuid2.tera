@@ -1,183 +1,67 @@
+bool flag = true;
+
 if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
 {
-	{%- if required %}
-	result.Errors.Add(new ValidationError
-	{
-		Path = {{ FieldNamePath }},
-		Message = {{ defaultError | json_encode | safe }}
-	});
-	flag = false;
-	{%- endif %}
+    {%- if required %}
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+    {%- endif %}
 }
 else if (rawValue is not string value)
 {
-	result.Errors.Add(new ValidationError
-	{
-		Path = {{ FieldNamePath }},
-		Message = {{ defaultError | json_encode | safe }}
-	});
-	flag = false;
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
 }
 else
 {
-	data[{{ FieldName }}] = value;
-	{%- if rules.length is defined and field.type == "cuid2" %}
-	if (value.Length != {{ rules.length.value }})
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.length.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.minLength is defined and field.type == "cuid2" %}
-	if (value.Length < {{ rules.minLength.value }})
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.minLength.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.maxLength is defined and field.type == "cuid2" %}
-	if (value.Length > {{ rules.maxLength.value }})
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.maxLength.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
+    {%- if rules.minLength is defined %}
+    if (value.Length < {{ rules.minLength.value }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.minLength.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
 
-	{%- set regex_val = "" -%}
-	{%- set regex_err = "" -%}
+    {%- if rules.maxLength is defined %}
+    if (value.Length > {{ rules.maxLength.value }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.maxLength.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
 
-	{%- if rules.regex is defined %}
-		{%- set regex_val = rules.regex.value -%}
-		{%- if rules.regex.error is defined %}
-			{%- set regex_err = rules.regex.error -%}
-		{%- endif %}
-	{%- elif field.type == "cuid2" or (rules.type is defined and rules.type.value == "cuid2") %}
-		{%- set regex_val = "^[a-z][a-z0-9]{8,30}$" -%}
-	{%- endif %}
+    {%- if rules.regex is defined %}
+    if (!System.Text.RegularExpressions.Regex.IsMatch(value, {{ rules.regex.value | json_encode | safe }}))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.regex.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
 
-	{%- if regex_val != "" %}
-	if (!System.Text.RegularExpressions.Regex.IsMatch(value, {{ regex_val | json_encode | safe }}))
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {%- if regex_err != "" -%}{{ regex_err | json_encode | safe }}{%- else -%}{{ defaultError | json_encode | safe }}{%- endif -%}
-		});
-		flag = false;
-	}
-	{%- endif %}
-
-	{%- if rules.startsWith is defined and field.type == "cuid2" %}
-	if (!value.StartsWith({{ rules.startsWith.value | json_encode | safe }}))
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.startsWith.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.endsWith is defined and field.type == "cuid2" %}
-	if (!value.EndsWith({{ rules.endsWith.value | json_encode | safe }}))
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.endsWith.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.includes is defined and field.type == "cuid2" %}
-	if (!value.Contains({{ rules.includes.value | json_encode | safe }}))
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.includes.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.uppercase is defined and field.type == "cuid2" %}
-	if (value != value.ToUpper())
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.uppercase.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.lowercase is defined and field.type == "cuid2" %}
-	if (value != value.ToLower())
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.lowercase.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-
-	{%- if transform.trim is defined and transform.trim %}
-	value = value.Trim();
-	data[{{ FieldName }}] = value;
-	{%- endif %}
-	{%- if transform.toLowerCase is defined and transform.toLowerCase %}
-	value = value.ToLower();
-	data[{{ FieldName }}] = value;
-	{%- endif %}
-	{%- if transform.toUpperCase is defined and transform.toUpperCase %}
-	value = value.ToUpper();
-	data[{{ FieldName }}] = value;
-	{%- endif %}
-	{%- if transform.split is defined %}
-	data[{{ FieldName }}] = new List<string>(value.Split(new string[] { {{ transform.split | json_encode | safe }} }, StringSplitOptions.None));
-	{%- endif %}
-	{%- if transform.cast is defined and transform.cast == "number" %}
-	if (double.TryParse(value, out double doubleValue))
-	{
-		data[{{ FieldName }}] = doubleValue;
-	}
-	else
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ defaultError | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if transform.cast is defined and transform.cast == "boolean" %}
-	if (bool.TryParse(value, out bool boolValue))
-	{
-		data[{{ FieldName }}] = boolValue;
-	}
-	else
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ defaultError | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
+    {%- if transform.trim is defined and transform.trim %}
+    value = value.Trim();
+    data[{{ FieldName }}] = value;
+    {%- else %}
+    data[{{ FieldName }}] = value;
+    {%- endif %}
 }

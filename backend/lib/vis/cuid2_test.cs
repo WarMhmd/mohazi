@@ -2,14 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-using Generated.Validation.Utils;
-
 
 namespace Generated.Validation
 {
     public static class Validators
     {
-        public static async Task<ValidationResult> ValidateUuid_form(Dictionary<string, object?> data)
+        public static async Task<ValidationResult> ValidateCuid2_form(Dictionary<string, object?> data)
         {
             var result = new ValidationResult
             {
@@ -23,11 +21,11 @@ namespace Generated.Validation
             {
                 flag = true;bool flag = true;
 
-if (!data.TryGetValue("session_id", out var rawValue) || rawValue == null)
+if (!data.TryGetValue("id", out var rawValue) || rawValue == null)
 {
     result.Errors.Add(new ValidationError
     {
-        Path = "session_id",
+        Path = "id",
         Message = "Invalid value."
     });
     flag = false;
@@ -36,38 +34,46 @@ else if (rawValue is not string value)
 {
     result.Errors.Add(new ValidationError
     {
-        Path = "session_id",
+        Path = "id",
         Message = "Invalid value."
     });
     flag = false;
 }
 else
 {
-    bool uuidFlag = true;
-    if (!UuidValidator.Validate(value))
-    {
-        uuidFlag = false;
-    }
-    else if (UuidValidator.GetVersion(value) != 4)
-    {
-        uuidFlag = false;
-    }
-
-    if (!uuidFlag)
+    if (value.Length < 10)
     {
         result.Errors.Add(new ValidationError
         {
-            Path = "session_id",
-            Message = "Invalid UUID version"
+            Path = "id",
+            Message = "Invalid value."
+        });
+        flag = false;
+    }
+    if (value.Length > 31)
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = "id",
+            Message = "Invalid value."
+        });
+        flag = false;
+    }
+    if (!System.Text.RegularExpressions.Regex.IsMatch(value, "^c[a-z0-9]+$"))
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = "id",
+            Message = "Invalid value."
         });
         flag = false;
     }
     value = value.Trim();
-    data["session_id"] = value;
+    data["id"] = value;
 }
 if (flag)
                 {
-                    successData["session_id"] = data["session_id"];
+                    successData["id"] = data["id"];
                 }
             }
 

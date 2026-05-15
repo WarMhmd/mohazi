@@ -30,7 +30,6 @@ login:
 		required: true
 		rules:
 			algorithm: 'Argon2id'
-			minLength: 10
 	profile:
 		type: image
 		required: true

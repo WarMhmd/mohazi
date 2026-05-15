@@ -2,22 +2,20 @@ use serde::{Deserialize, Serialize};
 use serde_yaml_ng::Value;
 
 use super::{parse_val, FieldType, Mergeable, RuleTrait, RuleType, TransformTrait};
-use super::string::{StringRules, StringTransform};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct HashRules {
-    #[serde(flatten)]
-    pub string_rules: StringRules,
-    
     pub algorithm: Option<RuleType<String>>,
+    #[serde(alias = "pattern", alias = "regex")]
+    pub regex: Option<RuleType<String>>,
 }
 
 impl RuleTrait for HashRules {
     fn new() -> Self {
         Self {
-            string_rules: StringRules::new(),
             algorithm: None,
+            regex: None,
         }
     }
 
@@ -31,32 +29,39 @@ impl RuleTrait for HashRules {
                 });
                 Ok(())
             }
-            _ => {
-                if StringRules::is_valid_key(key) {
-                    self.string_rules.set_rule(key, value, error)
-                } else {
-                    Err(format!("Unknown hash rule: {}", key))
-                }
+            "pattern" | "regex" => {
+                self.regex = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                });
+                Ok(())
             }
+            _ => Err(format!("Unknown hash rule: {}", key)),
         }
     }
 
     fn is_valid_key(key: &str) -> bool {
         match key {
-            "algorithm" => true,
-            _ => StringRules::is_valid_key(key),
+            "algorithm" | "pattern" | "regex" => true,
+            _ => false,
         }
     }
 }
 
 impl Mergeable for HashRules {
     fn merge(&mut self, other: Self) -> Result<(), String> {
-        self.string_rules.merge(other.string_rules)?;
         if other.algorithm.is_some() {
             if self.algorithm.is_some() {
                 return Err("Duplicate rule: algorithm".to_string());
             } else {
                 self.algorithm = other.algorithm;
+            }
+        }
+        if other.regex.is_some() {
+            if self.regex.is_some() {
+                return Err("Duplicate rule: regex".to_string());
+            } else {
+                self.regex = other.regex;
             }
         }
         Ok(())
@@ -66,32 +71,43 @@ impl Mergeable for HashRules {
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct HashTransform {
-    #[serde(flatten)]
-    pub string_transform: StringTransform,
+    pub trim: Option<bool>,
+    pub cast: Option<FieldType>,
 }
 
 impl Mergeable for HashTransform {
     fn merge(&mut self, other: Self) -> Result<(), String> {
-        self.string_transform.merge(other.string_transform)
+        if other.trim.is_some() {
+            self.trim = other.trim;
+        }
+        if other.cast.is_some() {
+            self.cast = other.cast;
+        }
+        Ok(())
     }
 }
 
 impl TransformTrait for HashTransform {
     fn new() -> Self {
         Self {
-            string_transform: StringTransform::new(),
+            trim: None,
+            cast: None,
         }
     }
 
     fn is_valid_key(key: &str) -> bool {
-        StringTransform::is_valid_key(key)
+        match key {
+            "trim" | "cast" => true,
+            _ => false,
+        }
     }
 
     fn set_transform(&mut self, key: &str, value: Value) -> Result<(), String> {
-        if StringTransform::is_valid_key(key) {
-            self.string_transform.set_transform(key, value)
-        } else {
-            Err(format!("Unknown hash transform: {}", key))
+        match key {
+            "trim" => self.trim = Some(parse_val(value)?),
+            "cast" => self.cast = Some(parse_val(value)?),
+            _ => return Err(format!("Unknown hash transform: {}", key)),
         }
+        Ok(())
     }
 }

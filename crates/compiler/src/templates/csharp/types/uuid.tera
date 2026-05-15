@@ -1,194 +1,63 @@
+bool flag = true;
+
 if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
 {
-	{%- if required %}
-	result.Errors.Add(new ValidationError
-	{
-		Path = {{ FieldNamePath }},
-		Message = {{ defaultError | json_encode | safe }}
-	});
-	flag = false;
-	{%- endif %}
+    {%- if required %}
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+    {%- endif %}
 }
 else if (rawValue is not string value)
 {
-	result.Errors.Add(new ValidationError
-	{
-		Path = {{ FieldNamePath }},
-		Message = {{ defaultError | json_encode | safe }}
-	});
-	flag = false;
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
 }
 else
 {
-	data[{{ FieldName }}] = value;
-	{%- if rules.length is defined %}
-	if (value.Length != {{ rules.length.value }})
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.length.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.minLength is defined %}
-	if (value.Length < {{ rules.minLength.value }})
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.minLength.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.maxLength is defined %}
-	if (value.Length > {{ rules.maxLength.value }})
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.maxLength.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.pattern is defined %}
-	if (!System.Text.RegularExpressions.Regex.IsMatch(value, {{ rules.pattern.value | json_encode | safe }}))
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.pattern.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.startsWith is defined %}
-	if (!value.StartsWith({{ rules.startsWith.value | json_encode | safe }}))
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.startsWith.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.endsWith is defined %}
-	if (!value.EndsWith({{ rules.endsWith.value | json_encode | safe }}))
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.endsWith.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.includes is defined %}
-	if (!value.Contains({{ rules.includes.value | json_encode | safe }}))
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.includes.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.uppercase is defined %}
-	if (value != value.ToUpper())
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.uppercase.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if rules.lowercase is defined %}
-	if (value != value.ToLower())
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ rules.lowercase.error | default(value=defaultError) | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
+    bool uuidFlag = true;
+    if (!UuidValidator.Validate(value))
+    {
+        uuidFlag = false;
+    }
+    {%- if rules.version is defined %}
+    else if (UuidValidator.GetVersion(value) != {{ rules.version.value | replace(from="v", to="") | int }})
+    {
+        uuidFlag = false;
+    }
+    {%- endif %}
 
-	if (flag)
-	{
-		bool uuidFlag = true;
-		if (!UuidValidator.Validate(value))
-		{
-			uuidFlag = false;
-		}
-		{%- if rules.version is defined %}
-		else if (UuidValidator.GetVersion(value) != {{ rules.version.value | replace(from="v", to="") | int }})
-		{
-			uuidFlag = false;
-		}
-		{%- endif %}
+    if (!uuidFlag)
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.version.error | default(value="Invalid UUID version") | json_encode | safe }}
+        });
+        flag = false;
+    }
 
-		if (!uuidFlag)
-		{
-			result.Errors.Add(new ValidationError
-			{
-				Path = {{ FieldNamePath }},
-				Message = {{ rules.version.error | default(value="Invalid UUID version") | json_encode | safe }}
-			});
-			flag = false;
-		}
-	}
+    {%- if transform.trim is defined and transform.trim %}
+    value = value.Trim();
+    data[{{ FieldName }}] = value;
+    {%- else %}
+    data[{{ FieldName }}] = value;
+    {%- endif %}
 
-	{%- if transform.trim is defined and transform.trim %}
-	value = value.Trim();
-	data[{{ FieldName }}] = value;
-	{%- endif %}
-	{%- if transform.toLowerCase is defined and transform.toLowerCase %}
-	value = value.ToLower();
-	data[{{ FieldName }}] = value;
-	{%- endif %}
-	{%- if transform.toUpperCase is defined and transform.toUpperCase %}
-	value = value.ToUpper();
-	data[{{ FieldName }}] = value;
-	{%- endif %}
-	{%- if transform.split is defined %}
-	data[{{ FieldName }}] = new List<string>(value.Split(new string[] { {{ transform.split | json_encode | safe }} }, StringSplitOptions.None));
-	{%- endif %}
-	{%- if transform.cast is defined and transform.cast == "number" %}
-	if (double.TryParse(value, out double doubleValue))
-	{
-		data[{{ FieldName }}] = doubleValue;
-	}
-	else
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ defaultError | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
-	{%- if transform.cast is defined and transform.cast == "boolean" %}
-	if (bool.TryParse(value, out bool boolValue))
-	{
-		data[{{ FieldName }}] = boolValue;
-	}
-	else
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = {{ FieldNamePath }},
-			Message = {{ defaultError | json_encode | safe }}
-		});
-		flag = false;
-	}
-	{%- endif %}
+    {%- if transform.toLowerCase is defined and transform.toLowerCase %}
+    value = value.ToLowerInvariant();
+    data[{{ FieldName }}] = value;
+    {%- endif %}
+
+    {%- if transform.toUpperCase is defined and transform.toUpperCase %}
+    value = value.ToUpperInvariant();
+    data[{{ FieldName }}] = value;
+    {%- endif %}
 }

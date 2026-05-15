@@ -90,23 +90,10 @@ else if (rawValue is not string value)
 }
 else
 {
-    data["password_hash"] = value;
-    if (value.Length < 10)
-    {
-        result.Errors.Add(new ValidationError
-        {
-            Path = "password_hash",
-            Message = "Invalid value."
-        });
-        flag = false;
-    }
-}
-if (flag)
-{
     string pattern = null;
     pattern = @"^\$argon2(id|i|d)\$v=\d+\$m=\d+,t=\d+,p=\d+\$[A-Za-z0-9+/]+={0,2}\$[A-Za-z0-9+/]+={0,2}$";
-    
-    if (pattern != null && !System.Text.RegularExpressions.Regex.IsMatch(data["password_hash"]?.ToString() ?? "", pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+
+    if (pattern != null && !System.Text.RegularExpressions.Regex.IsMatch(value, pattern))
     {
         result.Errors.Add(new ValidationError
         {
@@ -115,6 +102,7 @@ if (flag)
         });
         flag = false;
     }
+    data["password_hash"] = value;
 }if (flag)
                 {
                     successData["password_hash"] = data["password_hash"];
