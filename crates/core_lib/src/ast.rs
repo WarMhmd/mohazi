@@ -396,6 +396,7 @@ impl Transform {
             (Transform::Cuid2(a), Transform::Cuid2(b)) => a.merge(b),
             (Transform::Base64(a), Transform::Base64(b)) => a.merge(b),
             (Transform::Document(a), Transform::Document(b)) => a.merge(b),
+            (Transform::Hash(a), Transform::Hash(b)) => a.merge(b),
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
     }

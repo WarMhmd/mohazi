@@ -871,6 +871,13 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 "enum" => FieldType::Enum,
                                 "file" => FieldType::File,
                                 "document" => FieldType::Document,
+                                "image" => FieldType::Image,
+                                "mail" => FieldType::Mail,
+                                "username" => FieldType::Username,
+                                "uuid" => FieldType::Uuid,
+                                "cuid2" => FieldType::Cuid2,
+                                "base64" => FieldType::Base64,
+                                "hash" => FieldType::Hash,
                                 _ => {
                                     errors.push(ParserError::new(
                                         format!("Invalid cast type '{}'", value),
