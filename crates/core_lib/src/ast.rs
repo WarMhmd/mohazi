@@ -19,6 +19,7 @@ mod hash;
 mod image;
 mod mail;
 mod number;
+mod password;
 mod string;
 mod username;
 mod uuid;
@@ -27,12 +28,13 @@ pub use array::{ArrayRules, ArrayTransform};
 pub use base64::{Base64Rules, Base64Transform};
 pub use boolean::{BooleanRules, BooleanTransform};
 pub use cuid2::{Cuid2Rules, Cuid2Transform};
-pub use document::{DocumentRule, DocumentTransform};
+pub use document::{DocumentRules, DocumentTransform};
 pub use file::{FileRules, FileTransform};
 pub use hash::{HashRules, HashTransform};
 pub use image::{ImageRules, ImageTransform};
 pub use mail::{MailRules, MailTransform};
 pub use number::{NumberRules, NumberTransform};
+pub use password::{PasswordRules, PasswordTransform};
 pub use r#enum::{EnumRules, EnumTransform};
 pub use string::{StringRules, StringTransform};
 pub use username::{UsernameRules, UsernameTransform};
@@ -184,7 +186,7 @@ impl<'de> Deserialize<'de> for Field {
                         Rule::Base64(base64_rule)
                     }
                     FieldType::Document => {
-                        let document_rule: DocumentRule =
+                        let document_rule: DocumentRules =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Rule::Document(document_rule)
                     }
@@ -304,6 +306,7 @@ pub enum Rule {
     Base64(Base64Rules),
     Hash(HashRules),
     Document(DocumentRules),
+    Password(PasswordRules),
     // todo[Add]: Type
 }
 
@@ -333,6 +336,7 @@ impl Rule {
             (Rule::Base64(a), Rule::Base64(b)) => a.merge(b),
             (Rule::Hash(a), Rule::Hash(b)) => a.merge(b),
             (Rule::Document(a), Rule::Document(b)) => a.merge(b),
+            (Rule::Password(a), Rule::Password(b)) => a.merge(b),
             // todo[Add]: Type
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
@@ -364,6 +368,7 @@ pub enum Transform {
     Hash(HashTransform),
     Base64(Base64Transform),
     Document(DocumentTransform),
+    Password(PasswordTransform),
     // todo[Add]: Type
 }
 
@@ -397,6 +402,7 @@ impl Transform {
             (Transform::Base64(a), Transform::Base64(b)) => a.merge(b),
             (Transform::Document(a), Transform::Document(b)) => a.merge(b),
             (Transform::Hash(a), Transform::Hash(b)) => a.merge(b),
+            (Transform::Password(a), Transform::Password(b)) => a.merge(b),
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
     }
@@ -409,8 +415,6 @@ macro_rules! match_types {
 }
 
 use paste::paste;
-
-use crate::ast::document::DocumentRules;
 
 macro_rules! make_transform {
     // $t: The type name (e.g., String, Boolean)
@@ -442,6 +446,7 @@ impl Transform {
             Transform::Base64(b) => b.cast,
             Transform::Hash(h) => h.cast,
             Transform::Document(h) => h.cast,
+            Transform::Password(h) => h.cast,
             // todo[Add]: Types more types here
         }
     }
@@ -483,6 +488,9 @@ impl Transform {
             Transform::Document(f) => {
                 match_types!(f.cast, FieldType::File, FieldType::Base64)
             }
+            Transform::Password(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
             // todo[Add]: Types more types here
             Transform::Array(f) => {
                 // create a transform from array_type
@@ -515,6 +523,10 @@ impl Transform {
                         ..Default::default()
                     }),
                     Some(FieldType::Hash) => Transform::Hash(HashTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Password) => Transform::Password(PasswordTransform {
                         cast: f.cast,
                         ..Default::default()
                     }),
@@ -591,6 +603,7 @@ impl FieldType {
             "ulid" => Some(FieldType::Ulid),
             "cuid2" => Some(FieldType::Cuid2),
             "date" => Some(FieldType::Date),
+            "document" => Some(FieldType::Document),
             _ => None,
         }
     }
@@ -619,6 +632,7 @@ impl FieldType {
             FieldType::Cuid2 => "cuid2",
             FieldType::Hash => "hash",
             FieldType::Date => "date",
+            FieldType::Document => "document",
         }
     }
 }

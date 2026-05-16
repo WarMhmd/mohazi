@@ -1,10 +1,10 @@
 use crate::ast::{
     ArrayRules, ArrayTransform, Base64Rules, Base64Transform, BooleanRules, BooleanTransform,
-    Cuid2Rules, Cuid2Transform, DocumentRule, DocumentTransform, EnumRules, EnumTransform, Field,
+    Cuid2Rules, Cuid2Transform, DocumentRules, DocumentTransform, EnumRules, EnumTransform, Field,
     FieldType, FileRules, FileTransform, Form, HashRules, HashTransform, ImageRules,
-    ImageTransform, MailRules, MailTransform, NumberRules, NumberTransform, Rule, RuleTrait,
-    RuleType, StringRules, StringTransform, Transform, TransformTrait, UsernameRules,
-    UsernameTransform, UuidRules, UuidTransform,
+    ImageTransform, MailRules, MailTransform, NumberRules, NumberTransform, PasswordRules,
+    PasswordTransform, Rule, RuleTrait, RuleType, StringRules, StringTransform, Transform,
+    TransformTrait, UsernameRules, UsernameTransform, UuidRules, UuidTransform,
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -24,7 +24,8 @@ enum ActiveRuleBuilder {
     Cuid2(Cuid2Rules),
     Base64(Base64Rules),
     Hash(HashRules),
-    Document(DocumentRule),
+    Document(DocumentRules),
+    Password(PasswordRules),
     None,
 }
 
@@ -44,6 +45,7 @@ enum ActiveTransformBuilder {
     Hash(HashTransform),
     Base64(Base64Transform),
     Document(DocumentTransform),
+    Password(PasswordTransform),
     None,
 }
 
@@ -70,6 +72,7 @@ impl BuilderTrait for ActiveRuleBuilder {
             ActiveRuleBuilder::Hash(_) => Some(FieldType::Hash),
             ActiveRuleBuilder::Base64(_) => Some(FieldType::Base64),
             ActiveRuleBuilder::Document(_) => Some(FieldType::Document),
+            ActiveRuleBuilder::Password(_) => Some(FieldType::Password),
             ActiveRuleBuilder::None => None,
         }
     }
@@ -94,6 +97,7 @@ impl BuilderTrait for ActiveTransformBuilder {
             ActiveTransformBuilder::Base64(_) => Some(FieldType::Base64),
             ActiveTransformBuilder::Hash(_) => Some(FieldType::Hash),
             ActiveTransformBuilder::Document(_) => Some(FieldType::Document),
+            ActiveTransformBuilder::Password(_) => Some(FieldType::Password),
             ActiveTransformBuilder::None => None,
         }
     }
@@ -117,6 +121,7 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
         ActiveRuleBuilder::Base64(r) => current_field.rules.push(Rule::Base64(r)),
         ActiveRuleBuilder::Hash(r) => current_field.rules.push(Rule::Hash(r)),
         ActiveRuleBuilder::Document(r) => current_field.rules.push(Rule::Document(r)),
+        ActiveRuleBuilder::Password(r) => current_field.rules.push(Rule::Password(r)),
         // todo[Add]: Type
         ActiveRuleBuilder::None => {}
     }
@@ -140,6 +145,7 @@ fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Fi
         ActiveTransformBuilder::Base64(t) => current_field.transform.push(Transform::Base64(t)),
         ActiveTransformBuilder::Hash(t) => current_field.transform.push(Transform::Hash(t)),
         ActiveTransformBuilder::Document(t) => current_field.transform.push(Transform::Document(t)),
+        ActiveTransformBuilder::Password(t) => current_field.transform.push(Transform::Password(t)),
         // todo[Add]: Type
         ActiveTransformBuilder::None => {}
     }
@@ -468,6 +474,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             "base64" => FieldType::Base64,
                             "hash" => FieldType::Hash,
                             "document" => FieldType::Document,
+                            "password" => FieldType::Password,
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -585,7 +592,12 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Cuid2 => ActiveRuleBuilder::Cuid2(Cuid2Rules::new()),
                             FieldType::Base64 => ActiveRuleBuilder::Base64(Base64Rules::new()),
                             FieldType::Hash => ActiveRuleBuilder::Hash(HashRules::new()),
-                            FieldType::Document => ActiveRuleBuilder::Document(DocumentRule::new()),
+                            FieldType::Document => {
+                                ActiveRuleBuilder::Document(DocumentRules::new())
+                            }
+                            FieldType::Password => {
+                                ActiveRuleBuilder::Password(PasswordRules::new())
+                            }
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -751,6 +763,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         ActiveRuleBuilder::Base64(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Hash(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Document(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Password(r) => r.set_rule(key, final_val, final_err),
                         // todo[Add]: Type
                         ActiveRuleBuilder::None => Ok(()),
                     };
@@ -784,7 +797,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Uuid => Rule::Uuid(UuidRules::new()),
                             FieldType::Base64 => Rule::Base64(Base64Rules::new()),
                             FieldType::Hash => Rule::Hash(HashRules::new()),
-                            FieldType::Password => todo!(),
+                            FieldType::Password => Rule::Password(PasswordRules::new()),
                             FieldType::Url => todo!(),
                             FieldType::HttpUrl => todo!(),
                             FieldType::Jwt => todo!(),
@@ -794,7 +807,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Ulid => todo!(),
                             FieldType::Cuid2 => Rule::Cuid2(Cuid2Rules::new()),
                             FieldType::Date => todo!(),
-                            FieldType::Document => Rule::Document(DocumentRule::new()),
+                            FieldType::Document => Rule::Document(DocumentRules::new()),
                         };
 
                         current_field.rules.push(placeholder_rule);
@@ -846,6 +859,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Document => {
                                 ActiveTransformBuilder::Document(DocumentTransform::new())
                             }
+                            FieldType::Password => {
+                                ActiveTransformBuilder::Password(PasswordTransform::new())
+                            }
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -878,6 +894,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 "cuid2" => FieldType::Cuid2,
                                 "base64" => FieldType::Base64,
                                 "hash" => FieldType::Hash,
+                                "password" => FieldType::Password,
                                 _ => {
                                     errors.push(ParserError::new(
                                         format!("Invalid cast type '{}'", value),
@@ -1114,6 +1131,9 @@ fn build_transform(
         }
         ActiveTransformBuilder::Document(document_transofrm) => {
             document_transofrm.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Password(password_transform) => {
+            password_transform.set_transform(key, final_val)
         }
         ActiveTransformBuilder::None => Ok(()),
     };
