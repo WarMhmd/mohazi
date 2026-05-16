@@ -1,10 +1,10 @@
 use crate::ast::{
     ArrayRules, ArrayTransform, Base64Rules, Base64Transform, BooleanRules, BooleanTransform,
-    Cuid2Rules, Cuid2Transform, EnumRules, EnumTransform, Field, FieldType, FileRules,
-    FileTransform, Form, HashRules, HashTransform, ImageRules, ImageTransform, MailRules,
-    MailTransform, NumberRules, NumberTransform, Rule, RuleTrait, RuleType, StringRules,
-    StringTransform, Transform, TransformTrait, UsernameRules, UsernameTransform, UuidRules,
-    UuidTransform,
+    Cuid2Rules, Cuid2Transform, DocumentRule, DocumentTransform, EnumRules, EnumTransform, Field,
+    FieldType, FileRules, FileTransform, Form, HashRules, HashTransform, ImageRules,
+    ImageTransform, MailRules, MailTransform, NumberRules, NumberTransform, Rule, RuleTrait,
+    RuleType, StringRules, StringTransform, Transform, TransformTrait, UsernameRules,
+    UsernameTransform, UuidRules, UuidTransform,
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -24,11 +24,12 @@ enum ActiveRuleBuilder {
     Cuid2(Cuid2Rules),
     Base64(Base64Rules),
     Hash(HashRules),
+    Document(DocumentRule),
     None,
-    }
+}
 
-    // todo[Add]: Type
-    enum ActiveTransformBuilder {
+// todo[Add]: Type
+enum ActiveTransformBuilder {
     String(StringTransform),
     Number(NumberTransform),
     File(FileTransform),
@@ -42,9 +43,9 @@ enum ActiveRuleBuilder {
     Cuid2(Cuid2Transform),
     Hash(HashTransform),
     Base64(Base64Transform),
+    Document(DocumentTransform),
     None,
-    }
-
+}
 
 trait BuilderTrait {
     fn get_type(&self) -> Option<FieldType>;
@@ -68,6 +69,7 @@ impl BuilderTrait for ActiveRuleBuilder {
             ActiveRuleBuilder::Cuid2(_) => Some(FieldType::Cuid2),
             ActiveRuleBuilder::Hash(_) => Some(FieldType::Hash),
             ActiveRuleBuilder::Base64(_) => Some(FieldType::Base64),
+            ActiveRuleBuilder::Document(_) => Some(FieldType::Document),
             ActiveRuleBuilder::None => None,
         }
     }
@@ -91,6 +93,7 @@ impl BuilderTrait for ActiveTransformBuilder {
             ActiveTransformBuilder::Cuid2(_) => Some(FieldType::Cuid2),
             ActiveTransformBuilder::Base64(_) => Some(FieldType::Base64),
             ActiveTransformBuilder::Hash(_) => Some(FieldType::Hash),
+            ActiveTransformBuilder::Document(_) => Some(FieldType::Document),
             ActiveTransformBuilder::None => None,
         }
     }
@@ -113,6 +116,7 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
         ActiveRuleBuilder::Cuid2(r) => current_field.rules.push(Rule::Cuid2(r)),
         ActiveRuleBuilder::Base64(r) => current_field.rules.push(Rule::Base64(r)),
         ActiveRuleBuilder::Hash(r) => current_field.rules.push(Rule::Hash(r)),
+        ActiveRuleBuilder::Document(r) => current_field.rules.push(Rule::Document(r)),
         // todo[Add]: Type
         ActiveRuleBuilder::None => {}
     }
@@ -135,6 +139,7 @@ fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Fi
         ActiveTransformBuilder::Cuid2(t) => current_field.transform.push(Transform::Cuid2(t)),
         ActiveTransformBuilder::Base64(t) => current_field.transform.push(Transform::Base64(t)),
         ActiveTransformBuilder::Hash(t) => current_field.transform.push(Transform::Hash(t)),
+        ActiveTransformBuilder::Document(t) => current_field.transform.push(Transform::Document(t)),
         // todo[Add]: Type
         ActiveTransformBuilder::None => {}
     }
@@ -462,6 +467,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             "cuid2" => FieldType::Cuid2,
                             "base64" => FieldType::Base64,
                             "hash" => FieldType::Hash,
+                            "document" => FieldType::Document,
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -579,6 +585,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Cuid2 => ActiveRuleBuilder::Cuid2(Cuid2Rules::new()),
                             FieldType::Base64 => ActiveRuleBuilder::Base64(Base64Rules::new()),
                             FieldType::Hash => ActiveRuleBuilder::Hash(HashRules::new()),
+                            FieldType::Document => ActiveRuleBuilder::Document(DocumentRule::new()),
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -743,6 +750,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         ActiveRuleBuilder::Cuid2(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Base64(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Hash(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Document(r) => r.set_rule(key, final_val, final_err),
                         // todo[Add]: Type
                         ActiveRuleBuilder::None => Ok(()),
                     };
@@ -786,6 +794,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Ulid => todo!(),
                             FieldType::Cuid2 => Rule::Cuid2(Cuid2Rules::new()),
                             FieldType::Date => todo!(),
+                            FieldType::Document => Rule::Document(DocumentRule::new()),
                         };
 
                         current_field.rules.push(placeholder_rule);
@@ -819,15 +828,24 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 ActiveTransformBuilder::Array(ArrayTransform::new())
                             }
                             FieldType::Enum => ActiveTransformBuilder::Enum(EnumTransform::new()),
-                            FieldType::Image => ActiveTransformBuilder::Image(ImageTransform::new()),
+                            FieldType::Image => {
+                                ActiveTransformBuilder::Image(ImageTransform::new())
+                            }
                             FieldType::Mail => ActiveTransformBuilder::Mail(MailTransform::new()),
                             FieldType::Username => {
                                 ActiveTransformBuilder::Username(UsernameTransform::new())
                             }
                             FieldType::Uuid => ActiveTransformBuilder::Uuid(UuidTransform::new()),
-                            FieldType::Cuid2 => ActiveTransformBuilder::Cuid2(Cuid2Transform::new()),
-                            FieldType::Base64 => ActiveTransformBuilder::Base64(Base64Transform::new()),
+                            FieldType::Cuid2 => {
+                                ActiveTransformBuilder::Cuid2(Cuid2Transform::new())
+                            }
+                            FieldType::Base64 => {
+                                ActiveTransformBuilder::Base64(Base64Transform::new())
+                            }
                             FieldType::Hash => ActiveTransformBuilder::Hash(HashTransform::new()),
+                            FieldType::Document => {
+                                ActiveTransformBuilder::Document(DocumentTransform::new())
+                            }
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -852,6 +870,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 "array" => FieldType::Array,
                                 "enum" => FieldType::Enum,
                                 "file" => FieldType::File,
+                                "document" => FieldType::Document,
                                 _ => {
                                     errors.push(ParserError::new(
                                         format!("Invalid cast type '{}'", value),
@@ -909,7 +928,6 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 && current_field.field_type != FieldType::Mail
                                 && current_field.field_type != FieldType::Hash
                             {
-
                                 errors.push(ParserError::new(
                                     format!(
                                         "Cannot use the {} transform non-string field {}",
@@ -1086,6 +1104,9 @@ fn build_transform(
         }
         ActiveTransformBuilder::Hash(hash_transform) => {
             hash_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Document(document_transofrm) => {
+            document_transofrm.set_transform(key, final_val)
         }
         ActiveTransformBuilder::None => Ok(()),
     };

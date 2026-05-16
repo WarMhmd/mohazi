@@ -12,6 +12,7 @@ mod array;
 mod base64;
 mod boolean;
 mod cuid2;
+mod document;
 mod r#enum;
 mod file;
 mod hash;
@@ -26,6 +27,7 @@ pub use array::{ArrayRules, ArrayTransform};
 pub use base64::{Base64Rules, Base64Transform};
 pub use boolean::{BooleanRules, BooleanTransform};
 pub use cuid2::{Cuid2Rules, Cuid2Transform};
+pub use document::{DocumentRule, DocumentTransform};
 pub use file::{FileRules, FileTransform};
 pub use hash::{HashRules, HashTransform};
 pub use image::{ImageRules, ImageTransform};
@@ -181,6 +183,11 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Rule::Base64(base64_rule)
                     }
+                    FieldType::Document => {
+                        let document_rule: DocumentRule =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Document(document_rule)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for rules",
@@ -241,6 +248,11 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Transform::Hash(hash_transform)
                     }
+                    FieldType::Document => {
+                        let document_transform: DocumentTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Document(document_transform)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for transform",
@@ -291,6 +303,7 @@ pub enum Rule {
     Cuid2(Cuid2Rules),
     Base64(Base64Rules),
     Hash(HashRules),
+    Document(DocumentRules),
     // todo[Add]: Type
 }
 
@@ -319,6 +332,7 @@ impl Rule {
             (Rule::Cuid2(a), Rule::Cuid2(b)) => a.merge(b),
             (Rule::Base64(a), Rule::Base64(b)) => a.merge(b),
             (Rule::Hash(a), Rule::Hash(b)) => a.merge(b),
+            (Rule::Document(a), Rule::Document(b)) => a.merge(b),
             // todo[Add]: Type
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
@@ -349,6 +363,7 @@ pub enum Transform {
     Cuid2(Cuid2Transform),
     Hash(HashTransform),
     Base64(Base64Transform),
+    Document(DocumentTransform),
     // todo[Add]: Type
 }
 
@@ -380,6 +395,7 @@ impl Transform {
             (Transform::Uuid(a), Transform::Uuid(b)) => a.merge(b),
             (Transform::Cuid2(a), Transform::Cuid2(b)) => a.merge(b),
             (Transform::Base64(a), Transform::Base64(b)) => a.merge(b),
+            (Transform::Document(a), Transform::Document(b)) => a.merge(b),
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
     }
@@ -392,6 +408,8 @@ macro_rules! match_types {
 }
 
 use paste::paste;
+
+use crate::ast::document::DocumentRules;
 
 macro_rules! make_transform {
     // $t: The type name (e.g., String, Boolean)
@@ -422,6 +440,7 @@ impl Transform {
             Transform::Cuid2(u) => u.cast,
             Transform::Base64(b) => b.cast,
             Transform::Hash(h) => h.cast,
+            Transform::Document(h) => h.cast,
             // todo[Add]: Types more types here
         }
     }
@@ -460,6 +479,9 @@ impl Transform {
             Transform::Hash(f) => {
                 match_types!(f.cast, FieldType::String)
             }
+            Transform::Document(f) => {
+                match_types!(f.cast, FieldType::File, FieldType::Base64)
+            }
             // todo[Add]: Types more types here
             Transform::Array(f) => {
                 // create a transform from array_type
@@ -470,6 +492,7 @@ impl Transform {
                     Some(FieldType::Number) => make_transform!(Number, f),
                     Some(FieldType::File) => make_transform!(File, f),
                     Some(FieldType::Image) => make_transform!(Image, f),
+                    Some(FieldType::Document) => make_transform!(Document, f),
                     Some(FieldType::Mail) => Transform::Mail(MailTransform {
                         cast: f.cast,
                         ..Default::default()
@@ -539,6 +562,7 @@ pub enum FieldType {
     Ulid,
     Cuid2,
     Date,
+    Document,
 }
 
 impl FieldType {
