@@ -372,6 +372,10 @@ impl LanguageServer for Backend {
                                 ("uuid", "UUID type"),
                                 ("cuid2", "CUID2 type"),
                                 ("base64", "Base64 type"),
+                                ("image", "Image type"),
+                                ("mail", "Mail type"),
+                                ("username", "Username type"),
+                                ("hash", "Hash type"),
                             ])));
                         }
                         return Ok(Some(CompletionResponse::Array(completion_items![

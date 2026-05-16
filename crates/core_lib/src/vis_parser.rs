@@ -25,10 +25,10 @@ enum ActiveRuleBuilder {
     Base64(Base64Rules),
     Hash(HashRules),
     None,
-    }
+}
 
-    // todo[Add]: Type
-    enum ActiveTransformBuilder {
+// todo[Add]: Type
+enum ActiveTransformBuilder {
     String(StringTransform),
     Number(NumberTransform),
     File(FileTransform),
@@ -43,8 +43,7 @@ enum ActiveRuleBuilder {
     Hash(HashTransform),
     Base64(Base64Transform),
     None,
-    }
-
+}
 
 trait BuilderTrait {
     fn get_type(&self) -> Option<FieldType>;
@@ -819,14 +818,20 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 ActiveTransformBuilder::Array(ArrayTransform::new())
                             }
                             FieldType::Enum => ActiveTransformBuilder::Enum(EnumTransform::new()),
-                            FieldType::Image => ActiveTransformBuilder::Image(ImageTransform::new()),
+                            FieldType::Image => {
+                                ActiveTransformBuilder::Image(ImageTransform::new())
+                            }
                             FieldType::Mail => ActiveTransformBuilder::Mail(MailTransform::new()),
                             FieldType::Username => {
                                 ActiveTransformBuilder::Username(UsernameTransform::new())
                             }
                             FieldType::Uuid => ActiveTransformBuilder::Uuid(UuidTransform::new()),
-                            FieldType::Cuid2 => ActiveTransformBuilder::Cuid2(Cuid2Transform::new()),
-                            FieldType::Base64 => ActiveTransformBuilder::Base64(Base64Transform::new()),
+                            FieldType::Cuid2 => {
+                                ActiveTransformBuilder::Cuid2(Cuid2Transform::new())
+                            }
+                            FieldType::Base64 => {
+                                ActiveTransformBuilder::Base64(Base64Transform::new())
+                            }
                             FieldType::Hash => ActiveTransformBuilder::Hash(HashTransform::new()),
                             // todo[Add]: Type
                             _ => {
@@ -852,6 +857,13 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 "array" => FieldType::Array,
                                 "enum" => FieldType::Enum,
                                 "file" => FieldType::File,
+                                "image" => FieldType::Image,
+                                "mail" => FieldType::Mail,
+                                "username" => FieldType::Username,
+                                "uuid" => FieldType::Uuid,
+                                "cuid2" => FieldType::Cuid2,
+                                "base64" => FieldType::Base64,
+                                "hash" => FieldType::Hash,
                                 _ => {
                                     errors.push(ParserError::new(
                                         format!("Invalid cast type '{}'", value),
@@ -909,7 +921,6 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 && current_field.field_type != FieldType::Mail
                                 && current_field.field_type != FieldType::Hash
                             {
-
                                 errors.push(ParserError::new(
                                     format!(
                                         "Cannot use the {} transform non-string field {}",
