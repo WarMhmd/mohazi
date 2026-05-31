@@ -1,0 +1,7 @@
+Serde Yaml: https://docs.rs/serde_yaml/latest/serde_yaml/
+Tera: https://docs.rs/tera/latest/tera/
+Tokio: https://docs.rs/tokio/latest/tokio/
+Tower LSP: https://docs.rs/tower-lsp/latest/tower_lsp/
+
+Parsers: https://en.wikipedia.org/wiki/Parsing
+Transpiler (Source-to-source compiler): https://en.wikipedia.org/wiki/Source-to-source_compiler
