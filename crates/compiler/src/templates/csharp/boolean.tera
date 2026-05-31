@@ -9,16 +9,45 @@ if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
 	flag = false;
 	{%- endif %}
 }
-else if (rawValue is not bool value)
+else if (rawValue is JsonElement boolJe)
 {
-	result.Errors.Add(new ValidationError
+	if (boolJe.ValueKind != JsonValueKind.True && boolJe.ValueKind != JsonValueKind.False)
 	{
-		Path = {{ FieldNamePath }},
-		Message = {{ defaultError | json_encode | safe }}
-	});
-	flag = false;
+		result.Errors.Add(new ValidationError
+		{
+			Path = {{ FieldNamePath }},
+			Message = {{ defaultError | json_encode | safe }}
+		});
+		flag = false;
+	}
+	else
+	{
+		var value = boolJe.GetBoolean();
+		{%- if rules.state is defined %}
+		if (value != {{ rules.state.value | lower }})
+		{
+			result.Errors.Add(new ValidationError
+			{
+				Path = {{ FieldNamePath }},
+				Message = {{ rules.state.error | default(value=defaultError) | json_encode | safe }}
+			});
+			flag = false;
+		}
+		{%- endif %}
+		{%- if transform.cast is defined and transform.cast == "string" %}
+		data[{{ FieldName }}] = value.ToString().ToLower();
+		{%- elif transform.cast is defined and transform.cast == "number" %}
+		data[{{ FieldName }}] = value ? 1.0 : 0.0;
+		{%- else %}
+		data[{{ FieldName }}] = value;
+		{%- endif %}
+		if (flag)
+		{
+			successData[{{ FieldName }}] = data[{{ FieldName }}];
+		}
+	}
 }
-else
+else if (rawValue is bool value)
 {
 	{%- if rules.state is defined %}
 	if (value != {{ rules.state.value | lower }})
@@ -42,4 +71,13 @@ else
 	{
 		successData[{{ FieldName }}] = data[{{ FieldName }}];
 	}
+}
+else
+{
+	result.Errors.Add(new ValidationError
+	{
+		Path = {{ FieldNamePath }},
+		Message = {{ defaultError | json_encode | safe }}
+	});
+	flag = false;
 }

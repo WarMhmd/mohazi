@@ -38,10 +38,18 @@ export const validateLogin = async (data) => {
 		});
 		flag = false;
 	}
+	if (!new RegExp("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]+$").test(data.password)) {
+		result.errors.push({
+			path: "password",
+			message: "Password must contain at least one letter and one number."
+		});
+		flag = false;
+	}
 	if (flag) {
 		successData.password = data.password;
 	}
 }
+
 	}
 	{
 		flag = true;
@@ -72,10 +80,18 @@ export const validateLogin = async (data) => {
 		});
 		flag = false;
 	}
+	if (!new RegExp("^[a-zA-Z0-9_]+$").test(data.username)) {
+		result.errors.push({
+			path: "username",
+			message: "Username can only contain letters, numbers, and underscores."
+		});
+		flag = false;
+	}
 	if (flag) {
 		successData.username = data.username;
 	}
 }
+
 	}
 
 	if (result.errors.length === 0) {
@@ -113,10 +129,18 @@ export const validateRegister = async (data) => {
 	});
 	flag = false;
 } else {
+	if (!new RegExp("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$").test(data.email)) {
+		result.errors.push({
+			path: "email",
+			message: "Please enter a valid email address."
+		});
+		flag = false;
+	}
 	if (flag) {
 		successData.email = data.email;
 	}
 }
+
 	}
 	{
 		flag = true;
@@ -147,10 +171,18 @@ export const validateRegister = async (data) => {
 		});
 		flag = false;
 	}
+	if (!new RegExp("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]+$").test(data.password)) {
+		result.errors.push({
+			path: "password",
+			message: "Password must contain at least one letter and one number."
+		});
+		flag = false;
+	}
 	if (flag) {
 		successData.password = data.password;
 	}
 }
+
 	}
 	{
 		flag = true;
@@ -181,10 +213,18 @@ export const validateRegister = async (data) => {
 		});
 		flag = false;
 	}
+	if (!new RegExp("^[a-zA-Z0-9_]+$").test(data.username)) {
+		result.errors.push({
+			path: "username",
+			message: "Username can only contain letters, numbers, and underscores."
+		});
+		flag = false;
+	}
 	if (flag) {
 		successData.username = data.username;
 	}
 }
+
 	}
 
 	if (result.errors.length === 0) {

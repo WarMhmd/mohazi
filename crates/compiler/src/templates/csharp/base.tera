@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 {%- if uses_file_type %}
 using Generated.Validation.Utils;

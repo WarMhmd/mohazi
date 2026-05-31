@@ -9,16 +9,79 @@ if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
 	flag = false;
 	{%- endif %}
 }
-else if (rawValue is not string filePath)
+else if (rawValue is JsonElement fileJe)
 {
-	result.Errors.Add(new ValidationError
+	if (fileJe.ValueKind != JsonValueKind.String)
 	{
-		Path = {{ FieldNamePath }},
-		Message = {{ defaultError | json_encode | safe }}
-	});
-	flag = false;
+		result.Errors.Add(new ValidationError
+		{
+			Path = {{ FieldNamePath }},
+			Message = {{ defaultError | json_encode | safe }}
+		});
+		flag = false;
+	}
+	else
+	{
+		var filePath = fileJe.GetString()!;
+		if (!System.IO.File.Exists(filePath))
+		{
+			result.Errors.Add(new ValidationError
+			{
+				Path = {{ FieldNamePath }},
+				Message = "File does not exist."
+			});
+			flag = false;
+		}
+		else
+		{
+			{%- if rules.maxSize is defined %}
+			long fileSize = new System.IO.FileInfo(filePath).Length;
+			if (fileSize > {{ rules.maxSize.value }})
+			{
+				result.Errors.Add(new ValidationError
+				{
+					Path = {{ FieldNamePath }},
+					Message = {{ rules.maxSize.error | default(value=defaultError) | json_encode | safe }}
+				});
+				flag = false;
+			}
+			{%- endif %}
+			{%- if rules.minSize is defined %}
+			long fileSize = new System.IO.FileInfo(filePath).Length;
+			if (fileSize < {{ rules.minSize.value }})
+			{
+				result.Errors.Add(new ValidationError
+				{
+					Path = {{ FieldNamePath }},
+					Message = {{ rules.minSize.error | default(value=defaultError) | json_encode | safe }}
+				});
+				flag = false;
+			}
+			{%- endif %}
+			{%- if rules.signatures is defined %}
+			var validator = new FileSignatureValidator();
+			{%- for sig in rules.signatures %}
+			validator.AddSignature({{ sig.mime | json_encode | safe }}, {{ sig.signature | json_encode | safe }});
+			{%- endfor %}
+			if (!validator.Validate(filePath))
+			{
+				result.Errors.Add(new ValidationError
+				{
+					Path = {{ FieldNamePath }},
+					Message = {{ rules.signatures_error | default(value=defaultError) | json_encode | safe }}
+				});
+				flag = false;
+			}
+			{%- endif %}
+			if (flag)
+			{
+				data[{{ FieldName }}] = filePath;
+				successData[{{ FieldName }}] = data[{{ FieldName }}];
+			}
+		}
+	}
 }
-else
+else if (rawValue is string filePath)
 {
 	if (!System.IO.File.Exists(filePath))
 	{
@@ -72,7 +135,17 @@ else
 		{%- endif %}
 		if (flag)
 		{
+			data[{{ FieldName }}] = filePath;
 			successData[{{ FieldName }}] = data[{{ FieldName }}];
 		}
 	}
+}
+else
+{
+	result.Errors.Add(new ValidationError
+	{
+		Path = {{ FieldNamePath }},
+		Message = {{ defaultError | json_encode | safe }}
+	});
+	flag = false;
 }

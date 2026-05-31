@@ -9,9 +9,48 @@ if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
 	flag = false;
 	{%- endif %}
 }
-else
+else if (rawValue is JsonElement enumJe)
 {
-	string value = rawValue.ToString();
+	if (enumJe.ValueKind != JsonValueKind.String)
+	{
+		result.Errors.Add(new ValidationError
+		{
+			Path = {{ FieldNamePath }},
+			Message = {{ defaultError | json_encode | safe }}
+		});
+		flag = false;
+	}
+	else
+	{
+		var value = enumJe.GetString()!;
+		bool found = false;
+		{%- for val in rules.values %}
+		if (value == {{ val | json_encode | safe }})
+		{
+			found = true;
+		}
+		{%- endfor %}
+		if (!found)
+		{
+			result.Errors.Add(new ValidationError
+			{
+				Path = {{ FieldNamePath }},
+				Message = {{ rules.values_error | default(value=defaultError) | json_encode | safe }}
+			});
+			flag = false;
+		}
+		else
+		{
+			data[{{ FieldName }}] = value;
+			if (flag)
+			{
+				successData[{{ FieldName }}] = data[{{ FieldName }}];
+			}
+		}
+	}
+}
+else if (rawValue is string value)
+{
 	bool found = false;
 	{%- for val in rules.values %}
 	if (value == {{ val | json_encode | safe }})
@@ -36,4 +75,13 @@ else
 			successData[{{ FieldName }}] = data[{{ FieldName }}];
 		}
 	}
+}
+else
+{
+	result.Errors.Add(new ValidationError
+	{
+		Path = {{ FieldNamePath }},
+		Message = {{ defaultError | json_encode | safe }}
+	});
+	flag = false;
 }
