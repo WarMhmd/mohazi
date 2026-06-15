@@ -23,6 +23,7 @@ mod password;
 mod string;
 mod username;
 mod uuid;
+mod url;
 
 pub use array::{ArrayRules, ArrayTransform};
 pub use base64::{Base64Rules, Base64Transform};
@@ -39,6 +40,7 @@ pub use r#enum::{EnumRules, EnumTransform};
 pub use string::{StringRules, StringTransform};
 pub use username::{UsernameRules, UsernameTransform};
 pub use uuid::{UuidRules, UuidTransform};
+pub use url::{UrlRules, UrlTransform};
 
 /// This trait will be used for each rule to define the merge behaviour
 pub trait Mergeable {
@@ -190,6 +192,11 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Rule::Document(document_rule)
                     }
+                    FieldType::Url => {
+                        let url_rule: UrlRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Url(url_rule)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for rules",
@@ -255,6 +262,11 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Transform::Document(document_transform)
                     }
+                    FieldType::Url => {
+                        let url_transform: UrlTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Url(url_transform)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for transform",
@@ -307,6 +319,7 @@ pub enum Rule {
     Hash(HashRules),
     Document(DocumentRules),
     Password(PasswordRules),
+    Url(UrlRules),
     // todo[Add]: Type
 }
 
@@ -337,6 +350,7 @@ impl Rule {
             (Rule::Hash(a), Rule::Hash(b)) => a.merge(b),
             (Rule::Document(a), Rule::Document(b)) => a.merge(b),
             (Rule::Password(a), Rule::Password(b)) => a.merge(b),
+            (Rule::Url(a), Rule::Url(b)) => a.merge(b),
             // todo[Add]: Type
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
@@ -369,6 +383,7 @@ pub enum Transform {
     Base64(Base64Transform),
     Document(DocumentTransform),
     Password(PasswordTransform),
+    Url(UrlTransform),
     // todo[Add]: Type
 }
 
@@ -403,6 +418,7 @@ impl Transform {
             (Transform::Document(a), Transform::Document(b)) => a.merge(b),
             (Transform::Hash(a), Transform::Hash(b)) => a.merge(b),
             (Transform::Password(a), Transform::Password(b)) => a.merge(b),
+            (Transform::Url(a), Transform::Url(b)) => a.merge(b),
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
     }
@@ -447,6 +463,7 @@ impl Transform {
             Transform::Hash(h) => h.cast,
             Transform::Document(h) => h.cast,
             Transform::Password(h) => h.cast,
+            Transform::Url(h) => h.cast,
             // todo[Add]: Types more types here
         }
     }
@@ -491,6 +508,9 @@ impl Transform {
             Transform::Password(f) => {
                 match_types!(f.cast, FieldType::String)
             }
+            Transform::Url(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
             // todo[Add]: Types more types here
             Transform::Array(f) => {
                 // create a transform from array_type
@@ -527,6 +547,10 @@ impl Transform {
                         ..Default::default()
                     }),
                     Some(FieldType::Password) => Transform::Password(PasswordTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Url) => Transform::Url(UrlTransform {
                         cast: f.cast,
                         ..Default::default()
                     }),

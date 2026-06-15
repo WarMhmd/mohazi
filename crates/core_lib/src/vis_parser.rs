@@ -4,7 +4,7 @@ use crate::ast::{
     FieldType, FileRules, FileTransform, Form, HashRules, HashTransform, ImageRules,
     ImageTransform, MailRules, MailTransform, NumberRules, NumberTransform, PasswordRules,
     PasswordTransform, Rule, RuleTrait, RuleType, StringRules, StringTransform, Transform,
-    TransformTrait, UsernameRules, UsernameTransform, UuidRules, UuidTransform,
+    TransformTrait, UrlRules, UrlTransform, UsernameRules, UsernameTransform, UuidRules, UuidTransform,
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -26,6 +26,7 @@ enum ActiveRuleBuilder {
     Hash(HashRules),
     Document(DocumentRules),
     Password(PasswordRules),
+    Url(UrlRules),
     None,
 }
 
@@ -46,6 +47,7 @@ enum ActiveTransformBuilder {
     Base64(Base64Transform),
     Document(DocumentTransform),
     Password(PasswordTransform),
+    Url(UrlTransform),
     None,
 }
 
@@ -73,6 +75,7 @@ impl BuilderTrait for ActiveRuleBuilder {
             ActiveRuleBuilder::Base64(_) => Some(FieldType::Base64),
             ActiveRuleBuilder::Document(_) => Some(FieldType::Document),
             ActiveRuleBuilder::Password(_) => Some(FieldType::Password),
+            ActiveRuleBuilder::Url(_) => Some(FieldType::Url),
             ActiveRuleBuilder::None => None,
         }
     }
@@ -98,6 +101,7 @@ impl BuilderTrait for ActiveTransformBuilder {
             ActiveTransformBuilder::Hash(_) => Some(FieldType::Hash),
             ActiveTransformBuilder::Document(_) => Some(FieldType::Document),
             ActiveTransformBuilder::Password(_) => Some(FieldType::Password),
+            ActiveTransformBuilder::Url(_) => Some(FieldType::Url),
             ActiveTransformBuilder::None => None,
         }
     }
@@ -122,6 +126,7 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
         ActiveRuleBuilder::Hash(r) => current_field.rules.push(Rule::Hash(r)),
         ActiveRuleBuilder::Document(r) => current_field.rules.push(Rule::Document(r)),
         ActiveRuleBuilder::Password(r) => current_field.rules.push(Rule::Password(r)),
+        ActiveRuleBuilder::Url(r) => current_field.rules.push(Rule::Url(r)),
         // todo[Add]: Type
         ActiveRuleBuilder::None => {}
     }
@@ -146,6 +151,7 @@ fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Fi
         ActiveTransformBuilder::Hash(t) => current_field.transform.push(Transform::Hash(t)),
         ActiveTransformBuilder::Document(t) => current_field.transform.push(Transform::Document(t)),
         ActiveTransformBuilder::Password(t) => current_field.transform.push(Transform::Password(t)),
+        ActiveTransformBuilder::Url(t) => current_field.transform.push(Transform::Url(t)),
         // todo[Add]: Type
         ActiveTransformBuilder::None => {}
     }
@@ -475,6 +481,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             "hash" => FieldType::Hash,
                             "document" => FieldType::Document,
                             "password" => FieldType::Password,
+                            "url" => FieldType::Url,
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -597,6 +604,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             }
                             FieldType::Password => {
                                 ActiveRuleBuilder::Password(PasswordRules::new())
+                            }
+                            FieldType::Url => {
+                                ActiveRuleBuilder::Url(UrlRules::new())
                             }
                             // todo[Add]: Type
                             _ => {
@@ -764,6 +774,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         ActiveRuleBuilder::Hash(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Document(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Password(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Url(r) => r.set_rule(key, final_val, final_err),
                         // todo[Add]: Type
                         ActiveRuleBuilder::None => Ok(()),
                     };
@@ -798,7 +809,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Base64 => Rule::Base64(Base64Rules::new()),
                             FieldType::Hash => Rule::Hash(HashRules::new()),
                             FieldType::Password => Rule::Password(PasswordRules::new()),
-                            FieldType::Url => todo!(),
+                            FieldType::Url => Rule::Url(UrlRules::new()),
                             FieldType::HttpUrl => todo!(),
                             FieldType::Jwt => todo!(),
                             FieldType::Hex => todo!(),
@@ -862,6 +873,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Password => {
                                 ActiveTransformBuilder::Password(PasswordTransform::new())
                             }
+                            FieldType::Url => {
+                                ActiveTransformBuilder::Url(UrlTransform::new())
+                            }
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -895,6 +909,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 "base64" => FieldType::Base64,
                                 "hash" => FieldType::Hash,
                                 "password" => FieldType::Password,
+                                "url" => FieldType::Url,
                                 _ => {
                                     errors.push(ParserError::new(
                                         format!("Invalid cast type '{}'", value),
@@ -1134,6 +1149,9 @@ fn build_transform(
         }
         ActiveTransformBuilder::Password(password_transform) => {
             password_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Url(url_transform) => {
+            url_transform.set_transform(key, final_val)
         }
         ActiveTransformBuilder::None => Ok(()),
     };

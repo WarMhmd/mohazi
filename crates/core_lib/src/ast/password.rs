@@ -43,7 +43,7 @@ impl RuleTrait for PasswordRules {
             min_length: None,
             max_length: None,
             length: None,
-            regex: None,
+            regex: None, // TODO: Implement default regex value.
             starts_with: None,
             ends_with: None,
             includes: None,

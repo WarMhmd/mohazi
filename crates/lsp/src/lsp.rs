@@ -376,6 +376,9 @@ impl LanguageServer for Backend {
                                 ("mail", "Mail type"),
                                 ("username", "Username type"),
                                 ("hash", "Hash type"),
+                                ("password", "Password type"),
+                                ("document", "Document type"),
+                                ("url", "URL type"),
                             ])));
                         }
                         return Ok(Some(CompletionResponse::Array(completion_items![
@@ -572,6 +575,9 @@ impl LanguageServer for Backend {
                         ("cuid2", "CUID2 type"),
                         ("base64", "Base64 type"),
                         ("hash", "Hash type"),
+                        ("password", "Password type"),
+                        ("document", "Document type"),
+                        ("url", "URL type"),
                     ])));
                 }
 
@@ -653,6 +659,9 @@ impl LanguageServer for Backend {
             "cuid2" => get_docs("types", "cuid2").unwrap(),
             "hash" => get_docs("types", "hash").unwrap(),
             "base64" => get_docs("types", "base64").unwrap(),
+            "password" => get_docs("types", "password").unwrap_or_default(),
+            "document" => get_docs("types", "document").unwrap_or_default(),
+            "url" => get_docs("types", "url").unwrap_or_default(),
 
             // Rules
             "algorithm" => get_docs("rules", "algorithm").unwrap(),
