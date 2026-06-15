@@ -71,6 +71,16 @@ namespace Generated.Validation
                     {%- include "types/hash.tera" -%}
                 {%- elif field.type == "base64" -%}
                     {%- include "types/base64.tera" -%}
+                {%- elif field.type == "password" -%}
+                    {%- include "types/password.tera" -%}
+                {%- elif field.type == "document" -%}
+                    {%- include "types/document.tera" -%}
+                {%- elif field.type == "url" -%}
+                    {%- include "types/url.tera" -%}
+                {%- elif field.type == "cidrv4" -%}
+                    {%- include "types/cidrv4.tera" -%}
+                {%- elif field.type == "cidrv6" -%}
+                    {%- include "types/cidrv6.tera" -%}
                 {%- endif -%}
 
 

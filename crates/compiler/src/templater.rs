@@ -82,6 +82,8 @@ impl LanguageTemplater {
             let uses_uuid_type = has_uuid_type(forms);
             let uses_cuid2_type = has_cuid2_type(forms);
             let uses_base64_type = has_base64_type(forms);
+            let uses_cidrv4_type = has_cidrv4_type(forms);
+            let uses_cidrv6_type = has_cidrv6_type(forms);
 
             let mut context = Context::new();
             context.insert("actions", &build_actions(forms));
@@ -89,6 +91,8 @@ impl LanguageTemplater {
             context.insert("uses_uuid_type", &uses_uuid_type);
             context.insert("uses_cuid2_type", &uses_cuid2_type);
             context.insert("uses_base64_type", &uses_base64_type);
+            context.insert("uses_cidrv4_type", &uses_cidrv4_type);
+            context.insert("uses_cidrv6_type", &uses_cidrv6_type);
 
             let output = match self.tera.render("base.tera", &context) {
                 Ok(rendered) => rendered,
@@ -117,6 +121,12 @@ impl LanguageTemplater {
 
             if uses_base64_type {
                 self.write_base64_helper(output_dir);
+            }
+
+            if uses_cidrv4_type || uses_cidrv6_type {
+                if self.tera.get_template("utils/ipaddr.tera").is_ok() {
+                    self.write_ipaddr_helper(output_dir);
+                }
             }
         }
     }
@@ -199,6 +209,33 @@ impl LanguageTemplater {
         let helper_file = format!("{}/base64_validator.{}", helper_dir, self.extension);
         if let Err(error) = std::fs::write(&helper_file, helper_output) {
             eprintln!("Failed to write Base64 helper file '{}': {}", helper_file, error);
+        }
+    }
+
+    fn write_ipaddr_helper(&self, output_dir: &str) {
+        let helper_output = match self.tera.render("utils/ipaddr.tera", &Context::new()) {
+            Ok(rendered) => rendered,
+            Err(error) => {
+                eprintln!(
+                    "Error rendering ipaddr helper template for language '{}': {}",
+                    self.language, error
+                );
+                return;
+            }
+        };
+
+        let helper_dir = format!("{}/utils", output_dir);
+        if let Err(error) = std::fs::create_dir_all(&helper_dir) {
+            eprintln!(
+                "Failed to create helper directory '{}': {}",
+                helper_dir, error
+            );
+            return;
+        }
+
+        let helper_file = format!("{}/ipaddr.{}", helper_dir, self.extension);
+        if let Err(error) = std::fs::write(&helper_file, helper_output) {
+            eprintln!("Failed to write helper file '{}': {}", helper_file, error);
         }
     }
 }
@@ -299,6 +336,11 @@ fn rule_to_value(rule: &Rule) -> Value {
         Rule::Cuid2(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
         Rule::Base64(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
         Rule::Hash(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Document(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Password(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Url(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Cidrv4(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Cidrv6(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
     };
 
     prune_nulls(&mut value);
@@ -320,6 +362,11 @@ fn transform_to_value(transform: &Transform) -> Value {
         Transform::Cuid2(t) => serde_json::to_value(t).unwrap_or(Value::Null),
         Transform::Base64(t) => serde_json::to_value(t).unwrap_or(Value::Null),
         Transform::Hash(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Document(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Password(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Url(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Cidrv4(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Cidrv6(t) => serde_json::to_value(t).unwrap_or(Value::Null),
     };
 
     prune_nulls(&mut value);
@@ -431,4 +478,46 @@ fn rule_uses_base64_type(rule: &Rule) -> bool {
 
 fn transform_uses_base64_type(transform: &Transform) -> bool {
     matches!(transform, Transform::Base64(_)) || transform.get_cast() == Some(FieldType::Base64)
+}
+
+fn has_cidrv4_type(forms: &IndexMap<String, Form>) -> bool {
+    forms.values().any(|form| {
+        form.fields.values().any(|field| {
+            field.field_type == FieldType::Cidrv4
+                || field.rules.iter().any(rule_uses_cidrv4_type)
+                || field.transform.iter().any(transform_uses_cidrv4_type)
+        })
+    })
+}
+
+fn rule_uses_cidrv4_type(rule: &Rule) -> bool {
+    match rule {
+        Rule::Array(rules) => rules.array_type.value == FieldType::Cidrv4,
+        _ => false,
+    }
+}
+
+fn transform_uses_cidrv4_type(transform: &Transform) -> bool {
+    transform.get_cast() == Some(FieldType::Cidrv4)
+}
+
+fn has_cidrv6_type(forms: &IndexMap<String, Form>) -> bool {
+    forms.values().any(|form| {
+        form.fields.values().any(|field| {
+            field.field_type == FieldType::Cidrv6
+                || field.rules.iter().any(rule_uses_cidrv6_type)
+                || field.transform.iter().any(transform_uses_cidrv6_type)
+        })
+    })
+}
+
+fn rule_uses_cidrv6_type(rule: &Rule) -> bool {
+    match rule {
+        Rule::Array(rules) => rules.array_type.value == FieldType::Cidrv6,
+        _ => false,
+    }
+}
+
+fn transform_uses_cidrv6_type(transform: &Transform) -> bool {
+    transform.get_cast() == Some(FieldType::Cidrv6)
 }

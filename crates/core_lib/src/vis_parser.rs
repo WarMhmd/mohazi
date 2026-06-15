@@ -5,6 +5,7 @@ use crate::ast::{
     ImageTransform, MailRules, MailTransform, NumberRules, NumberTransform, PasswordRules,
     PasswordTransform, Rule, RuleTrait, RuleType, StringRules, StringTransform, Transform,
     TransformTrait, UrlRules, UrlTransform, UsernameRules, UsernameTransform, UuidRules, UuidTransform,
+    Cidrv4Rules, Cidrv6Rules, Cidrv4Transform, Cidrv6Transform,
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -27,6 +28,8 @@ enum ActiveRuleBuilder {
     Document(DocumentRules),
     Password(PasswordRules),
     Url(UrlRules),
+    Cidrv4(Cidrv4Rules),
+    Cidrv6(Cidrv6Rules),
     None,
 }
 
@@ -48,6 +51,8 @@ enum ActiveTransformBuilder {
     Document(DocumentTransform),
     Password(PasswordTransform),
     Url(UrlTransform),
+    Cidrv4(Cidrv4Transform),
+    Cidrv6(Cidrv6Transform),
     None,
 }
 
@@ -76,6 +81,8 @@ impl BuilderTrait for ActiveRuleBuilder {
             ActiveRuleBuilder::Document(_) => Some(FieldType::Document),
             ActiveRuleBuilder::Password(_) => Some(FieldType::Password),
             ActiveRuleBuilder::Url(_) => Some(FieldType::Url),
+            ActiveRuleBuilder::Cidrv4(_) => Some(FieldType::Cidrv4),
+            ActiveRuleBuilder::Cidrv6(_) => Some(FieldType::Cidrv6),
             ActiveRuleBuilder::None => None,
         }
     }
@@ -102,6 +109,8 @@ impl BuilderTrait for ActiveTransformBuilder {
             ActiveTransformBuilder::Document(_) => Some(FieldType::Document),
             ActiveTransformBuilder::Password(_) => Some(FieldType::Password),
             ActiveTransformBuilder::Url(_) => Some(FieldType::Url),
+            ActiveTransformBuilder::Cidrv4(_) => Some(FieldType::Cidrv4),
+            ActiveTransformBuilder::Cidrv6(_) => Some(FieldType::Cidrv6),
             ActiveTransformBuilder::None => None,
         }
     }
@@ -127,6 +136,8 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
         ActiveRuleBuilder::Document(r) => current_field.rules.push(Rule::Document(r)),
         ActiveRuleBuilder::Password(r) => current_field.rules.push(Rule::Password(r)),
         ActiveRuleBuilder::Url(r) => current_field.rules.push(Rule::Url(r)),
+        ActiveRuleBuilder::Cidrv4(r) => current_field.rules.push(Rule::Cidrv4(r)),
+        ActiveRuleBuilder::Cidrv6(r) => current_field.rules.push(Rule::Cidrv6(r)),
         // todo[Add]: Type
         ActiveRuleBuilder::None => {}
     }
@@ -152,6 +163,8 @@ fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Fi
         ActiveTransformBuilder::Document(t) => current_field.transform.push(Transform::Document(t)),
         ActiveTransformBuilder::Password(t) => current_field.transform.push(Transform::Password(t)),
         ActiveTransformBuilder::Url(t) => current_field.transform.push(Transform::Url(t)),
+        ActiveTransformBuilder::Cidrv4(t) => current_field.transform.push(Transform::Cidrv4(t)),
+        ActiveTransformBuilder::Cidrv6(t) => current_field.transform.push(Transform::Cidrv6(t)),
         // todo[Add]: Type
         ActiveTransformBuilder::None => {}
     }
@@ -482,6 +495,8 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             "document" => FieldType::Document,
                             "password" => FieldType::Password,
                             "url" => FieldType::Url,
+                            "cidrv4" => FieldType::Cidrv4,
+                            "cidrv6" => FieldType::Cidrv6,
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -607,6 +622,12 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             }
                             FieldType::Url => {
                                 ActiveRuleBuilder::Url(UrlRules::new())
+                            }
+                            FieldType::Cidrv4 => {
+                                ActiveRuleBuilder::Cidrv4(Cidrv4Rules::new())
+                            }
+                            FieldType::Cidrv6 => {
+                                ActiveRuleBuilder::Cidrv6(Cidrv6Rules::new())
                             }
                             // todo[Add]: Type
                             _ => {
@@ -775,6 +796,8 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         ActiveRuleBuilder::Document(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Password(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Url(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Cidrv4(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Cidrv6(r) => r.set_rule(key, final_val, final_err),
                         // todo[Add]: Type
                         ActiveRuleBuilder::None => Ok(()),
                     };
@@ -810,11 +833,11 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Hash => Rule::Hash(HashRules::new()),
                             FieldType::Password => Rule::Password(PasswordRules::new()),
                             FieldType::Url => Rule::Url(UrlRules::new()),
+                            FieldType::Cidrv4 => Rule::Cidrv4(Cidrv4Rules::new()),
+                            FieldType::Cidrv6 => Rule::Cidrv6(Cidrv6Rules::new()),
                             FieldType::HttpUrl => todo!(),
                             FieldType::Jwt => todo!(),
                             FieldType::Hex => todo!(),
-                            FieldType::Cidrv4 => todo!(),
-                            FieldType::Cidrv6 => todo!(),
                             FieldType::Ulid => todo!(),
                             FieldType::Cuid2 => Rule::Cuid2(Cuid2Rules::new()),
                             FieldType::Date => todo!(),
@@ -876,6 +899,12 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Url => {
                                 ActiveTransformBuilder::Url(UrlTransform::new())
                             }
+                            FieldType::Cidrv4 => {
+                                ActiveTransformBuilder::Cidrv4(Cidrv4Transform::new())
+                            }
+                            FieldType::Cidrv6 => {
+                                ActiveTransformBuilder::Cidrv6(Cidrv6Transform::new())
+                            }
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -910,6 +939,8 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 "hash" => FieldType::Hash,
                                 "password" => FieldType::Password,
                                 "url" => FieldType::Url,
+                                "cidrv4" => FieldType::Cidrv4,
+                                "cidrv6" => FieldType::Cidrv6,
                                 _ => {
                                     errors.push(ParserError::new(
                                         format!("Invalid cast type '{}'", value),
@@ -1152,6 +1183,12 @@ fn build_transform(
         }
         ActiveTransformBuilder::Url(url_transform) => {
             url_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Cidrv4(cidrv4_transform) => {
+            cidrv4_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Cidrv6(cidrv6_transform) => {
+            cidrv6_transform.set_transform(key, final_val)
         }
         ActiveTransformBuilder::None => Ok(()),
     };

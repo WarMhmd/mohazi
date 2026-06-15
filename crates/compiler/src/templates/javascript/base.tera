@@ -7,6 +7,9 @@ import { validateUuid, getUuidVersion } from "./utils/uuid_validator.js";
 {% if uses_base64_type -%}
 import { isStrictBase64 } from "./utils/base64_validator.js";
 {%- endif %}
+{% if uses_cidrv4_type or uses_cidrv6_type -%}
+import ipaddr from "./utils/ipaddr.js";
+{%- endif %}
 
 {%- for actionName, action in actions %}
 
@@ -69,6 +72,16 @@ export const validate{{ actionName | capitalize }} = async (data) => {
             {%- include "types/hash.tera" -%}
         {%- elif field.type == "base64" -%}
             {%- include "types/base64.tera" -%}
+        {%- elif field.type == "password" -%}
+            {%- include "types/password.tera" -%}
+        {%- elif field.type == "document" -%}
+            {%- include "types/document.tera" -%}
+        {%- elif field.type == "url" -%}
+            {%- include "types/url.tera" -%}
+        {%- elif field.type == "cidrv4" -%}
+            {%- include "types/cidrv4.tera" -%}
+        {%- elif field.type == "cidrv6" -%}
+            {%- include "types/cidrv6.tera" -%}
         {%- endif -%}
 
         if (flag) {

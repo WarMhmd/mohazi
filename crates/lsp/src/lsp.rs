@@ -379,6 +379,8 @@ impl LanguageServer for Backend {
                                 ("password", "Password type"),
                                 ("document", "Document type"),
                                 ("url", "URL type"),
+                                ("cidrv4", "CIDRv4 type"),
+                                ("cidrv6", "CIDRv6 type"),
                             ])));
                         }
                         return Ok(Some(CompletionResponse::Array(completion_items![
@@ -578,6 +580,8 @@ impl LanguageServer for Backend {
                         ("password", "Password type"),
                         ("document", "Document type"),
                         ("url", "URL type"),
+                        ("cidrv4", "CIDRv4 type"),
+                        ("cidrv6", "CIDRv6 type"),
                     ])));
                 }
 
@@ -662,6 +666,8 @@ impl LanguageServer for Backend {
             "password" => get_docs("types", "password").unwrap_or_default(),
             "document" => get_docs("types", "document").unwrap_or_default(),
             "url" => get_docs("types", "url").unwrap_or_default(),
+            "cidrv4" => get_docs("types", "cidrv4").unwrap_or_default(),
+            "cidrv6" => get_docs("types", "cidrv6").unwrap_or_default(),
 
             // Rules
             "algorithm" => get_docs("rules", "algorithm").unwrap(),

@@ -42,6 +42,12 @@ pub use username::{UsernameRules, UsernameTransform};
 pub use uuid::{UuidRules, UuidTransform};
 pub use url::{UrlRules, UrlTransform};
 
+pub mod cidrv4;
+pub mod cidrv6;
+
+pub use cidrv4::{Cidrv4Rules, Cidrv4Transform};
+pub use cidrv6::{Cidrv6Rules, Cidrv6Transform};
+
 /// This trait will be used for each rule to define the merge behaviour
 pub trait Mergeable {
     fn merge(&mut self, other: Self) -> Result<(), String>;
@@ -197,6 +203,16 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Rule::Url(url_rule)
                     }
+                    FieldType::Cidrv4 => {
+                        let cidr_rule: Cidrv4Rules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Cidrv4(cidr_rule)
+                    }
+                    FieldType::Cidrv6 => {
+                        let cidr_rule: Cidrv6Rules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Cidrv6(cidr_rule)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for rules",
@@ -267,6 +283,16 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Transform::Url(url_transform)
                     }
+                    FieldType::Cidrv4 => {
+                        let cidr_transform: Cidrv4Transform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Cidrv4(cidr_transform)
+                    }
+                    FieldType::Cidrv6 => {
+                        let cidr_transform: Cidrv6Transform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Cidrv6(cidr_transform)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for transform",
@@ -320,6 +346,8 @@ pub enum Rule {
     Document(DocumentRules),
     Password(PasswordRules),
     Url(UrlRules),
+    Cidrv4(Cidrv4Rules),
+    Cidrv6(Cidrv6Rules),
     // todo[Add]: Type
 }
 
@@ -351,6 +379,8 @@ impl Rule {
             (Rule::Document(a), Rule::Document(b)) => a.merge(b),
             (Rule::Password(a), Rule::Password(b)) => a.merge(b),
             (Rule::Url(a), Rule::Url(b)) => a.merge(b),
+            (Rule::Cidrv4(a), Rule::Cidrv4(b)) => a.merge(b),
+            (Rule::Cidrv6(a), Rule::Cidrv6(b)) => a.merge(b),
             // todo[Add]: Type
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
@@ -384,6 +414,8 @@ pub enum Transform {
     Document(DocumentTransform),
     Password(PasswordTransform),
     Url(UrlTransform),
+    Cidrv4(Cidrv4Transform),
+    Cidrv6(Cidrv6Transform),
     // todo[Add]: Type
 }
 
@@ -419,6 +451,8 @@ impl Transform {
             (Transform::Hash(a), Transform::Hash(b)) => a.merge(b),
             (Transform::Password(a), Transform::Password(b)) => a.merge(b),
             (Transform::Url(a), Transform::Url(b)) => a.merge(b),
+            (Transform::Cidrv4(a), Transform::Cidrv4(b)) => a.merge(b),
+            (Transform::Cidrv6(a), Transform::Cidrv6(b)) => a.merge(b),
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
     }
@@ -464,6 +498,8 @@ impl Transform {
             Transform::Document(h) => h.cast,
             Transform::Password(h) => h.cast,
             Transform::Url(h) => h.cast,
+            Transform::Cidrv4(h) => h.cast,
+            Transform::Cidrv6(h) => h.cast,
             // todo[Add]: Types more types here
         }
     }
@@ -511,6 +547,12 @@ impl Transform {
             Transform::Url(f) => {
                 match_types!(f.cast, FieldType::String)
             }
+            Transform::Cidrv4(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Cidrv6(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
             // todo[Add]: Types more types here
             Transform::Array(f) => {
                 // create a transform from array_type
@@ -551,6 +593,14 @@ impl Transform {
                         ..Default::default()
                     }),
                     Some(FieldType::Url) => Transform::Url(UrlTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Cidrv4) => Transform::Cidrv4(Cidrv4Transform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Cidrv6) => Transform::Cidrv6(Cidrv6Transform {
                         cast: f.cast,
                         ..Default::default()
                     }),
