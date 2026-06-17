@@ -341,6 +341,9 @@ fn rule_to_value(rule: &Rule) -> Value {
         Rule::Url(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
         Rule::Cidrv4(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
         Rule::Cidrv6(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Date(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Hex(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
+        Rule::Ulid(rules) => serde_json::to_value(rules).unwrap_or(Value::Null),
     };
 
     prune_nulls(&mut value);
@@ -367,6 +370,9 @@ fn transform_to_value(transform: &Transform) -> Value {
         Transform::Url(t) => serde_json::to_value(t).unwrap_or(Value::Null),
         Transform::Cidrv4(t) => serde_json::to_value(t).unwrap_or(Value::Null),
         Transform::Cidrv6(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Date(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Hex(t) => serde_json::to_value(t).unwrap_or(Value::Null),
+        Transform::Ulid(t) => serde_json::to_value(t).unwrap_or(Value::Null),
     };
 
     prune_nulls(&mut value);

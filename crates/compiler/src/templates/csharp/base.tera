@@ -81,6 +81,12 @@ namespace Generated.Validation
                     {%- include "types/cidrv4.tera" -%}
                 {%- elif field.type == "cidrv6" -%}
                     {%- include "types/cidrv6.tera" -%}
+                {%- elif field.type == "date" -%}
+                    {%- include "types/date.tera" -%}
+                {%- elif field.type == "hex" -%}
+                    {%- include "types/hex.tera" -%}
+                {%- elif field.type == "ulid" -%}
+                    {%- include "types/ulid.tera" -%}
                 {%- endif -%}
 
 

@@ -381,6 +381,9 @@ impl LanguageServer for Backend {
                                 ("url", "URL type"),
                                 ("cidrv4", "CIDRv4 type"),
                                 ("cidrv6", "CIDRv6 type"),
+                                ("date", "Date type"),
+                                ("hex", "Hexadecimal string type"),
+                                ("ulid", "ULID type"),
                             ])));
                         }
                         return Ok(Some(CompletionResponse::Array(completion_items![
@@ -582,6 +585,9 @@ impl LanguageServer for Backend {
                         ("url", "URL type"),
                         ("cidrv4", "CIDRv4 type"),
                         ("cidrv6", "CIDRv6 type"),
+                        ("date", "Date type"),
+                        ("hex", "Hexadecimal string type"),
+                        ("ulid", "ULID type"),
                     ])));
                 }
 
@@ -668,6 +674,9 @@ impl LanguageServer for Backend {
             "url" => get_docs("types", "url").unwrap_or_default(),
             "cidrv4" => get_docs("types", "cidrv4").unwrap_or_default(),
             "cidrv6" => get_docs("types", "cidrv6").unwrap_or_default(),
+            "date" => get_docs("types", "date").unwrap_or_default(),
+            "hex" => get_docs("types", "hex").unwrap_or_default(),
+            "ulid" => get_docs("types", "ulid").unwrap_or_default(),
 
             // Rules
             "algorithm" => get_docs("rules", "algorithm").unwrap(),

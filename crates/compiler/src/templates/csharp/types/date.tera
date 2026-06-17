@@ -132,24 +132,84 @@ else
     }
     {%- endif %}
 
+    if (flag)
+    {
+        if (!DateTime.TryParse(value, out DateTime dateObj))
+        {
+            result.Errors.Add(new ValidationError
+            {
+                Path = {{ FieldNamePath }},
+                Message = {{ defaultError | json_encode | safe }}
+            });
+            flag = false;
+        }
+        else
+        {
+            {%- if rules.minDate is defined %}
+            if (dateObj < DateTime.Parse("{{ rules.minDate.value }}"))
+            {
+                result.Errors.Add(new ValidationError
+                {
+                    Path = {{ FieldNamePath }},
+                    Message = {{ rules.minDate.error | default(value=defaultError) | json_encode | safe }}
+                });
+                flag = false;
+            }
+            {%- endif %}
+
+            {%- if rules.maxDate is defined %}
+            if (dateObj > DateTime.Parse("{{ rules.maxDate.value }}"))
+            {
+                result.Errors.Add(new ValidationError
+                {
+                    Path = {{ FieldNamePath }},
+                    Message = {{ rules.maxDate.error | default(value=defaultError) | json_encode | safe }}
+                });
+                flag = false;
+            }
+            {%- endif %}
+            
+            if (flag)
+            {
+                {%- if transform.format is defined %}
+                string formatStr = "{{ transform.format }}";
+                formatStr = formatStr.Replace("DDD", dateObj.DayOfYear.ToString("000"));
+                formatStr = formatStr.Replace("YYYY", "yyyy").Replace("YY", "yy");
+                formatStr = formatStr.Replace("a", "tt");
+                data[{{ FieldName }}] = dateObj.ToString(formatStr);
+                {%- else %}
+                data[{{ FieldName }}] = dateObj;
+                {%- endif %}
+            }
+        }
+    }
 
     {%- if transform.trim is defined and transform.trim %}
-    value = value.Trim();
-    data[{{ FieldName }}] = value;
+    if (data[{{ FieldName }}] is string strTrim)
+    {
+        data[{{ FieldName }}] = strTrim.Trim();
+    }
     {%- endif %}
 
     {%- if transform.toLowerCase is defined and transform.toLowerCase %}
-    value = value.ToLowerInvariant();
-    data[{{ FieldName }}] = value;
+    if (data[{{ FieldName }}] is string strToLower)
+    {
+        data[{{ FieldName }}] = strToLower.ToLowerInvariant();
+    }
     {%- endif %}
 
     {%- if transform.toUpperCase is defined and transform.toUpperCase %}
-    value = value.ToUpperInvariant();
-    data[{{ FieldName }}] = value;
+    if (data[{{ FieldName }}] is string strToUpper)
+    {
+        data[{{ FieldName }}] = strToUpper.ToUpperInvariant();
+    }
     {%- endif %}
 
     {%- if transform.split is defined %}
-    data[{{ FieldName }}] = value.Split(new[] { "{{ transform.split }}" }, StringSplitOptions.None);
+    if (data[{{ FieldName }}] is string strSplit)
+    {
+        data[{{ FieldName }}] = strSplit.Split(new[] { "{{ transform.split }}" }, StringSplitOptions.None);
+    }
     {%- endif %}
 
     {%- if transform.cast is defined and transform.cast == "String" %}

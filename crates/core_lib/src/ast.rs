@@ -44,9 +44,15 @@ pub use url::{UrlRules, UrlTransform};
 
 pub mod cidrv4;
 pub mod cidrv6;
+pub mod date;
+pub mod hex;
+pub mod ulid;
 
 pub use cidrv4::{Cidrv4Rules, Cidrv4Transform};
 pub use cidrv6::{Cidrv6Rules, Cidrv6Transform};
+pub use date::{DateRules, DateTransform};
+pub use hex::{HexRules, HexTransform};
+pub use ulid::{UlidRules, UlidTransform};
 
 /// This trait will be used for each rule to define the merge behaviour
 pub trait Mergeable {
@@ -213,6 +219,21 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Rule::Cidrv6(cidr_rule)
                     }
+                    FieldType::Date => {
+                        let date_rule: DateRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Date(date_rule)
+                    }
+                    FieldType::Hex => {
+                        let hex_rule: HexRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Hex(hex_rule)
+                    }
+                    FieldType::Ulid => {
+                        let ulid_rule: UlidRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Ulid(ulid_rule)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for rules",
@@ -293,6 +314,21 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Transform::Cidrv6(cidr_transform)
                     }
+                    FieldType::Date => {
+                        let date_transform: DateTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Date(date_transform)
+                    }
+                    FieldType::Hex => {
+                        let hex_transform: HexTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Hex(hex_transform)
+                    }
+                    FieldType::Ulid => {
+                        let ulid_transform: UlidTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Ulid(ulid_transform)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for transform",
@@ -348,6 +384,9 @@ pub enum Rule {
     Url(UrlRules),
     Cidrv4(Cidrv4Rules),
     Cidrv6(Cidrv6Rules),
+    Date(DateRules),
+    Hex(HexRules),
+    Ulid(UlidRules),
     // todo[Add]: Type
 }
 
@@ -381,6 +420,9 @@ impl Rule {
             (Rule::Url(a), Rule::Url(b)) => a.merge(b),
             (Rule::Cidrv4(a), Rule::Cidrv4(b)) => a.merge(b),
             (Rule::Cidrv6(a), Rule::Cidrv6(b)) => a.merge(b),
+            (Rule::Date(a), Rule::Date(b)) => a.merge(b),
+            (Rule::Hex(a), Rule::Hex(b)) => a.merge(b),
+            (Rule::Ulid(a), Rule::Ulid(b)) => a.merge(b),
             // todo[Add]: Type
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
@@ -416,6 +458,9 @@ pub enum Transform {
     Url(UrlTransform),
     Cidrv4(Cidrv4Transform),
     Cidrv6(Cidrv6Transform),
+    Date(DateTransform),
+    Hex(HexTransform),
+    Ulid(UlidTransform),
     // todo[Add]: Type
 }
 
@@ -453,6 +498,9 @@ impl Transform {
             (Transform::Url(a), Transform::Url(b)) => a.merge(b),
             (Transform::Cidrv4(a), Transform::Cidrv4(b)) => a.merge(b),
             (Transform::Cidrv6(a), Transform::Cidrv6(b)) => a.merge(b),
+            (Transform::Date(a), Transform::Date(b)) => a.merge(b),
+            (Transform::Hex(a), Transform::Hex(b)) => a.merge(b),
+            (Transform::Ulid(a), Transform::Ulid(b)) => a.merge(b),
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
     }
@@ -500,6 +548,9 @@ impl Transform {
             Transform::Url(h) => h.cast,
             Transform::Cidrv4(h) => h.cast,
             Transform::Cidrv6(h) => h.cast,
+            Transform::Date(h) => h.cast,
+            Transform::Hex(h) => h.cast,
+            Transform::Ulid(h) => h.cast,
             // todo[Add]: Types more types here
         }
     }
@@ -553,6 +604,15 @@ impl Transform {
             Transform::Cidrv6(f) => {
                 match_types!(f.cast, FieldType::String)
             }
+            Transform::Date(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Hex(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Ulid(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
             // todo[Add]: Types more types here
             Transform::Array(f) => {
                 // create a transform from array_type
@@ -604,6 +664,18 @@ impl Transform {
                         cast: f.cast,
                         ..Default::default()
                     }),
+                    Some(FieldType::Date) => Transform::Date(DateTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Hex) => Transform::Hex(HexTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Ulid) => Transform::Ulid(UlidTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
 
                     // todo[Add]: Types your mock transform here
                     _ => Transform::Array(ArrayTransform {
@@ -647,6 +719,8 @@ pub enum FieldType {
     Cidrv4,
     Cidrv6,
     Ulid,
+    MacV4,
+    MacV6,
     Cuid2,
     Date,
     Document,
@@ -675,6 +749,8 @@ impl FieldType {
             "cidrv4" => Some(FieldType::Cidrv4),
             "cidrv6" => Some(FieldType::Cidrv6),
             "ulid" => Some(FieldType::Ulid),
+            "macv4" => Some(FieldType::MacV4),
+            "macv6" => Some(FieldType::MacV6),
             "cuid2" => Some(FieldType::Cuid2),
             "date" => Some(FieldType::Date),
             "document" => Some(FieldType::Document),
@@ -700,6 +776,8 @@ impl FieldType {
             FieldType::Base64 => "base64",
             FieldType::Jwt => "jwt",
             FieldType::Hex => "hex",
+            FieldType::MacV4 => "macv4",
+            FieldType::MacV6 => "macv6",
             FieldType::Cidrv4 => "cidrv4",
             FieldType::Cidrv6 => "cidrv6",
             FieldType::Ulid => "ulid",

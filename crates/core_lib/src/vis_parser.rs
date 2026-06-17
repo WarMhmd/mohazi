@@ -1,11 +1,12 @@
 use crate::ast::{
     ArrayRules, ArrayTransform, Base64Rules, Base64Transform, BooleanRules, BooleanTransform,
-    Cuid2Rules, Cuid2Transform, DocumentRules, DocumentTransform, EnumRules, EnumTransform, Field,
-    FieldType, FileRules, FileTransform, Form, HashRules, HashTransform, ImageRules,
-    ImageTransform, MailRules, MailTransform, NumberRules, NumberTransform, PasswordRules,
-    PasswordTransform, Rule, RuleTrait, RuleType, StringRules, StringTransform, Transform,
-    TransformTrait, UrlRules, UrlTransform, UsernameRules, UsernameTransform, UuidRules, UuidTransform,
-    Cidrv4Rules, Cidrv6Rules, Cidrv4Transform, Cidrv6Transform,
+    Cidrv4Rules, Cidrv4Transform, Cidrv6Rules, Cidrv6Transform, Cuid2Rules, Cuid2Transform,
+    DateRules, DateTransform, DocumentRules, DocumentTransform, EnumRules, EnumTransform, Field,
+    FieldType, FileRules, FileTransform, Form, HashRules, HashTransform, HexRules, HexTransform,
+    ImageRules, ImageTransform, MailRules, MailTransform, NumberRules, NumberTransform,
+    PasswordRules, PasswordTransform, Rule, RuleTrait, RuleType, StringRules, StringTransform,
+    Transform, TransformTrait, UlidRules, UlidTransform, UrlRules, UrlTransform, UsernameRules,
+    UsernameTransform, UuidRules, UuidTransform,
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -30,6 +31,9 @@ enum ActiveRuleBuilder {
     Url(UrlRules),
     Cidrv4(Cidrv4Rules),
     Cidrv6(Cidrv6Rules),
+    Date(DateRules),
+    Hex(HexRules),
+    Ulid(UlidRules),
     None,
 }
 
@@ -53,6 +57,9 @@ enum ActiveTransformBuilder {
     Url(UrlTransform),
     Cidrv4(Cidrv4Transform),
     Cidrv6(Cidrv6Transform),
+    Date(DateTransform),
+    Hex(HexTransform),
+    Ulid(UlidTransform),
     None,
 }
 
@@ -83,6 +90,9 @@ impl BuilderTrait for ActiveRuleBuilder {
             ActiveRuleBuilder::Url(_) => Some(FieldType::Url),
             ActiveRuleBuilder::Cidrv4(_) => Some(FieldType::Cidrv4),
             ActiveRuleBuilder::Cidrv6(_) => Some(FieldType::Cidrv6),
+            ActiveRuleBuilder::Date(_) => Some(FieldType::Date),
+            ActiveRuleBuilder::Hex(_) => Some(FieldType::Hex),
+            ActiveRuleBuilder::Ulid(_) => Some(FieldType::Ulid),
             ActiveRuleBuilder::None => None,
         }
     }
@@ -111,6 +121,9 @@ impl BuilderTrait for ActiveTransformBuilder {
             ActiveTransformBuilder::Url(_) => Some(FieldType::Url),
             ActiveTransformBuilder::Cidrv4(_) => Some(FieldType::Cidrv4),
             ActiveTransformBuilder::Cidrv6(_) => Some(FieldType::Cidrv6),
+            ActiveTransformBuilder::Date(_) => Some(FieldType::Date),
+            ActiveTransformBuilder::Hex(_) => Some(FieldType::Hex),
+            ActiveTransformBuilder::Ulid(_) => Some(FieldType::Ulid),
             ActiveTransformBuilder::None => None,
         }
     }
@@ -138,6 +151,9 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
         ActiveRuleBuilder::Url(r) => current_field.rules.push(Rule::Url(r)),
         ActiveRuleBuilder::Cidrv4(r) => current_field.rules.push(Rule::Cidrv4(r)),
         ActiveRuleBuilder::Cidrv6(r) => current_field.rules.push(Rule::Cidrv6(r)),
+        ActiveRuleBuilder::Date(r) => current_field.rules.push(Rule::Date(r)),
+        ActiveRuleBuilder::Hex(r) => current_field.rules.push(Rule::Hex(r)),
+        ActiveRuleBuilder::Ulid(r) => current_field.rules.push(Rule::Ulid(r)),
         // todo[Add]: Type
         ActiveRuleBuilder::None => {}
     }
@@ -165,6 +181,9 @@ fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Fi
         ActiveTransformBuilder::Url(t) => current_field.transform.push(Transform::Url(t)),
         ActiveTransformBuilder::Cidrv4(t) => current_field.transform.push(Transform::Cidrv4(t)),
         ActiveTransformBuilder::Cidrv6(t) => current_field.transform.push(Transform::Cidrv6(t)),
+        ActiveTransformBuilder::Date(t) => current_field.transform.push(Transform::Date(t)),
+        ActiveTransformBuilder::Hex(t) => current_field.transform.push(Transform::Hex(t)),
+        ActiveTransformBuilder::Ulid(t) => current_field.transform.push(Transform::Ulid(t)),
         // todo[Add]: Type
         ActiveTransformBuilder::None => {}
     }
@@ -488,7 +507,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             "image" => FieldType::Image,
                             "mail" => FieldType::Mail,
                             "username" => FieldType::Username,
-                            "uuid" => FieldType::Uuid,
+                            "uuid" | "guid" => FieldType::Uuid,
                             "cuid2" => FieldType::Cuid2,
                             "base64" => FieldType::Base64,
                             "hash" => FieldType::Hash,
@@ -620,15 +639,12 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Password => {
                                 ActiveRuleBuilder::Password(PasswordRules::new())
                             }
-                            FieldType::Url => {
-                                ActiveRuleBuilder::Url(UrlRules::new())
-                            }
-                            FieldType::Cidrv4 => {
-                                ActiveRuleBuilder::Cidrv4(Cidrv4Rules::new())
-                            }
-                            FieldType::Cidrv6 => {
-                                ActiveRuleBuilder::Cidrv6(Cidrv6Rules::new())
-                            }
+                            FieldType::Url => ActiveRuleBuilder::Url(UrlRules::new()),
+                            FieldType::Cidrv4 => ActiveRuleBuilder::Cidrv4(Cidrv4Rules::new()),
+                            FieldType::Cidrv6 => ActiveRuleBuilder::Cidrv6(Cidrv6Rules::new()),
+                            FieldType::Date => ActiveRuleBuilder::Date(DateRules::new()),
+                            FieldType::Hex => ActiveRuleBuilder::Hex(HexRules::new()),
+                            FieldType::Ulid => ActiveRuleBuilder::Ulid(UlidRules::new()),
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -798,6 +814,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         ActiveRuleBuilder::Url(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Cidrv4(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Cidrv6(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Date(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Hex(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Ulid(r) => r.set_rule(key, final_val, final_err),
                         // todo[Add]: Type
                         ActiveRuleBuilder::None => Ok(()),
                     };
@@ -835,12 +854,14 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Url => Rule::Url(UrlRules::new()),
                             FieldType::Cidrv4 => Rule::Cidrv4(Cidrv4Rules::new()),
                             FieldType::Cidrv6 => Rule::Cidrv6(Cidrv6Rules::new()),
+                            FieldType::Date => Rule::Date(DateRules::new()),
+                            FieldType::Ulid => Rule::Ulid(UlidRules::new()),
                             FieldType::HttpUrl => todo!(),
                             FieldType::Jwt => todo!(),
-                            FieldType::Hex => todo!(),
-                            FieldType::Ulid => todo!(),
+                            FieldType::Hex => Rule::Hex(HexRules::new()),
+                            FieldType::MacV4 => todo!(),
+                            FieldType::MacV6 => todo!(),
                             FieldType::Cuid2 => Rule::Cuid2(Cuid2Rules::new()),
-                            FieldType::Date => todo!(),
                             FieldType::Document => Rule::Document(DocumentRules::new()),
                         };
 
@@ -896,15 +917,16 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Password => {
                                 ActiveTransformBuilder::Password(PasswordTransform::new())
                             }
-                            FieldType::Url => {
-                                ActiveTransformBuilder::Url(UrlTransform::new())
-                            }
+                            FieldType::Url => ActiveTransformBuilder::Url(UrlTransform::new()),
                             FieldType::Cidrv4 => {
                                 ActiveTransformBuilder::Cidrv4(Cidrv4Transform::new())
                             }
                             FieldType::Cidrv6 => {
                                 ActiveTransformBuilder::Cidrv6(Cidrv6Transform::new())
                             }
+                            FieldType::Date => ActiveTransformBuilder::Date(DateTransform::new()),
+                            FieldType::Hex => ActiveTransformBuilder::Hex(HexTransform::new()),
+                            FieldType::Ulid => ActiveTransformBuilder::Ulid(UlidTransform::new()),
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -933,7 +955,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 "image" => FieldType::Image,
                                 "mail" => FieldType::Mail,
                                 "username" => FieldType::Username,
-                                "uuid" => FieldType::Uuid,
+                                "uuid" | "guid" => FieldType::Uuid,
                                 "cuid2" => FieldType::Cuid2,
                                 "base64" => FieldType::Base64,
                                 "hash" => FieldType::Hash,
@@ -1181,14 +1203,19 @@ fn build_transform(
         ActiveTransformBuilder::Password(password_transform) => {
             password_transform.set_transform(key, final_val)
         }
-        ActiveTransformBuilder::Url(url_transform) => {
-            url_transform.set_transform(key, final_val)
-        }
+        ActiveTransformBuilder::Url(url_transform) => url_transform.set_transform(key, final_val),
         ActiveTransformBuilder::Cidrv4(cidrv4_transform) => {
             cidrv4_transform.set_transform(key, final_val)
         }
         ActiveTransformBuilder::Cidrv6(cidrv6_transform) => {
             cidrv6_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Date(date_transform) => {
+            date_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Hex(hex_transform) => hex_transform.set_transform(key, final_val),
+        ActiveTransformBuilder::Ulid(ulid_transform) => {
+            ulid_transform.set_transform(key, final_val)
         }
         ActiveTransformBuilder::None => Ok(()),
     };

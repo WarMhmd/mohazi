@@ -1,16 +1,17 @@
 use serde::{Deserialize, Serialize};
 use serde_yaml_ng::Value;
 
+use crate::ast::TransformTrait;
+
 use super::parse_val;
 use super::FieldType;
 use super::Mergeable;
 use super::RuleTrait;
 use super::RuleType;
-use crate::ast::TransformTrait;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct UuidRules {
+pub struct DateRules {
     #[serde(alias = "min", alias = "min_length")]
     pub min_length: Option<RuleType<u128>>,
     #[serde(alias = "max", alias = "max_length")]
@@ -26,32 +27,27 @@ pub struct UuidRules {
     pub uppercase: Option<RuleType<bool>>,
     pub lowercase: Option<RuleType<bool>>,
 
-    // custom rule
-    pub version: Option<RuleType<String>>,
+    // Custom rules for Date
+    #[serde(alias = "min_date")]
+    pub min_date: Option<RuleType<String>>,
+    #[serde(alias = "max_date")]
+    pub max_date: Option<RuleType<String>>,
 }
 
-impl RuleTrait for UuidRules {
+impl RuleTrait for DateRules {
     fn new() -> Self {
         Self {
             min_length: None,
             max_length: None,
-            length: Some(RuleType {
-                value: 36,
-                error: None,
-            }),
-            regex: Some(RuleType {
-                value: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$".to_string(),
-                error: None,
-            }),
+            length: None,
+            regex: None,
             starts_with: None,
             ends_with: None,
             includes: None,
             uppercase: None,
             lowercase: None,
-            version: Some(RuleType {
-                value: String::from("v4"),
-                error: None,
-            }),
+            min_date: None,
+            max_date: None,
         }
     }
 
@@ -113,39 +109,19 @@ impl RuleTrait for UuidRules {
                     error: rule_err,
                 })
             }
-            "version" => {
-                let parsed_version: String = parse_val(value)?;
-                let valid_versions = ["v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8"];
-                if !valid_versions.contains(&parsed_version.as_str()) {
-                    return Err(format!(
-                        "Invalid UUID version '{}'. Only v1 through v8 are supported.",
-                        parsed_version
-                    ));
-                }
-
-                if parsed_version == "v4" {
-                    self.regex = Some(RuleType {
-                        value: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$".to_string(),
-                        error: rule_err.clone(),
-                    });
-                } else if parsed_version == "v7" {
-                    self.regex = Some(RuleType {
-                        value: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$".to_string(),
-                        error: rule_err.clone(),
-                    });
-                } else {
-                    self.regex = Some(RuleType {
-                        value: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$".to_string(),
-                        error: rule_err.clone(),
-                    });
-                }
-
-                self.version = Some(RuleType {
-                    value: parsed_version,
+            "minDate" | "min_date" => {
+                self.min_date = Some(RuleType {
+                    value: parse_val(value)?,
                     error: rule_err,
-                });
+                })
             }
-            _ => return Err(format!("Unknown uuid rule: {}", key)),
+            "maxDate" | "max_date" => {
+                self.max_date = Some(RuleType {
+                    value: parse_val(value)?,
+                    error: rule_err,
+                })
+            }
+            _ => return Err(format!("Unknown date rule: {}", key)),
         }
         Ok(())
     }
@@ -161,14 +137,15 @@ impl RuleTrait for UuidRules {
             "includes" => true,
             "uppercase" => true,
             "lowercase" => true,
-            "version" => true,
+            "minDate" | "min_date" => true,
+            "maxDate" | "max_date" => true,
             _ => false,
         }
     }
 }
 
-impl Mergeable for UuidRules {
-    fn merge(&mut self, other: UuidRules) -> Result<(), String> {
+impl Mergeable for DateRules {
+    fn merge(&mut self, other: DateRules) -> Result<(), String> {
         if other.min_length.is_some() {
             if self.min_length.is_some() {
                 return Err("Duplicate rule: min_length".to_string());
@@ -232,11 +209,18 @@ impl Mergeable for UuidRules {
                 self.lowercase = other.lowercase;
             }
         }
-        if other.version.is_some() {
-            if self.version.is_some() {
-                return Err("Duplicate rule: version".to_string());
+        if other.min_date.is_some() {
+            if self.min_date.is_some() {
+                return Err("Duplicate rule: minDate".to_string());
             } else {
-                self.version = other.version;
+                self.min_date = other.min_date;
+            }
+        }
+        if other.max_date.is_some() {
+            if self.max_date.is_some() {
+                return Err("Duplicate rule: maxDate".to_string());
+            } else {
+                self.max_date = other.max_date;
             }
         }
 
@@ -246,7 +230,7 @@ impl Mergeable for UuidRules {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct UuidTransform {
+pub struct DateTransform {
     pub trim: Option<bool>,
     #[serde(
         alias = "toLowerCase",
@@ -264,9 +248,12 @@ pub struct UuidTransform {
     pub to_uppercase: Option<bool>,
     pub split: Option<String>,
     pub cast: Option<FieldType>,
+
+    // Custom transforms for Date
+    pub format: Option<String>,
 }
 
-impl Mergeable for UuidTransform {
+impl Mergeable for DateTransform {
     fn merge(&mut self, other: Self) -> Result<(), String> {
         if other.cast.is_some() {
             if self.cast.is_some() {
@@ -307,19 +294,28 @@ impl Mergeable for UuidTransform {
                 self.split = other.split;
             }
         }
+        
+        if other.format.is_some() {
+            if self.format.is_some() {
+                return Err("Duplicate transform: format".to_string());
+            } else {
+                self.format = other.format;
+            }
+        }
 
         Ok(())
     }
 }
 
-impl TransformTrait for UuidTransform {
+impl TransformTrait for DateTransform {
     fn new() -> Self {
-        UuidTransform {
+        DateTransform {
             trim: None,
             to_lowercase: None,
             to_uppercase: None,
             split: None,
             cast: None,
+            format: None,
         }
     }
 
@@ -330,6 +326,7 @@ impl TransformTrait for UuidTransform {
             "toUpperCase" | "to_upper_case" | "uppercase" | "to_uppercase" => true,
             "split" => true,
             "cast" => true,
+            "format" => true,
             _ => false,
         }
     }
@@ -345,8 +342,9 @@ impl TransformTrait for UuidTransform {
             }
             "split" => self.split = Some(parse_val(value)?),
             "cast" => self.cast = Some(parse_val(value)?),
-            _ => return Err(format!("Unknown uuid transform: {}", key)),
-        }
+            "format" => self.format = Some(parse_val(value)?),
+            _ => return Err(format!("Unknown transform {}", key)),
+        };
         Ok(())
     }
 }
