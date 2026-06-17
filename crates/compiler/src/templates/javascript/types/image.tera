@@ -1,0 +1,110 @@
+if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
+	{%- if required %}
+	result.errors.push({
+		path: {{ FieldNamePath }},
+		message: {{ defaultError | json_encode | safe }}
+	});
+	flag = false;
+	{%- endif %}
+} else if (typeof data.{{ FieldName }} !== "string") {
+	result.errors.push({
+		path: {{ FieldNamePath }},
+		message: {{ defaultError | json_encode | safe }}
+	});
+	flag = false;
+} else {
+	{%- if rules.maxSize is defined %}
+	if (getFileSize(data.{{ FieldName }}) > {{ rules.maxSize.value }}) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.maxSize.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if rules.minSize is defined %}
+	if (getFileSize(data.{{ FieldName }}) < {{ rules.minSize.value }}) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.minSize.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+	{%- if rules.extension is defined %}
+	if (!await validateFileExtension(data.{{ FieldName }}, {{ rules.extension.value | json_encode | safe }})) {
+		result.errors.push({
+			path: {{ FieldNamePath }},
+			message: {{ rules.extension.error | default(value=defaultError) | json_encode | safe }}
+		});
+		flag = false;
+	}
+	{%- endif %}
+
+	if (flag) {
+		const dimensions = await getImageDimensions(data.{{ FieldName }});
+		{%- if rules.width is defined %}
+		if (dimensions.width !== {{ rules.width.value }}) {
+			result.errors.push({
+				path: {{ FieldNamePath }},
+				message: {{ rules.width.error | default(value="Invalid image width") | json_encode | safe }}
+			});
+			flag = false;
+		}
+		{%- endif %}
+		{%- if rules.height is defined %}
+		if (dimensions.height !== {{ rules.height.value }}) {
+			result.errors.push({
+				path: {{ FieldNamePath }},
+				message: {{ rules.height.error | default(value="Invalid image height") | json_encode | safe }}
+			});
+			flag = false;
+		}
+		{%- endif %}
+		{%- if rules.minWidth is defined %}
+		if (dimensions.width < {{ rules.minWidth.value }}) {
+			result.errors.push({
+				path: {{ FieldNamePath }},
+				message: {{ rules.minWidth.error | default(value="Image width too small") | json_encode | safe }}
+			});
+			flag = false;
+		}
+		{%- endif %}
+		{%- if rules.maxWidth is defined %}
+		if (dimensions.width > {{ rules.maxWidth.value }}) {
+			result.errors.push({
+				path: {{ FieldNamePath }},
+				message: {{ rules.maxWidth.error | default(value="Image width too large") | json_encode | safe }}
+			});
+			flag = false;
+		}
+		{%- endif %}
+		{%- if rules.minHeight is defined %}
+		if (dimensions.height < {{ rules.minHeight.value }}) {
+			result.errors.push({
+				path: {{ FieldNamePath }},
+				message: {{ rules.minHeight.error | default(value="Image height too small") | json_encode | safe }}
+			});
+			flag = false;
+		}
+		{%- endif %}
+		{%- if rules.maxHeight is defined %}
+		if (dimensions.height > {{ rules.maxHeight.value }}) {
+			result.errors.push({
+				path: {{ FieldNamePath }},
+				message: {{ rules.maxHeight.error | default(value="Image height too large") | json_encode | safe }}
+			});
+			flag = false;
+		}
+		{%- endif %}
+		{%- if rules.ratio is defined %}
+		if (!validateImageRatio(dimensions.width, dimensions.height, {{ rules.ratio.value | json_encode | safe }})) {
+			result.errors.push({
+				path: {{ FieldNamePath }},
+				message: {{ rules.ratio.error | default(value="Invalid image aspect ratio") | json_encode | safe }}
+			});
+			flag = false;
+		}
+		{%- endif %}
+	}
+}

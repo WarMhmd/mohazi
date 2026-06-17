@@ -1,0 +1,194 @@
+bool flag = true;
+
+if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
+{
+    {%- if required %}
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+    {%- endif %}
+}
+else if (
+    rawValue is not sbyte &&
+    rawValue is not byte &&
+    rawValue is not short &&
+    rawValue is not ushort &&
+    rawValue is not int &&
+    rawValue is not uint &&
+    rawValue is not long &&
+    rawValue is not ulong &&
+    rawValue is not float &&
+    rawValue is not double &&
+    rawValue is not decimal)
+{
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+}
+else if ((rawValue is double d && double.IsNaN(d)) ||
+         (rawValue is float f && float.IsNaN(f)))
+{
+    result.Errors.Add(new ValidationError
+    {
+        Path = {{ FieldNamePath }},
+        Message = {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+}
+else
+{
+    decimal value = Convert.ToDecimal(rawValue);
+    data[{{ FieldName }}] = rawValue;
+
+    {%- if rules.lt is defined %}
+    if (value >= {{ rules.lt.value }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.lt.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.max is defined %}
+    if (value > {{ rules.max.value }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.max.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.gt is defined %}
+    if (value <= {{ rules.gt.value }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.gt.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.min is defined %}
+    if (value < {{ rules.min.value }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.min.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.equal is defined %}
+    if (value != {{ rules.equal.value }})
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.equal.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.positive is defined %}
+    if (value <= 0)
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.positive.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.nonpositive is defined %}
+    if (value > 0)
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.nonpositive.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.negative is defined %}
+    if (value >= 0)
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.negative.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.nonnegative is defined %}
+    if (value < 0)
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.nonnegative.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if rules.multiple_of is defined %}
+    if (value % {{ rules.multiple_of.value }} != 0)
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ rules.multiple_of.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "string" %}
+    data[{{ FieldName }}] = value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "boolean" %}
+    data[{{ FieldName }}] = value != 0;
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "hex" %}
+    if (value != decimal.Truncate(value) ||
+        value > long.MaxValue ||
+        value < long.MinValue)
+    {
+        result.Errors.Add(new ValidationError
+        {
+            Path = {{ FieldNamePath }},
+            Message = {{ defaultError | json_encode | safe }}
+        });
+        flag = false;
+    }
+    else
+    {
+        data[{{ FieldName }}] = ((long)value).ToString("x");
+    }
+    {%- endif %}
+}

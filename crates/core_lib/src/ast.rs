@@ -9,18 +9,50 @@ use std::collections::HashMap;
 
 // todo[Add]: Types add new mod here and pub use
 mod array;
+mod base64;
 mod boolean;
+mod cuid2;
+mod document;
 mod r#enum;
 mod file;
+mod hash;
+mod image;
+mod mail;
 mod number;
+mod password;
 mod string;
+mod username;
+mod uuid;
+mod url;
 
 pub use array::{ArrayRules, ArrayTransform};
+pub use base64::{Base64Rules, Base64Transform};
 pub use boolean::{BooleanRules, BooleanTransform};
+pub use cuid2::{Cuid2Rules, Cuid2Transform};
+pub use document::{DocumentRules, DocumentTransform};
 pub use file::{FileRules, FileTransform};
+pub use hash::{HashRules, HashTransform};
+pub use image::{ImageRules, ImageTransform};
+pub use mail::{MailRules, MailTransform};
 pub use number::{NumberRules, NumberTransform};
+pub use password::{PasswordRules, PasswordTransform};
 pub use r#enum::{EnumRules, EnumTransform};
 pub use string::{StringRules, StringTransform};
+pub use username::{UsernameRules, UsernameTransform};
+pub use uuid::{UuidRules, UuidTransform};
+pub use url::{UrlRules, UrlTransform};
+
+pub mod cidrv4;
+pub mod cidrv6;
+pub mod date;
+pub mod hex;
+pub mod ulid;
+
+pub use cidrv4::{Cidrv4Rules, Cidrv4Transform};
+pub use cidrv6::{Cidrv6Rules, Cidrv6Transform};
+pub use date::{DateRules, DateTransform};
+pub use hex::{HexRules, HexTransform};
+pub use ulid::{UlidRules, UlidTransform};
 
 /// This trait will be used for each rule to define the merge behaviour
 pub trait Mergeable {
@@ -132,6 +164,76 @@ impl<'de> Deserialize<'de> for Field {
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Rule::Number(number_rule)
                     }
+                    FieldType::File => {
+                        let file_rule: FileRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::File(file_rule)
+                    }
+                    FieldType::Image => {
+                        let image_rule: ImageRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Image(image_rule)
+                    }
+                    FieldType::Mail => {
+                        let mail_rule: MailRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Mail(mail_rule)
+                    }
+                    FieldType::Username => {
+                        let username_rule: UsernameRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Username(username_rule)
+                    }
+                    FieldType::Uuid => {
+                        let uuid_rule: UuidRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Uuid(uuid_rule)
+                    }
+                    FieldType::Cuid2 => {
+                        let cuid2_rule: Cuid2Rules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Cuid2(cuid2_rule)
+                    }
+                    FieldType::Base64 => {
+                        let base64_rule: Base64Rules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Base64(base64_rule)
+                    }
+                    FieldType::Document => {
+                        let document_rule: DocumentRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Document(document_rule)
+                    }
+                    FieldType::Url => {
+                        let url_rule: UrlRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Url(url_rule)
+                    }
+                    FieldType::Cidrv4 => {
+                        let cidr_rule: Cidrv4Rules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Cidrv4(cidr_rule)
+                    }
+                    FieldType::Cidrv6 => {
+                        let cidr_rule: Cidrv6Rules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Cidrv6(cidr_rule)
+                    }
+                    FieldType::Date => {
+                        let date_rule: DateRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Date(date_rule)
+                    }
+                    FieldType::Hex => {
+                        let hex_rule: HexRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Hex(hex_rule)
+                    }
+                    FieldType::Ulid => {
+                        let ulid_rule: UlidRules =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Rule::Ulid(ulid_rule)
+                    }
                     _ => {
                         return Err(D::Error::custom(format!(
                             "Unsupported field type '{:?}' for rules",
@@ -151,6 +253,81 @@ impl<'de> Deserialize<'de> for Field {
                         let number_transform: NumberTransform =
                             serde_yaml::from_value(value).map_err(D::Error::custom)?;
                         Transform::Number(number_transform)
+                    }
+                    FieldType::File => {
+                        let file_transform: FileTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::File(file_transform)
+                    }
+                    FieldType::Image => {
+                        let image_transform: ImageTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Image(image_transform)
+                    }
+                    FieldType::Mail => {
+                        let mail_transform: MailTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Mail(mail_transform)
+                    }
+                    FieldType::Username => {
+                        let username_transform: UsernameTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Username(username_transform)
+                    }
+                    FieldType::Base64 => {
+                        let base64_transform: Base64Transform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Base64(base64_transform)
+                    }
+                    FieldType::Uuid => {
+                        let uuid_transform: UuidTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Uuid(uuid_transform)
+                    }
+                    FieldType::Cuid2 => {
+                        let cuid2_transform: Cuid2Transform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Cuid2(cuid2_transform)
+                    }
+                    FieldType::Hash => {
+                        let hash_transform: HashTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Hash(hash_transform)
+                    }
+                    FieldType::Document => {
+                        let document_transform: DocumentTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Document(document_transform)
+                    }
+                    FieldType::Url => {
+                        let url_transform: UrlTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Url(url_transform)
+                    }
+                    FieldType::Cidrv4 => {
+                        let cidr_transform: Cidrv4Transform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Cidrv4(cidr_transform)
+                    }
+                    FieldType::Cidrv6 => {
+                        let cidr_transform: Cidrv6Transform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Cidrv6(cidr_transform)
+                    }
+                    FieldType::Date => {
+                        let date_transform: DateTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Date(date_transform)
+                    }
+                    FieldType::Hex => {
+                        let hex_transform: HexTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Hex(hex_transform)
+                    }
+                    FieldType::Ulid => {
+                        let ulid_transform: UlidTransform =
+                            serde_yaml::from_value(value).map_err(D::Error::custom)?;
+                        Transform::Ulid(ulid_transform)
                     }
                     _ => {
                         return Err(D::Error::custom(format!(
@@ -195,6 +372,21 @@ pub enum Rule {
     Enum(EnumRules),
     Boolean(BooleanRules),
     Array(ArrayRules),
+    Image(ImageRules),
+    Mail(MailRules),
+    Username(UsernameRules),
+    Uuid(UuidRules),
+    Cuid2(Cuid2Rules),
+    Base64(Base64Rules),
+    Hash(HashRules),
+    Document(DocumentRules),
+    Password(PasswordRules),
+    Url(UrlRules),
+    Cidrv4(Cidrv4Rules),
+    Cidrv6(Cidrv6Rules),
+    Date(DateRules),
+    Hex(HexRules),
+    Ulid(UlidRules),
     // todo[Add]: Type
 }
 
@@ -216,6 +408,21 @@ impl Rule {
             (Rule::Boolean(a), Rule::Boolean(b)) => a.merge(b),
             (Rule::Array(a), Rule::Array(b)) => a.merge(b),
             (Rule::Enum(a), Rule::Enum(b)) => a.merge(b),
+            (Rule::Image(a), Rule::Image(b)) => a.merge(b),
+            (Rule::Mail(a), Rule::Mail(b)) => a.merge(b),
+            (Rule::Username(a), Rule::Username(b)) => a.merge(b),
+            (Rule::Uuid(a), Rule::Uuid(b)) => a.merge(b),
+            (Rule::Cuid2(a), Rule::Cuid2(b)) => a.merge(b),
+            (Rule::Base64(a), Rule::Base64(b)) => a.merge(b),
+            (Rule::Hash(a), Rule::Hash(b)) => a.merge(b),
+            (Rule::Document(a), Rule::Document(b)) => a.merge(b),
+            (Rule::Password(a), Rule::Password(b)) => a.merge(b),
+            (Rule::Url(a), Rule::Url(b)) => a.merge(b),
+            (Rule::Cidrv4(a), Rule::Cidrv4(b)) => a.merge(b),
+            (Rule::Cidrv6(a), Rule::Cidrv6(b)) => a.merge(b),
+            (Rule::Date(a), Rule::Date(b)) => a.merge(b),
+            (Rule::Hex(a), Rule::Hex(b)) => a.merge(b),
+            (Rule::Ulid(a), Rule::Ulid(b)) => a.merge(b),
             // todo[Add]: Type
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
@@ -239,6 +446,21 @@ pub enum Transform {
     Enum(EnumTransform),
     Boolean(BooleanTransform),
     Array(ArrayTransform),
+    Image(ImageTransform),
+    Mail(MailTransform),
+    Username(UsernameTransform),
+    Uuid(UuidTransform),
+    Cuid2(Cuid2Transform),
+    Hash(HashTransform),
+    Base64(Base64Transform),
+    Document(DocumentTransform),
+    Password(PasswordTransform),
+    Url(UrlTransform),
+    Cidrv4(Cidrv4Transform),
+    Cidrv6(Cidrv6Transform),
+    Date(DateTransform),
+    Hex(HexTransform),
+    Ulid(UlidTransform),
     // todo[Add]: Type
 }
 
@@ -264,6 +486,21 @@ impl Transform {
             (Transform::String(a), Transform::String(b)) => a.merge(b),
             (Transform::Number(a), Transform::Number(b)) => a.merge(b),
             (Transform::File(a), Transform::File(b)) => a.merge(b),
+            (Transform::Image(a), Transform::Image(b)) => a.merge(b),
+            (Transform::Mail(a), Transform::Mail(b)) => a.merge(b),
+            (Transform::Username(a), Transform::Username(b)) => a.merge(b),
+            (Transform::Uuid(a), Transform::Uuid(b)) => a.merge(b),
+            (Transform::Cuid2(a), Transform::Cuid2(b)) => a.merge(b),
+            (Transform::Base64(a), Transform::Base64(b)) => a.merge(b),
+            (Transform::Document(a), Transform::Document(b)) => a.merge(b),
+            (Transform::Hash(a), Transform::Hash(b)) => a.merge(b),
+            (Transform::Password(a), Transform::Password(b)) => a.merge(b),
+            (Transform::Url(a), Transform::Url(b)) => a.merge(b),
+            (Transform::Cidrv4(a), Transform::Cidrv4(b)) => a.merge(b),
+            (Transform::Cidrv6(a), Transform::Cidrv6(b)) => a.merge(b),
+            (Transform::Date(a), Transform::Date(b)) => a.merge(b),
+            (Transform::Hex(a), Transform::Hex(b)) => a.merge(b),
+            (Transform::Ulid(a), Transform::Ulid(b)) => a.merge(b),
             _ => Err("Unknown rule type to be merged.".to_string()),
         }
     }
@@ -276,8 +513,6 @@ macro_rules! match_types {
 }
 
 use paste::paste;
-
-use crate::vis_parser::ParserError;
 
 macro_rules! make_transform {
     // $t: The type name (e.g., String, Boolean)
@@ -301,6 +536,21 @@ impl Transform {
             Transform::Enum(e) => e.cast,
             Transform::Boolean(b) => b.cast,
             Transform::Array(a) => a.cast,
+            Transform::Image(i) => i.cast,
+            Transform::Mail(m) => m.cast,
+            Transform::Username(u) => u.cast,
+            Transform::Uuid(u) => u.cast,
+            Transform::Cuid2(u) => u.cast,
+            Transform::Base64(b) => b.cast,
+            Transform::Hash(h) => h.cast,
+            Transform::Document(h) => h.cast,
+            Transform::Password(h) => h.cast,
+            Transform::Url(h) => h.cast,
+            Transform::Cidrv4(h) => h.cast,
+            Transform::Cidrv6(h) => h.cast,
+            Transform::Date(h) => h.cast,
+            Transform::Hex(h) => h.cast,
+            Transform::Ulid(h) => h.cast,
             // todo[Add]: Types more types here
         }
     }
@@ -318,6 +568,51 @@ impl Transform {
             Transform::Boolean(f) => match_types!(f.cast, FieldType::Number, FieldType::String),
             Transform::Enum(f) => match_types!(f.cast, FieldType::Number, FieldType::String,),
             Transform::File(f) => match_types!(f.cast, FieldType::Image, FieldType::Base64,),
+            Transform::Image(f) => {
+                match_types!(f.cast, FieldType::File, FieldType::Base64)
+            }
+            Transform::Mail(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Username(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Uuid(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Cuid2(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Base64(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Hash(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Document(f) => {
+                match_types!(f.cast, FieldType::File, FieldType::Base64)
+            }
+            Transform::Password(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Url(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Cidrv4(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Cidrv6(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Date(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Hex(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
+            Transform::Ulid(f) => {
+                match_types!(f.cast, FieldType::String)
+            }
             // todo[Add]: Types more types here
             Transform::Array(f) => {
                 // create a transform from array_type
@@ -327,6 +622,60 @@ impl Transform {
                     Some(FieldType::Enum) => make_transform!(Enum, f),
                     Some(FieldType::Number) => make_transform!(Number, f),
                     Some(FieldType::File) => make_transform!(File, f),
+                    Some(FieldType::Image) => make_transform!(Image, f),
+                    Some(FieldType::Document) => make_transform!(Document, f),
+                    Some(FieldType::Mail) => Transform::Mail(MailTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Username) => Transform::Username(UsernameTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Uuid) => Transform::Uuid(UuidTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Cuid2) => Transform::Cuid2(Cuid2Transform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Base64) => Transform::Base64(Base64Transform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Hash) => Transform::Hash(HashTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Password) => Transform::Password(PasswordTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Url) => Transform::Url(UrlTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Cidrv4) => Transform::Cidrv4(Cidrv4Transform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Cidrv6) => Transform::Cidrv6(Cidrv6Transform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Date) => Transform::Date(DateTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Hex) => Transform::Hex(HexTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
+                    Some(FieldType::Ulid) => Transform::Ulid(UlidTransform {
+                        cast: f.cast,
+                        ..Default::default()
+                    }),
 
                     // todo[Add]: Types your mock transform here
                     _ => Transform::Array(ArrayTransform {
@@ -364,14 +713,17 @@ pub enum FieldType {
     Uuid,
     HttpUrl,
     Base64,
+    Hash,
     Jwt,
     Hex,
     Cidrv4,
     Cidrv6,
     Ulid,
+    MacV4,
+    MacV6,
     Cuid2,
-    Hash,
     Date,
+    Document,
 }
 
 impl FieldType {
@@ -391,11 +743,17 @@ impl FieldType {
             "uuid" => Some(FieldType::Uuid),
             "http_url" => Some(FieldType::HttpUrl),
             "base64" => Some(FieldType::Base64),
+            "hash" => Some(FieldType::Hash),
             "jwt" => Some(FieldType::Jwt),
             "hex" => Some(FieldType::Hex),
             "cidrv4" => Some(FieldType::Cidrv4),
             "cidrv6" => Some(FieldType::Cidrv6),
             "ulid" => Some(FieldType::Ulid),
+            "macv4" => Some(FieldType::MacV4),
+            "macv6" => Some(FieldType::MacV6),
+            "cuid2" => Some(FieldType::Cuid2),
+            "date" => Some(FieldType::Date),
+            "document" => Some(FieldType::Document),
             _ => None,
         }
     }
@@ -418,12 +776,15 @@ impl FieldType {
             FieldType::Base64 => "base64",
             FieldType::Jwt => "jwt",
             FieldType::Hex => "hex",
+            FieldType::MacV4 => "macv4",
+            FieldType::MacV6 => "macv6",
             FieldType::Cidrv4 => "cidrv4",
             FieldType::Cidrv6 => "cidrv6",
             FieldType::Ulid => "ulid",
             FieldType::Cuid2 => "cuid2",
             FieldType::Hash => "hash",
             FieldType::Date => "date",
+            FieldType::Document => "document",
         }
     }
 }

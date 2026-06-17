@@ -1,0 +1,152 @@
+if (!data.TryGetValue({{ FieldName }}, out var rawValue) || rawValue == null)
+{
+	{%- if required %}
+	result.Errors.Add(new ValidationError
+	{
+		Path = {{ FieldNamePath }},
+		Message = {{ defaultError | json_encode | safe }}
+	});
+	flag = false;
+	{%- endif %}
+}
+else if (rawValue is not string filePath)
+{
+	result.Errors.Add(new ValidationError
+	{
+		Path = {{ FieldNamePath }},
+		Message = {{ defaultError | json_encode | safe }}
+	});
+	flag = false;
+}
+else
+{
+	if (!System.IO.File.Exists(filePath))
+	{
+		result.Errors.Add(new ValidationError
+		{
+			Path = {{ FieldNamePath }},
+			Message = "File does not exist."
+		});
+		flag = false;
+	}
+	else
+	{
+		{%- if rules.maxSize is defined %}
+		long fileSize = new System.IO.FileInfo(filePath).Length;
+		if (fileSize > {{ rules.maxSize.value }})
+		{
+			result.Errors.Add(new ValidationError
+			{
+				Path = {{ FieldNamePath }},
+				Message = {{ rules.maxSize.error | default(value=defaultError) | json_encode | safe }}
+			});
+			flag = false;
+		}
+		{%- endif %}
+		{%- if rules.minSize is defined %}
+		long fileSize = new System.IO.FileInfo(filePath).Length;
+		if (fileSize < {{ rules.minSize.value }})
+		{
+			result.Errors.Add(new ValidationError
+			{
+				Path = {{ FieldNamePath }},
+				Message = {{ rules.minSize.error | default(value=defaultError) | json_encode | safe }}
+			});
+			flag = false;
+		}
+		{%- endif %}
+		{%- if rules.extension is defined %}
+		if (!FileSignatureValidator.ValidateExtension(filePath, {{ rules.extension.value | json_encode | safe }}))
+		{
+			result.Errors.Add(new ValidationError
+			{
+				Path = {{ FieldNamePath }},
+				Message = {{ rules.extension.error | default(value=defaultError) | json_encode | safe }}
+			});
+			flag = false;
+		}
+		{%- endif %}
+
+		if (flag)
+		{
+			var dimensions = ImageHelper.GetDimensions(filePath);
+			{%- if rules.width is defined %}
+			if (dimensions.Width != {{ rules.width.value }})
+			{
+				result.Errors.Add(new ValidationError
+				{
+					Path = {{ FieldNamePath }},
+					Message = {{ rules.width.error | default(value="Invalid image width") | json_encode | safe }}
+				});
+				flag = false;
+			}
+			{%- endif %}
+			{%- if rules.height is defined %}
+			if (dimensions.Height != {{ rules.height.value }})
+			{
+				result.Errors.Add(new ValidationError
+				{
+					Path = {{ FieldNamePath }},
+					Message = {{ rules.height.error | default(value="Invalid image height") | json_encode | safe }}
+				});
+				flag = false;
+			}
+			{%- endif %}
+			{%- if rules.minWidth is defined %}
+			if (dimensions.Width < {{ rules.minWidth.value }})
+			{
+				result.Errors.Add(new ValidationError
+				{
+					Path = {{ FieldNamePath }},
+					Message = {{ rules.minWidth.error | default(value="Image width too small") | json_encode | safe }}
+				});
+				flag = false;
+			}
+			{%- endif %}
+			{%- if rules.maxWidth is defined %}
+			if (dimensions.Width > {{ rules.maxWidth.value }})
+			{
+				result.Errors.Add(new ValidationError
+				{
+					Path = {{ FieldNamePath }},
+					Message = {{ rules.maxWidth.error | default(value="Image width too large") | json_encode | safe }}
+				});
+				flag = false;
+			}
+			{%- endif %}
+			{%- if rules.minHeight is defined %}
+			if (dimensions.Height < {{ rules.minHeight.value }})
+			{
+				result.Errors.Add(new ValidationError
+				{
+					Path = {{ FieldNamePath }},
+					Message = {{ rules.minHeight.error | default(value="Image height too small") | json_encode | safe }}
+				});
+				flag = false;
+			}
+			{%- endif %}
+			{%- if rules.maxHeight is defined %}
+			if (dimensions.Height > {{ rules.maxHeight.value }})
+			{
+				result.Errors.Add(new ValidationError
+				{
+					Path = {{ FieldNamePath }},
+					Message = {{ rules.maxHeight.error | default(value="Image height too large") | json_encode | safe }}
+				});
+				flag = false;
+			}
+			{%- endif %}
+			{%- if rules.ratio is defined %}
+			if (!ImageHelper.ValidateRatio(dimensions.Width, dimensions.Height, {{ rules.ratio.value | json_encode | safe }}))
+			{
+				result.Errors.Add(new ValidationError
+				{
+					Path = {{ FieldNamePath }},
+					Message = {{ rules.ratio.error | default(value="Invalid image aspect ratio") | json_encode | safe }}
+				});
+				flag = false;
+			}
+			{%- endif %}
+		}
+	}
+}

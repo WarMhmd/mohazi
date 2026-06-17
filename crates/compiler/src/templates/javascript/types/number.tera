@@ -126,7 +126,4 @@ if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
 		data.{{ FieldName }} = data.{{ FieldName }}.toString(16);
 	}
 	{%- endif %}
-	if (flag) {
-		successData.{{ FieldName }} = data.{{ FieldName }};
-	}
 }

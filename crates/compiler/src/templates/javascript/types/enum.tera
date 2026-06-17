@@ -1,0 +1,49 @@
+flag = true;
+
+if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
+
+    {% if required %}
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+    {% endif %}
+
+} else {
+
+    {% if rules.allowedValues is defined %}
+
+    {% if rules.allowedValues.value is string %}
+    var EnumValues = {{ rules.allowedValues.value }}.map(function(item) {
+        return item.trim();
+    });
+    {% else %}
+    var EnumValues = {{ rules.allowedValues.value }};
+    {% endif %}
+
+    if (!EnumValues.includes(data.{{ FieldName }})) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.allowedValues.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+
+    {% endif %}
+
+    {% if transform.cast is defined and transform.cast == "number" %}
+    data.{{ FieldName }} = Number(data.{{ FieldName }});
+    if (Number.isNaN(data.{{ FieldName }})) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ defaultError | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {% endif %}
+
+    {% if transform.cast is defined and transform.cast == "string" %}
+    data.{{ FieldName }} = String(data.{{ FieldName }});
+    {% endif %}
+}

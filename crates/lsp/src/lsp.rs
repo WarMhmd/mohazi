@@ -204,6 +204,163 @@ impl LanguageServer for Backend {
                             ),
                         ])));
                     }
+                    "image" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("width", "Rule: Check if the image width is equal to some value"),
+                            ("height", "Rule: Check if the image height is equal to some value"),
+                            ("minWidth", "Rule: Check if the image width is greater than or equal to some value"),
+                            ("maxWidth", "Rule: Check if the image width is less than or equal to some value"),
+                            ("minHeight", "Rule: Check if the image height is greater than or equal to some value"),
+                            ("maxHeight", "Rule: Check if the image height is less than or equal to some value"),
+                            ("ratio", "Rule: Check if the image aspect ratio matches some value (e.g. 1:1, 16:9)"),
+                            ("extension", "Rule: Check if the file has a specific extension"),
+                            ("mime", "Rule: Check if the file has a specific mime type"),
+                            ("maxSize", "Rule: Check if the file size is less than or equal to some value"),
+                            ("minSize", "Rule: Check if the file size is greater than or equal to some value"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
+                        ])));
+                    }
+                    "mail" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("allowedDomains", "Rule: Only allow emails from these domains"),
+                            ("forbiddenDomains", "Rule: Blacklist these email domains"),
+                            ("minLength", "Rule: Minimum string length"),
+                            ("maxLength", "Rule: Maximum string length"),
+                            ("length", "Rule: Set the string length"),
+                            ("regex", "Rule: Match custom regex pattern"),
+                            ("pattern", "Rule: Match custom regex pattern"),
+                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            ("endsWith", "Rule: Check if the string ends with a suffix"),
+                            ("uppercase", "Rule: Check if the string is written in uppercase"),
+                            ("lowercase", "Rule: Check if the string is written in lowercase"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
+                        ])));
+                    }
+                    "username" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("minLength", "Rule: Minimum string length"),
+                            ("maxLength", "Rule: Maximum string length"),
+                            ("length", "Rule: Set the string length"),
+                            ("regex", "Rule: Match custom regex pattern"),
+                            ("pattern", "Rule: Match custom regex pattern"),
+                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            ("endsWith", "Rule: Check if the string ends with a suffix"),
+                            ("uppercase", "Rule: Check if the string is written in uppercase"),
+                            ("lowercase", "Rule: Check if the string is written in lowercase"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
+                        ])));
+                    }
+                    "uuid" => {
+                        if prefix.ends_with("version: ") {
+                            return Ok(Some(CompletionResponse::Array(vec![
+                                CompletionItem {
+                                    label: "v4".to_string(),
+                                    detail: Some("Recommended: Randomly generated UUID".to_string()),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v7".to_string(),
+                                    detail: Some("Recommended: Time-sortable UUID".to_string()),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v1".to_string(),
+                                    detail: Some("Deprecated: Time + MAC Address".to_string()),
+                                    tags: Some(vec![CompletionItemTag::DEPRECATED]),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v2".to_string(),
+                                    detail: Some("Deprecated: DCE Security".to_string()),
+                                    tags: Some(vec![CompletionItemTag::DEPRECATED]),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v3".to_string(),
+                                    detail: Some("Deprecated: Name-based (MD5)".to_string()),
+                                    tags: Some(vec![CompletionItemTag::DEPRECATED]),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v5".to_string(),
+                                    detail: Some("Deprecated: Name-based (SHA-1)".to_string()),
+                                    tags: Some(vec![CompletionItemTag::DEPRECATED]),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v6".to_string(),
+                                    detail: Some("Deprecated: Reordered Time".to_string()),
+                                    tags: Some(vec![CompletionItemTag::DEPRECATED]),
+                                    ..Default::default()
+                                },
+                                CompletionItem {
+                                    label: "v8".to_string(),
+                                    detail: Some("Deprecated: Custom".to_string()),
+                                    tags: Some(vec![CompletionItemTag::DEPRECATED]),
+                                    ..Default::default()
+                                },
+                            ])));
+                        }
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("version", "Rule: UUID Version (v4, v7 recommended)"),
+                            ("minLength", "Rule: Minimum string length"),
+                            ("maxLength", "Rule: Maximum string length"),
+                            ("length", "Rule: Set the string length"),
+                            ("regex", "Rule: Match custom regex pattern"),
+                            ("pattern", "Rule: Match custom regex pattern"),
+                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            ("endsWith", "Rule: Check if the string ends with a suffix"),
+                            ("uppercase", "Rule: Check if the string is written in uppercase"),
+                            ("lowercase", "Rule: Check if the string is written in lowercase"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
+                        ])));
+                    }
+                    "cuid2" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("minLength", "Rule: Minimum string length"),
+                            ("maxLength", "Rule: Maximum string length"),
+                            ("length", "Rule: Set the string length"),
+                            ("regex", "Rule: Match custom regex pattern"),
+                            ("pattern", "Rule: Match custom regex pattern"),
+                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            ("endsWith", "Rule: Check if the string ends with a suffix"),
+                            ("uppercase", "Rule: Check if the string is written in uppercase"),
+                            ("lowercase", "Rule: Check if the string is written in lowercase"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
+                        ])));
+                    }
+                    "hash" => {
+                        if prefix.ends_with("algorithm: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("Argon2id", "Algorithm: Argon2id hash"),
+                                ("Bcrypt", "Algorithm: Bcrypt hash"),
+                                ("SHA-256", "Algorithm: SHA-256 hash"),
+                                ("SHA-512", "Algorithm: SHA-512 hash"),
+                                ("BLAKE3", "Algorithm: BLAKE3 hash"),
+                            ])));
+                        }
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("algorithm", "Rule: Select validation algorithm (Argon2id, Bcrypt, SHA-256, SHA-512, BLAKE3)"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
+                        ])));
+                    }
+                    "base64" => {
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("url", "Rule: Check for URL-safe Base64 encoding"),
+                            ("minSize", "Rule: Minimum decoded data size in bytes"),
+                            ("maxSize", "Rule: Maximum decoded data size in bytes"),
+                            ("minLength", "Rule: Minimum string length"),
+                            ("maxLength", "Rule: Maximum string length"),
+                            ("length", "Rule: Set the string length"),
+                            ("regex", "Rule: Match custom regex pattern"),
+                            ("pattern", "Rule: Match custom regex pattern"),
+                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            ("endsWith", "Rule: Check if the string ends with a suffix"),
+                            ("uppercase", "Rule: Check if the string is written in uppercase"),
+                            ("lowercase", "Rule: Check if the string is written in lowercase"),
+                            ("error", "Rule Error: set custom error message for the previous rule"),
+                        ])));
+                    }
                     "array" => {
                         if prefix.ends_with("type: ") || prefix.ends_with("field_type: ") {
                             // check the macro implementation to understand
@@ -212,6 +369,21 @@ impl LanguageServer for Backend {
                                 ("string", "String type"),
                                 ("number", "Number type"),
                                 ("boolean", "Boolean type"),
+                                ("uuid", "UUID type"),
+                                ("cuid2", "CUID2 type"),
+                                ("base64", "Base64 type"),
+                                ("image", "Image type"),
+                                ("mail", "Mail type"),
+                                ("username", "Username type"),
+                                ("hash", "Hash type"),
+                                ("password", "Password type"),
+                                ("document", "Document type"),
+                                ("url", "URL type"),
+                                ("cidrv4", "CIDRv4 type"),
+                                ("cidrv6", "CIDRv6 type"),
+                                ("date", "Date type"),
+                                ("hex", "Hexadecimal string type"),
+                                ("ulid", "ULID type"),
                             ])));
                         }
                         return Ok(Some(CompletionResponse::Array(completion_items![
@@ -302,6 +474,80 @@ impl LanguageServer for Backend {
                             ("sum", "Transform: Sum array elements"),
                         ])));
                     }
+                    "image" => {
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("file", "Cast: image to file"),
+                                ("base64", "Cast: image to base64"),
+                            ])));
+                        }
+
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                            ("rename", "Transform: Rename image file"),
+                        ])));
+                    }
+                    "uuid" => {
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("string", "Cast: uuid to string"),
+                            ])));
+                        }
+
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                            ("trim", "Transform: Remove whitespace"),
+                            ("toLowerCase", "Transform: Convert to lowercase"),
+                            ("toUpperCase", "Transform: Convert to uppercase"),
+                        ])));
+                    }
+                    "cuid2" => {
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("string", "Cast: cuid2 to string"),
+                            ])));
+                        }
+
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                            ("trim", "Transform: Remove whitespace"),
+                            ("toLowerCase", "Transform: Convert to lowercase"),
+                            ("toUpperCase", "Transform: Convert to uppercase"),
+                        ])));
+                    }
+                    "hash" => {
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("string", "Cast: hash to string"),
+                            ])));
+                        }
+
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                            ("trim", "Transform: Remove whitespace"),
+                            ("toLowerCase", "Transform: Convert to lowercase"),
+                            ("toUpperCase", "Transform: Convert to uppercase"),
+                        ])));
+                    }
+                    "base64" => {
+                        // setup the cast completion list
+                        if prefix.ends_with("cast: ") {
+                            return Ok(Some(CompletionResponse::Array(completion_items![
+                                ("string", "Cast: base64 to string"),
+                            ])));
+                        }
+
+                        return Ok(Some(CompletionResponse::Array(completion_items![
+                            ("cast", "Transform: Cast type"),
+                            ("trim", "Transform: Remove whitespace"),
+                            ("toLowerCase", "Transform: Convert to lowercase"),
+                            ("toUpperCase", "Transform: Convert to uppercase"),
+                        ])));
+                    }
                     "" => {
                         return Ok(Some(CompletionResponse::Array(completion_items![
                             ("cast", "Transform: Cast type"),
@@ -327,6 +573,21 @@ impl LanguageServer for Backend {
                         ("array", "Array type"),
                         ("enum", "Enum type"),
                         ("file", "File type"),
+                        ("image", "Image type"),
+                        ("mail", "Mail type"),
+                        ("username", "Username type"),
+                        ("uuid", "UUID type"),
+                        ("cuid2", "CUID2 type"),
+                        ("base64", "Base64 type"),
+                        ("hash", "Hash type"),
+                        ("password", "Password type"),
+                        ("document", "Document type"),
+                        ("url", "URL type"),
+                        ("cidrv4", "CIDRv4 type"),
+                        ("cidrv6", "CIDRv6 type"),
+                        ("date", "Date type"),
+                        ("hex", "Hexadecimal string type"),
+                        ("ulid", "ULID type"),
                     ])));
                 }
 
@@ -401,8 +662,24 @@ impl LanguageServer for Backend {
             "array" => get_docs("types", "array").unwrap(),
             "boolean" => get_docs("types", "boolean").unwrap(),
             "enum" => get_docs("types", "enum").unwrap(),
+            "image" => get_docs("types", "image").unwrap(),
+            "mail" => get_docs("types", "mail").unwrap(),
+            "username" => get_docs("types", "username").unwrap(),
+            "uuid" => get_docs("types", "uuid").unwrap(),
+            "cuid2" => get_docs("types", "cuid2").unwrap(),
+            "hash" => get_docs("types", "hash").unwrap(),
+            "base64" => get_docs("types", "base64").unwrap(),
+            "password" => get_docs("types", "password").unwrap_or_default(),
+            "document" => get_docs("types", "document").unwrap_or_default(),
+            "url" => get_docs("types", "url").unwrap_or_default(),
+            "cidrv4" => get_docs("types", "cidrv4").unwrap_or_default(),
+            "cidrv6" => get_docs("types", "cidrv6").unwrap_or_default(),
+            "date" => get_docs("types", "date").unwrap_or_default(),
+            "hex" => get_docs("types", "hex").unwrap_or_default(),
+            "ulid" => get_docs("types", "ulid").unwrap_or_default(),
 
             // Rules
+            "algorithm" => get_docs("rules", "algorithm").unwrap(),
             "min" => get_docs("rules", "min").unwrap(),
             "max" => get_docs("rules", "max").unwrap(),
             "maxLength" => get_docs("rules", "maxLength").unwrap(),
@@ -410,6 +687,14 @@ impl LanguageServer for Backend {
             "length" => get_docs("rules", "length").unwrap(),
             "uppercase" => get_docs("rules", "uppercase").unwrap(),
             "lowercase" => get_docs("rules", "lowercase").unwrap(),
+            "width" => get_docs("rules", "width").unwrap(),
+            "height" => get_docs("rules", "height").unwrap(),
+            "minWidth" => get_docs("rules", "minWidth").unwrap(),
+            "maxWidth" => get_docs("rules", "maxWidth").unwrap(),
+            "minHeight" => get_docs("rules", "minHeight").unwrap(),
+            "maxHeight" => get_docs("rules", "maxHeight").unwrap(),
+            "ratio" => get_docs("rules", "ratio").unwrap(),
+            "mime" => get_docs("rules", "mime").unwrap(),
             // "type" => get_docs("rules", "array-type").unwrap(), // special case, handled in the
             // first type
             "endsWith" => get_docs("rules", "endsWith").unwrap(),

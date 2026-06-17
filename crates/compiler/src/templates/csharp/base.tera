@@ -2,79 +2,122 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
-{%- if uses_file_type %}
+{% if uses_file_type or uses_uuid_type or uses_base64_type %}
 using Generated.Validation.Utils;
-using Utils.FileSignatureValidator;
-{%- endif %}
+{% endif %}
 
 namespace Generated.Validation
 {
-	public static class Validators
-	{
-		{%- for actionName, action in actions %}
-		public static async Task<ValidationResult> Validate{{ actionName | capitalize }}(Dictionary<string, object?> data)
-		{
-			var result = new ValidationResult
-			{
-				Success = false,
-				Errors = new List<ValidationError>(),
-				Data = data
-			};
+    public static class Validators
+    {
+        {%- for actionName, action in actions %}
+        public static async Task<ValidationResult> Validate{{ actionName | capitalize }}(Dictionary<string, object?> data)
+        {
+            var result = new ValidationResult
+            {
+                Success = false,
+                Errors = new List<ValidationError>(),
+                Data = data
+            };
 
-			var successData = new Dictionary<string, object?>();
-			bool flag = true;
+            var successData = new Dictionary<string, object?>();
+            bool flag = true;
 
-			{%- for fieldName, field in action %}
-			{
-				flag = true;
-				{% set FieldName = '"' ~ fieldName ~ '"' %}
-				{%- set FieldNamePath = '"' ~ fieldName ~ '"' %}
-				{%- set required = field.required | default(value=false) %}
-				{%- set rawDefaultError = field.defaultError | default(value="Invalid value.") %}
-				{%- set defaultError = rawDefaultError %}
-				{%- if field.rules is defined %}
-					{%- set rules = field.rules %}
-				{%- else %}
-					{%- set rules = "" %}
-				{%- endif %}
-				{%- if field.transform is defined %}
-					{%- set transform = field.transform %}
-				{%- else %}
-					{%- set transform = "" %}
-				{%- endif %}
-				{%- set isNested = false %}
-				{%- if field.type == "string" %}
-					{%- include "string.tera" %}
-				{%- elif field.type == "number" %}
-					{%- include "number.tera" %}
-				{%- elif field.type == "boolean" %}
-					{%- include "boolean.tera" %}
-				{%- elif field.type == "file" %}
-					{%- include "file.tera" %}
-				{%- elif field.type == "array" %}
-					{%- include "array.tera" %}
-				{%- elif field.type == "enum" %}
-					{%- include "enum.tera" %}
-				{%- endif %}
-			}
-			{%- endfor %}
+            {%- for fieldName, field in action %}
+            {
+                flag = true;
 
-			if (result.Errors.Count == 0)
-			{
-				result = new ValidationResult
-				{
-					Success = true,
-					Errors = new List<ValidationError>(),
-					Data = successData
-				};
-			}
+                {%- set FieldName = '"' ~ fieldName ~ '"' -%}
+                {%- set FieldNamePath = '"' ~ fieldName ~ '"' -%}
+                {%- set required = field.required | default(value=false) -%}
+                {%- set defaultError = field.defaultError | default(value="Invalid value.") -%}
 
-			return result;
-		}
+                {%- if field.rules is defined -%}
+                    {%- set rules = field.rules -%}
+                {%- else -%}
+                    {%- set rules = "" -%}
+                {%- endif -%}
 
 		{%- endfor %}
 	}
 
+}
+                {%- if field.transform is defined -%}
+                    {%- set transform = field.transform -%}
+                {%- else -%}
+                    {%- set transform = "" -%}
+                {%- endif -%}
+
+                {%- set isNested = false -%}
+
+                {%- if field.type == "string" -%}
+                    {%- include "types/string.tera" -%}
+                {%- elif field.type == "number" -%}
+                    {%- include "types/number.tera" -%}
+                {%- elif field.type == "boolean" -%}
+                    {%- include "types/boolean.tera" -%}
+                {%- elif field.type == "file" -%}
+                    {%- include "types/file.tera" -%}
+                {%- elif field.type == "array" -%}
+                    {%- include "types/array.tera" -%}
+                {%- elif field.type == "enum" -%}
+                    {%- include "types/enum.tera" -%}
+                {%- elif field.type == "image" -%}
+                    {%- include "types/image.tera" -%}
+                {%- elif field.type == "mail" -%}
+                    {%- include "types/mail.tera" -%}
+                {%- elif field.type == "username" -%}
+                    {%- include "types/username.tera" -%}
+                {%- elif field.type == "uuid" -%}
+                    {%- include "types/uuid.tera" -%}
+                {%- elif field.type == "cuid2" -%}
+                    {%- include "types/cuid2.tera" -%}
+                {%- elif field.type == "hash" -%}
+                    {%- include "types/hash.tera" -%}
+                {%- elif field.type == "base64" -%}
+                    {%- include "types/base64.tera" -%}
+                {%- elif field.type == "password" -%}
+                    {%- include "types/password.tera" -%}
+                {%- elif field.type == "document" -%}
+                    {%- include "types/document.tera" -%}
+                {%- elif field.type == "url" -%}
+                    {%- include "types/url.tera" -%}
+                {%- elif field.type == "cidrv4" -%}
+                    {%- include "types/cidrv4.tera" -%}
+                {%- elif field.type == "cidrv6" -%}
+                    {%- include "types/cidrv6.tera" -%}
+                {%- elif field.type == "date" -%}
+                    {%- include "types/date.tera" -%}
+                {%- elif field.type == "hex" -%}
+                    {%- include "types/hex.tera" -%}
+                {%- elif field.type == "ulid" -%}
+                    {%- include "types/ulid.tera" -%}
+                {%- endif -%}
+
+
+                if (flag)
+                {
+                    successData[{{ FieldName }}] = data[{{ FieldName }}];
+                }
+            }
+            {%- endfor %}
+
+            if (result.Errors.Count == 0)
+            {
+                result = new ValidationResult
+                {
+                    Success = true,
+                    Errors = new List<ValidationError>(),
+                    Data = successData
+                };
+            }
+
+            return result;
+        }
+
+        {%- endfor %}
+    }
+    
     public class ValidationResult
     {
         public bool Success { get; set; }
@@ -89,3 +132,4 @@ namespace Generated.Validation
     }
 
 }
+>>>>>>> Alhareth-types

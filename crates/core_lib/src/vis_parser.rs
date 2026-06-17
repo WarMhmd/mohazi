@@ -1,7 +1,12 @@
 use crate::ast::{
-    ArrayRules, ArrayTransform, BooleanRules, BooleanTransform, EnumRules, EnumTransform, Field,
-    FieldType, FileRules, FileTransform, Form, NumberRules, NumberTransform, Rule, RuleTrait,
-    RuleType, StringRules, StringTransform, Transform, TransformTrait,
+    ArrayRules, ArrayTransform, Base64Rules, Base64Transform, BooleanRules, BooleanTransform,
+    Cidrv4Rules, Cidrv4Transform, Cidrv6Rules, Cidrv6Transform, Cuid2Rules, Cuid2Transform,
+    DateRules, DateTransform, DocumentRules, DocumentTransform, EnumRules, EnumTransform, Field,
+    FieldType, FileRules, FileTransform, Form, HashRules, HashTransform, HexRules, HexTransform,
+    ImageRules, ImageTransform, MailRules, MailTransform, NumberRules, NumberTransform,
+    PasswordRules, PasswordTransform, Rule, RuleTrait, RuleType, StringRules, StringTransform,
+    Transform, TransformTrait, UlidRules, UlidTransform, UrlRules, UrlTransform, UsernameRules,
+    UsernameTransform, UuidRules, UuidTransform,
 };
 use indexmap::IndexMap;
 use std::collections::HashMap;
@@ -14,6 +19,21 @@ enum ActiveRuleBuilder {
     Boolean(BooleanRules),
     Array(ArrayRules),
     Enum(EnumRules),
+    Image(ImageRules),
+    Mail(MailRules),
+    Username(UsernameRules),
+    Uuid(UuidRules),
+    Cuid2(Cuid2Rules),
+    Base64(Base64Rules),
+    Hash(HashRules),
+    Document(DocumentRules),
+    Password(PasswordRules),
+    Url(UrlRules),
+    Cidrv4(Cidrv4Rules),
+    Cidrv6(Cidrv6Rules),
+    Date(DateRules),
+    Hex(HexRules),
+    Ulid(UlidRules),
     None,
 }
 
@@ -25,6 +45,21 @@ enum ActiveTransformBuilder {
     Boolean(BooleanTransform),
     Array(ArrayTransform),
     Enum(EnumTransform),
+    Image(ImageTransform),
+    Mail(MailTransform),
+    Username(UsernameTransform),
+    Uuid(UuidTransform),
+    Cuid2(Cuid2Transform),
+    Hash(HashTransform),
+    Base64(Base64Transform),
+    Document(DocumentTransform),
+    Password(PasswordTransform),
+    Url(UrlTransform),
+    Cidrv4(Cidrv4Transform),
+    Cidrv6(Cidrv6Transform),
+    Date(DateTransform),
+    Hex(HexTransform),
+    Ulid(UlidTransform),
     None,
 }
 
@@ -43,6 +78,21 @@ impl BuilderTrait for ActiveRuleBuilder {
             ActiveRuleBuilder::Boolean(_) => Some(FieldType::Boolean),
             ActiveRuleBuilder::Array(_) => Some(FieldType::Array),
             ActiveRuleBuilder::Enum(_) => Some(FieldType::Enum),
+            ActiveRuleBuilder::Image(_) => Some(FieldType::Image),
+            ActiveRuleBuilder::Mail(_) => Some(FieldType::Mail),
+            ActiveRuleBuilder::Username(_) => Some(FieldType::Username),
+            ActiveRuleBuilder::Uuid(_) => Some(FieldType::Uuid),
+            ActiveRuleBuilder::Cuid2(_) => Some(FieldType::Cuid2),
+            ActiveRuleBuilder::Hash(_) => Some(FieldType::Hash),
+            ActiveRuleBuilder::Base64(_) => Some(FieldType::Base64),
+            ActiveRuleBuilder::Document(_) => Some(FieldType::Document),
+            ActiveRuleBuilder::Password(_) => Some(FieldType::Password),
+            ActiveRuleBuilder::Url(_) => Some(FieldType::Url),
+            ActiveRuleBuilder::Cidrv4(_) => Some(FieldType::Cidrv4),
+            ActiveRuleBuilder::Cidrv6(_) => Some(FieldType::Cidrv6),
+            ActiveRuleBuilder::Date(_) => Some(FieldType::Date),
+            ActiveRuleBuilder::Hex(_) => Some(FieldType::Hex),
+            ActiveRuleBuilder::Ulid(_) => Some(FieldType::Ulid),
             ActiveRuleBuilder::None => None,
         }
     }
@@ -59,6 +109,21 @@ impl BuilderTrait for ActiveTransformBuilder {
             ActiveTransformBuilder::Boolean(_) => Some(FieldType::Boolean),
             ActiveTransformBuilder::Array(_) => Some(FieldType::Array),
             ActiveTransformBuilder::Enum(_) => Some(FieldType::Enum),
+            ActiveTransformBuilder::Image(_) => Some(FieldType::Image),
+            ActiveTransformBuilder::Mail(_) => Some(FieldType::Mail),
+            ActiveTransformBuilder::Username(_) => Some(FieldType::Username),
+            ActiveTransformBuilder::Uuid(_) => Some(FieldType::Uuid),
+            ActiveTransformBuilder::Cuid2(_) => Some(FieldType::Cuid2),
+            ActiveTransformBuilder::Base64(_) => Some(FieldType::Base64),
+            ActiveTransformBuilder::Hash(_) => Some(FieldType::Hash),
+            ActiveTransformBuilder::Document(_) => Some(FieldType::Document),
+            ActiveTransformBuilder::Password(_) => Some(FieldType::Password),
+            ActiveTransformBuilder::Url(_) => Some(FieldType::Url),
+            ActiveTransformBuilder::Cidrv4(_) => Some(FieldType::Cidrv4),
+            ActiveTransformBuilder::Cidrv6(_) => Some(FieldType::Cidrv6),
+            ActiveTransformBuilder::Date(_) => Some(FieldType::Date),
+            ActiveTransformBuilder::Hex(_) => Some(FieldType::Hex),
+            ActiveTransformBuilder::Ulid(_) => Some(FieldType::Ulid),
             ActiveTransformBuilder::None => None,
         }
     }
@@ -74,6 +139,21 @@ fn flush_rules(builder: &mut ActiveRuleBuilder, current_field: &mut Field) {
         ActiveRuleBuilder::Boolean(r) => current_field.rules.push(Rule::Boolean(r)),
         ActiveRuleBuilder::Array(r) => current_field.rules.push(Rule::Array(r)),
         ActiveRuleBuilder::Enum(r) => current_field.rules.push(Rule::Enum(r)),
+        ActiveRuleBuilder::Image(r) => current_field.rules.push(Rule::Image(r)),
+        ActiveRuleBuilder::Mail(r) => current_field.rules.push(Rule::Mail(r)),
+        ActiveRuleBuilder::Username(r) => current_field.rules.push(Rule::Username(r)),
+        ActiveRuleBuilder::Uuid(r) => current_field.rules.push(Rule::Uuid(r)),
+        ActiveRuleBuilder::Cuid2(r) => current_field.rules.push(Rule::Cuid2(r)),
+        ActiveRuleBuilder::Base64(r) => current_field.rules.push(Rule::Base64(r)),
+        ActiveRuleBuilder::Hash(r) => current_field.rules.push(Rule::Hash(r)),
+        ActiveRuleBuilder::Document(r) => current_field.rules.push(Rule::Document(r)),
+        ActiveRuleBuilder::Password(r) => current_field.rules.push(Rule::Password(r)),
+        ActiveRuleBuilder::Url(r) => current_field.rules.push(Rule::Url(r)),
+        ActiveRuleBuilder::Cidrv4(r) => current_field.rules.push(Rule::Cidrv4(r)),
+        ActiveRuleBuilder::Cidrv6(r) => current_field.rules.push(Rule::Cidrv6(r)),
+        ActiveRuleBuilder::Date(r) => current_field.rules.push(Rule::Date(r)),
+        ActiveRuleBuilder::Hex(r) => current_field.rules.push(Rule::Hex(r)),
+        ActiveRuleBuilder::Ulid(r) => current_field.rules.push(Rule::Ulid(r)),
         // todo[Add]: Type
         ActiveRuleBuilder::None => {}
     }
@@ -89,6 +169,21 @@ fn flush_transforms(builder: &mut ActiveTransformBuilder, current_field: &mut Fi
         ActiveTransformBuilder::Boolean(t) => current_field.transform.push(Transform::Boolean(t)),
         ActiveTransformBuilder::Array(t) => current_field.transform.push(Transform::Array(t)),
         ActiveTransformBuilder::Enum(t) => current_field.transform.push(Transform::Enum(t)),
+        ActiveTransformBuilder::Image(t) => current_field.transform.push(Transform::Image(t)),
+        ActiveTransformBuilder::Mail(t) => current_field.transform.push(Transform::Mail(t)),
+        ActiveTransformBuilder::Username(t) => current_field.transform.push(Transform::Username(t)),
+        ActiveTransformBuilder::Uuid(t) => current_field.transform.push(Transform::Uuid(t)),
+        ActiveTransformBuilder::Cuid2(t) => current_field.transform.push(Transform::Cuid2(t)),
+        ActiveTransformBuilder::Base64(t) => current_field.transform.push(Transform::Base64(t)),
+        ActiveTransformBuilder::Hash(t) => current_field.transform.push(Transform::Hash(t)),
+        ActiveTransformBuilder::Document(t) => current_field.transform.push(Transform::Document(t)),
+        ActiveTransformBuilder::Password(t) => current_field.transform.push(Transform::Password(t)),
+        ActiveTransformBuilder::Url(t) => current_field.transform.push(Transform::Url(t)),
+        ActiveTransformBuilder::Cidrv4(t) => current_field.transform.push(Transform::Cidrv4(t)),
+        ActiveTransformBuilder::Cidrv6(t) => current_field.transform.push(Transform::Cidrv6(t)),
+        ActiveTransformBuilder::Date(t) => current_field.transform.push(Transform::Date(t)),
+        ActiveTransformBuilder::Hex(t) => current_field.transform.push(Transform::Hex(t)),
+        ActiveTransformBuilder::Ulid(t) => current_field.transform.push(Transform::Ulid(t)),
         // todo[Add]: Type
         ActiveTransformBuilder::None => {}
     }
@@ -409,6 +504,22 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             "boolean" | "bool" => FieldType::Boolean,
                             "array" => FieldType::Array,
                             "enum" => FieldType::Enum,
+                            "image" => FieldType::Image,
+                            "mail" => FieldType::Mail,
+                            "username" => FieldType::Username,
+                            "uuid" | "guid" => FieldType::Uuid,
+                            "cuid2" => FieldType::Cuid2,
+                            "base64" => FieldType::Base64,
+                            "hash" => FieldType::Hash,
+                            "document" => FieldType::Document,
+                            "password" => FieldType::Password,
+                            "url" => FieldType::Url,
+                            "cidrv4" => FieldType::Cidrv4,
+                            "cidrv6" => FieldType::Cidrv6,
+                            "date" => FieldType::Date,
+                            "hex" => FieldType::Hex,
+                            "ulid" => FieldType::Ulid,
+                            // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
                                     format!("Unknown field type {}", value),
@@ -516,10 +627,31 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::Boolean => ActiveRuleBuilder::Boolean(BooleanRules::new()),
                             FieldType::Array => ActiveRuleBuilder::Array(ArrayRules::new()),
                             FieldType::Enum => ActiveRuleBuilder::Enum(EnumRules::new()),
+                            FieldType::Image => ActiveRuleBuilder::Image(ImageRules::new()),
+                            FieldType::Mail => ActiveRuleBuilder::Mail(MailRules::new()),
+                            FieldType::Username => {
+                                ActiveRuleBuilder::Username(UsernameRules::new())
+                            }
+                            FieldType::Uuid => ActiveRuleBuilder::Uuid(UuidRules::new()),
+                            FieldType::Cuid2 => ActiveRuleBuilder::Cuid2(Cuid2Rules::new()),
+                            FieldType::Base64 => ActiveRuleBuilder::Base64(Base64Rules::new()),
+                            FieldType::Hash => ActiveRuleBuilder::Hash(HashRules::new()),
+                            FieldType::Document => {
+                                ActiveRuleBuilder::Document(DocumentRules::new())
+                            }
+                            FieldType::Password => {
+                                ActiveRuleBuilder::Password(PasswordRules::new())
+                            }
+                            FieldType::Url => ActiveRuleBuilder::Url(UrlRules::new()),
+                            FieldType::Cidrv4 => ActiveRuleBuilder::Cidrv4(Cidrv4Rules::new()),
+                            FieldType::Cidrv6 => ActiveRuleBuilder::Cidrv6(Cidrv6Rules::new()),
+                            FieldType::Date => ActiveRuleBuilder::Date(DateRules::new()),
+                            FieldType::Hex => ActiveRuleBuilder::Hex(HexRules::new()),
+                            FieldType::Ulid => ActiveRuleBuilder::Ulid(UlidRules::new()),
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
-                                    format!("Unknown field type {}", value),
+                                    format!("Unknown field type {:?}", parsing_type),
                                     line_index as u32,
                                     current_level as u32,
                                     current_level as u32 + line.len() as u32,
@@ -673,6 +805,21 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         ActiveRuleBuilder::Boolean(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Array(r) => r.set_rule(key, final_val, final_err),
                         ActiveRuleBuilder::Enum(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Image(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Mail(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Username(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Uuid(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Cuid2(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Base64(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Hash(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Document(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Password(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Url(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Cidrv4(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Cidrv6(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Date(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Hex(r) => r.set_rule(key, final_val, final_err),
+                        ActiveRuleBuilder::Ulid(r) => r.set_rule(key, final_val, final_err),
                         // todo[Add]: Type
                         ActiveRuleBuilder::None => Ok(()),
                     };
@@ -700,22 +847,25 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             FieldType::File => Rule::File(FileRules::new()),
                             FieldType::Enum => Rule::Enum(EnumRules::new()),
                             // todo[Add]: type
-                            FieldType::Image => todo!(),
-                            FieldType::Mail => todo!(),
-                            FieldType::Password => todo!(),
-                            FieldType::Username => todo!(),
-                            FieldType::Url => todo!(),
-                            FieldType::Uuid => todo!(),
+                            FieldType::Image => Rule::Image(ImageRules::new()),
+                            FieldType::Mail => Rule::Mail(MailRules::new()),
+                            FieldType::Username => Rule::Username(UsernameRules::new()),
+                            FieldType::Uuid => Rule::Uuid(UuidRules::new()),
+                            FieldType::Base64 => Rule::Base64(Base64Rules::new()),
+                            FieldType::Hash => Rule::Hash(HashRules::new()),
+                            FieldType::Password => Rule::Password(PasswordRules::new()),
+                            FieldType::Url => Rule::Url(UrlRules::new()),
+                            FieldType::Cidrv4 => Rule::Cidrv4(Cidrv4Rules::new()),
+                            FieldType::Cidrv6 => Rule::Cidrv6(Cidrv6Rules::new()),
+                            FieldType::Date => Rule::Date(DateRules::new()),
+                            FieldType::Ulid => Rule::Ulid(UlidRules::new()),
                             FieldType::HttpUrl => todo!(),
-                            FieldType::Base64 => todo!(),
                             FieldType::Jwt => todo!(),
-                            FieldType::Hex => todo!(),
-                            FieldType::Cidrv4 => todo!(),
-                            FieldType::Cidrv6 => todo!(),
-                            FieldType::Ulid => todo!(),
-                            FieldType::Cuid2 => todo!(),
-                            FieldType::Hash => todo!(),
-                            FieldType::Date => todo!(),
+                            FieldType::Hex => Rule::Hex(HexRules::new()),
+                            FieldType::MacV4 => todo!(),
+                            FieldType::MacV6 => todo!(),
+                            FieldType::Cuid2 => Rule::Cuid2(Cuid2Rules::new()),
+                            FieldType::Document => Rule::Document(DocumentRules::new()),
                         };
 
                         current_field.rules.push(placeholder_rule);
@@ -749,6 +899,37 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 ActiveTransformBuilder::Array(ArrayTransform::new())
                             }
                             FieldType::Enum => ActiveTransformBuilder::Enum(EnumTransform::new()),
+                            FieldType::Image => {
+                                ActiveTransformBuilder::Image(ImageTransform::new())
+                            }
+                            FieldType::Mail => ActiveTransformBuilder::Mail(MailTransform::new()),
+                            FieldType::Username => {
+                                ActiveTransformBuilder::Username(UsernameTransform::new())
+                            }
+                            FieldType::Uuid => ActiveTransformBuilder::Uuid(UuidTransform::new()),
+                            FieldType::Cuid2 => {
+                                ActiveTransformBuilder::Cuid2(Cuid2Transform::new())
+                            }
+                            FieldType::Base64 => {
+                                ActiveTransformBuilder::Base64(Base64Transform::new())
+                            }
+                            FieldType::Hash => ActiveTransformBuilder::Hash(HashTransform::new()),
+                            FieldType::Document => {
+                                ActiveTransformBuilder::Document(DocumentTransform::new())
+                            }
+                            FieldType::Password => {
+                                ActiveTransformBuilder::Password(PasswordTransform::new())
+                            }
+                            FieldType::Url => ActiveTransformBuilder::Url(UrlTransform::new()),
+                            FieldType::Cidrv4 => {
+                                ActiveTransformBuilder::Cidrv4(Cidrv4Transform::new())
+                            }
+                            FieldType::Cidrv6 => {
+                                ActiveTransformBuilder::Cidrv6(Cidrv6Transform::new())
+                            }
+                            FieldType::Date => ActiveTransformBuilder::Date(DateTransform::new()),
+                            FieldType::Hex => ActiveTransformBuilder::Hex(HexTransform::new()),
+                            FieldType::Ulid => ActiveTransformBuilder::Ulid(UlidTransform::new()),
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -763,6 +944,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                     }
 
                     match key {
+                        // todo[Add]: Transform
                         "cast" => {
                             // 1. Parse the target type
                             // todo[Add]: Type
@@ -773,6 +955,21 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 "array" => FieldType::Array,
                                 "enum" => FieldType::Enum,
                                 "file" => FieldType::File,
+                                "document" => FieldType::Document,
+                                "image" => FieldType::Image,
+                                "mail" => FieldType::Mail,
+                                "username" => FieldType::Username,
+                                "uuid" | "guid" => FieldType::Uuid,
+                                "cuid2" => FieldType::Cuid2,
+                                "base64" => FieldType::Base64,
+                                "hash" => FieldType::Hash,
+                                "password" => FieldType::Password,
+                                "url" => FieldType::Url,
+                                "cidrv4" => FieldType::Cidrv4,
+                                "cidrv6" => FieldType::Cidrv6,
+                                "date" => FieldType::Date,
+                                "hex" => FieldType::Hex,
+                                "ulid" => FieldType::Ulid,
                                 _ => {
                                     errors.push(ParserError::new(
                                         format!("Invalid cast type '{}'", value),
@@ -821,8 +1018,16 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         // String only transforms
                         "split" | "trim" | "to_lowercase" | "to_lower_case" | "toLowerCase"
                         | "lowercase" | "to_uppercase" | "to_upper_case" | "toUpperCase"
-                        | "uppercase" => {
-                            if current_field.field_type != FieldType::String {
+                        | "uppercase" | "format" => {
+                            if current_field.field_type != FieldType::String
+                                && current_field.field_type != FieldType::Username
+                                && current_field.field_type != FieldType::Uuid
+                                && current_field.field_type != FieldType::Cuid2
+                                && current_field.field_type != FieldType::Base64
+                                && current_field.field_type != FieldType::Mail
+                                && current_field.field_type != FieldType::Hash
+                                && current_field.field_type != FieldType::Date
+                            {
                                 errors.push(ParserError::new(
                                     format!(
                                         "Cannot use the {} transform non-string field {}",
@@ -865,6 +1070,33 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
 
                             if key == "join" {
                                 parsing_type = FieldType::String;
+                            }
+
+                            build_transform(
+                                key,
+                                value,
+                                &mut active_transform_builder,
+                                &mut errors,
+                                line_index,
+                                current_level,
+                                line,
+                            );
+                        }
+                        // for Images
+                        "rename" => {
+                            if current_field.field_type != FieldType::Image
+                                && current_field.field_type != FieldType::File
+                                && current_field.field_type != FieldType::Document
+                            {
+                                errors.push(ParserError::new(
+                                    format!(
+                                        "Cannot use the {} transform non-file field {}",
+                                        key, current_field_name
+                                    ),
+                                    line_index as u32,
+                                    current_level as u32,
+                                    current_level as u32 + line.len() as u32,
+                                ));
                             }
 
                             build_transform(
@@ -978,6 +1210,47 @@ fn build_transform(
         }
         ActiveTransformBuilder::Enum(enum_transform) => {
             enum_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Image(image_transform) => {
+            image_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Mail(mail_transform) => {
+            mail_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Username(username_transform) => {
+            username_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Uuid(uuid_transform) => {
+            uuid_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Cuid2(cuid2_transform) => {
+            cuid2_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Base64(base64_transform) => {
+            base64_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Hash(hash_transform) => {
+            hash_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Document(document_transofrm) => {
+            document_transofrm.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Password(password_transform) => {
+            password_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Url(url_transform) => url_transform.set_transform(key, final_val),
+        ActiveTransformBuilder::Cidrv4(cidrv4_transform) => {
+            cidrv4_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Cidrv6(cidrv6_transform) => {
+            cidrv6_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Date(date_transform) => {
+            date_transform.set_transform(key, final_val)
+        }
+        ActiveTransformBuilder::Hex(hex_transform) => hex_transform.set_transform(key, final_val),
+        ActiveTransformBuilder::Ulid(ulid_transform) => {
+            ulid_transform.set_transform(key, final_val)
         }
         ActiveTransformBuilder::None => Ok(()),
     };

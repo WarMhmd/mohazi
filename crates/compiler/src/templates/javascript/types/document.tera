@@ -1,0 +1,50 @@
+flag = true;
+
+if (data.{{ FieldName }} === undefined || data.{{ FieldName }} === null) {
+    {%- if required %}
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+    {%- endif %}
+} else if (typeof data.{{ FieldName }} !== "string") {
+    result.errors.push({
+        path: {{ FieldNamePath }},
+        message: {{ defaultError | json_encode | safe }}
+    });
+    flag = false;
+} else {
+    {%- if rules.maxSize is defined %}
+    if (getFileSize(data.{{ FieldName }}) > {{ rules.maxSize.value }}) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.maxSize.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+    {%- if rules.minSize is defined %}
+    if (getFileSize(data.{{ FieldName }}) < {{ rules.minSize.value }}) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.minSize.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+    {%- if rules.extension is defined %}
+    const allowedExtensions = {{ rules.extension.value | json_encode | safe }};
+    if (!allowedExtensions.includes(getFileExtension(data.{{ FieldName }}))) {
+        result.errors.push({
+            path: {{ FieldNamePath }},
+            message: {{ rules.extension.error | default(value=defaultError) | json_encode | safe }}
+        });
+        flag = false;
+    }
+    {%- endif %}
+
+    {%- if transform.cast is defined and transform.cast == "string" %}
+    // Document cast to string is inherently handled or implemented based on specific environment.
+    {%- endif %}
+}

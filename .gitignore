@@ -27,3 +27,9 @@ target
 
 # Ignore all vis files, these files are for development testing
 *.vis
+HOW_TO_ADD_TYPE.md
+
+# TEST FILES 
+frontend/
+backend/
+vis/
