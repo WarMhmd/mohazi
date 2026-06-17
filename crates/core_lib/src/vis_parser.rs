@@ -516,6 +516,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                             "url" => FieldType::Url,
                             "cidrv4" => FieldType::Cidrv4,
                             "cidrv6" => FieldType::Cidrv6,
+                            "date" => FieldType::Date,
+                            "hex" => FieldType::Hex,
+                            "ulid" => FieldType::Ulid,
                             // todo[Add]: Type
                             _ => {
                                 errors.push(ParserError::new(
@@ -941,6 +944,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                     }
 
                     match key {
+                        // todo[Add]: Transform
                         "cast" => {
                             // 1. Parse the target type
                             // todo[Add]: Type
@@ -963,6 +967,9 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 "url" => FieldType::Url,
                                 "cidrv4" => FieldType::Cidrv4,
                                 "cidrv6" => FieldType::Cidrv6,
+                                "date" => FieldType::Date,
+                                "hex" => FieldType::Hex,
+                                "ulid" => FieldType::Ulid,
                                 _ => {
                                     errors.push(ParserError::new(
                                         format!("Invalid cast type '{}'", value),
@@ -1011,7 +1018,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                         // String only transforms
                         "split" | "trim" | "to_lowercase" | "to_lower_case" | "toLowerCase"
                         | "lowercase" | "to_uppercase" | "to_upper_case" | "toUpperCase"
-                        | "uppercase" => {
+                        | "uppercase" | "format" => {
                             if current_field.field_type != FieldType::String
                                 && current_field.field_type != FieldType::Username
                                 && current_field.field_type != FieldType::Uuid
@@ -1019,6 +1026,7 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
                                 && current_field.field_type != FieldType::Base64
                                 && current_field.field_type != FieldType::Mail
                                 && current_field.field_type != FieldType::Hash
+                                && current_field.field_type != FieldType::Date
                             {
                                 errors.push(ParserError::new(
                                     format!(
@@ -1062,6 +1070,33 @@ pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>
 
                             if key == "join" {
                                 parsing_type = FieldType::String;
+                            }
+
+                            build_transform(
+                                key,
+                                value,
+                                &mut active_transform_builder,
+                                &mut errors,
+                                line_index,
+                                current_level,
+                                line,
+                            );
+                        }
+                        // for Images
+                        "rename" => {
+                            if current_field.field_type != FieldType::Image
+                                && current_field.field_type != FieldType::File
+                                && current_field.field_type != FieldType::Document
+                            {
+                                errors.push(ParserError::new(
+                                    format!(
+                                        "Cannot use the {} transform non-file field {}",
+                                        key, current_field_name
+                                    ),
+                                    line_index as u32,
+                                    current_level as u32,
+                                    current_level as u32 + line.len() as u32,
+                                ));
                             }
 
                             build_transform(

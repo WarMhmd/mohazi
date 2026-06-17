@@ -9,7 +9,7 @@ namespace Generated.Validation
 {
     public static class Validators
     {
-        public static async Task<ValidationResult> ValidateLogin(Dictionary<string, object?> data)
+        public static async Task<ValidationResult> ValidateBirth(Dictionary<string, object?> data)
         {
             var result = new ValidationResult
             {
@@ -23,12 +23,12 @@ namespace Generated.Validation
             {
                 flag = true;bool flag = true;
 
-if (!data.TryGetValue("password", out var rawValue) || rawValue == null)
+if (!data.TryGetValue("childName", out var rawValue) || rawValue == null)
 {
     result.Errors.Add(new ValidationError
     {
-        Path = "password",
-        Message = "Invalid value."
+        Path = "childName",
+        Message = "\"Child name is invalid\""
     });
     flag = false;
 }
@@ -36,46 +36,46 @@ else if (rawValue is not string value)
 {
     result.Errors.Add(new ValidationError
     {
-        Path = "password",
-        Message = "Invalid value."
+        Path = "childName",
+        Message = "\"Child name is invalid\""
     });
     flag = false;
 }
 else
 {
-    data["password"] = value;
-    if (value.Length < 8)
+    data["childName"] = value;
+    if (value.Length < 3)
     {
         result.Errors.Add(new ValidationError
         {
-            Path = "password",
-            Message = "Password must be at least 8 characters long."
+            Path = "childName",
+            Message = "Child name cannot be shorter than 3 characters."
         });
         flag = false;
     }
-    if (value.Length > 100)
+    if (value.Length > 20)
     {
         result.Errors.Add(new ValidationError
         {
-            Path = "password",
-            Message = "Password must be at most 100 characters long."
+            Path = "childName",
+            Message = "Child name cannot be longer than 20 characters."
         });
         flag = false;
     }
 }if (flag)
                 {
-                    successData["password"] = data["password"];
+                    successData["childName"] = data["childName"];
                 }
             }
             {
                 flag = true;bool flag = true;
 
-if (!data.TryGetValue("password_hash", out var rawValue) || rawValue == null)
+if (!data.TryGetValue("dateOfBirth", out var rawValue) || rawValue == null)
 {
     result.Errors.Add(new ValidationError
     {
-        Path = "password_hash",
-        Message = "Invalid value."
+        Path = "dateOfBirth",
+        Message = "\"Invalid date of birth\""
     });
     flag = false;
 }
@@ -83,111 +83,54 @@ else if (rawValue is not string value)
 {
     result.Errors.Add(new ValidationError
     {
-        Path = "password_hash",
-        Message = "Invalid value."
+        Path = "dateOfBirth",
+        Message = "\"Invalid date of birth\""
     });
     flag = false;
 }
 else
 {
-    string pattern = null;
-    pattern = @"^\$argon2(id|i|d)\$v=\d+\$m=\d+,t=\d+,p=\d+\$[A-Za-z0-9+/]+={0,2}\$[A-Za-z0-9+/]+={0,2}$";
+    data["dateOfBirth"] = value;
 
-    if (pattern != null && !System.Text.RegularExpressions.Regex.IsMatch(value, pattern))
+    if (flag)
     {
-        result.Errors.Add(new ValidationError
+        if (!DateTime.TryParse(value, out DateTime dateObj))
         {
-            Path = "password_hash",
-            Message = "Invalid value."
-        });
-        flag = false;
-    }
-    data["password_hash"] = value;
-}if (flag)
-                {
-                    successData["password_hash"] = data["password_hash"];
-                }
-            }
+            result.Errors.Add(new ValidationError
             {
-                flag = true;if (!data.TryGetValue("profile", out var rawValue) || rawValue == null)
-{
-	result.Errors.Add(new ValidationError
-	{
-		Path = "profile",
-		Message = "Invalid value."
-	});
-	flag = false;
-}
-else if (rawValue is not string filePath)
-{
-	result.Errors.Add(new ValidationError
-	{
-		Path = "profile",
-		Message = "Invalid value."
-	});
-	flag = false;
-}
-else
-{
-	if (!System.IO.File.Exists(filePath))
-	{
-		result.Errors.Add(new ValidationError
-		{
-			Path = "profile",
-			Message = "File does not exist."
-		});
-		flag = false;
-	}
-	else
-	{
-		if (!FileSignatureValidator.ValidateExtension(filePath, ["jpg","jpeg","png","webp","avif","heic","heif"]))
-		{
-			result.Errors.Add(new ValidationError
-			{
-				Path = "profile",
-				Message = "Invalid value."
-			});
-			flag = false;
-		}
-
-		if (flag)
-		{
-			var dimensions = ImageHelper.GetDimensions(filePath);
-			if (dimensions.Width != 512)
-			{
-				result.Errors.Add(new ValidationError
-				{
-					Path = "profile",
-					Message = "Invalid image width"
-				});
-				flag = false;
-			}
-			if (dimensions.Height != 512)
-			{
-				result.Errors.Add(new ValidationError
-				{
-					Path = "profile",
-					Message = "Invalid image height"
-				});
-				flag = false;
-			}
-		}
-	}
+                Path = "dateOfBirth",
+                Message = "\"Invalid date of birth\""
+            });
+            flag = false;
+        }
+        else
+        {
+            
+            if (flag)
+            {
+                string formatStr = "YYYY-mm-dd";
+                formatStr = formatStr.Replace("DDD", dateObj.DayOfYear.ToString("000"));
+                formatStr = formatStr.Replace("YYYY", "yyyy").Replace("YY", "yy");
+                formatStr = formatStr.Replace("a", "tt");
+                data["dateOfBirth"] = dateObj.ToString(formatStr);
+            }
+        }
+    }
 }
 if (flag)
                 {
-                    successData["profile"] = data["profile"];
+                    successData["dateOfBirth"] = data["dateOfBirth"];
                 }
             }
             {
                 flag = true;bool flag = true;
 
-if (!data.TryGetValue("username", out var rawValue) || rawValue == null)
+if (!data.TryGetValue("id", out var rawValue) || rawValue == null)
 {
     result.Errors.Add(new ValidationError
     {
-        Path = "username",
-        Message = "Invalid value."
+        Path = "id",
+        Message = "\"Invalid UUID\""
     });
     flag = false;
 }
@@ -195,182 +138,36 @@ else if (rawValue is not string value)
 {
     result.Errors.Add(new ValidationError
     {
-        Path = "username",
-        Message = "Invalid value."
+        Path = "id",
+        Message = "\"Invalid UUID\""
     });
     flag = false;
 }
 else
 {
-    data["username"] = value;
-    if (value.Length < 3)
+    data["id"] = value;
+    if (value.Length != 36)
     {
         result.Errors.Add(new ValidationError
         {
-            Path = "username",
-            Message = "Username must be at least 3 characters long."
+            Path = "id",
+            Message = "\"Invalid UUID\""
         });
         flag = false;
     }
-    if (value.Length > 20)
+    if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"))
     {
         result.Errors.Add(new ValidationError
         {
-            Path = "username",
-            Message = "Username must be at most 20 characters long."
+            Path = "id",
+            Message = "\"Invalid UUID\""
         });
         flag = false;
     }
-}if (flag)
+}
+if (flag)
                 {
-                    successData["username"] = data["username"];
-                }
-            }
-
-            if (result.Errors.Count == 0)
-            {
-                result = new ValidationResult
-                {
-                    Success = true,
-                    Errors = new List<ValidationError>(),
-                    Data = successData
-                };
-            }
-
-            return result;
-        }
-        public static async Task<ValidationResult> ValidateRegister(Dictionary<string, object?> data)
-        {
-            var result = new ValidationResult
-            {
-                Success = false,
-                Errors = new List<ValidationError>(),
-                Data = data
-            };
-
-            var successData = new Dictionary<string, object?>();
-            bool flag = true;
-            {
-                flag = true;bool flag = true;
-
-if (!data.TryGetValue("email", out var rawValue) || rawValue == null)
-{
-    result.Errors.Add(new ValidationError
-    {
-        Path = "email",
-        Message = "Invalid value."
-    });
-    flag = false;
-}
-else if (rawValue is not string value)
-{
-    result.Errors.Add(new ValidationError
-    {
-        Path = "email",
-        Message = "Invalid value."
-    });
-    flag = false;
-}
-else
-{
-    data["email"] = value;
-}if (flag)
-                {
-                    successData["email"] = data["email"];
-                }
-            }
-            {
-                flag = true;bool flag = true;
-
-if (!data.TryGetValue("password", out var rawValue) || rawValue == null)
-{
-    result.Errors.Add(new ValidationError
-    {
-        Path = "password",
-        Message = "Invalid value."
-    });
-    flag = false;
-}
-else if (rawValue is not string value)
-{
-    result.Errors.Add(new ValidationError
-    {
-        Path = "password",
-        Message = "Invalid value."
-    });
-    flag = false;
-}
-else
-{
-    data["password"] = value;
-    if (value.Length < 8)
-    {
-        result.Errors.Add(new ValidationError
-        {
-            Path = "password",
-            Message = "Password must be at least 8 characters long."
-        });
-        flag = false;
-    }
-    if (value.Length > 100)
-    {
-        result.Errors.Add(new ValidationError
-        {
-            Path = "password",
-            Message = "Password must be at most 100 characters long."
-        });
-        flag = false;
-    }
-}if (flag)
-                {
-                    successData["password"] = data["password"];
-                }
-            }
-            {
-                flag = true;bool flag = true;
-
-if (!data.TryGetValue("username", out var rawValue) || rawValue == null)
-{
-    result.Errors.Add(new ValidationError
-    {
-        Path = "username",
-        Message = "Invalid value."
-    });
-    flag = false;
-}
-else if (rawValue is not string value)
-{
-    result.Errors.Add(new ValidationError
-    {
-        Path = "username",
-        Message = "Invalid value."
-    });
-    flag = false;
-}
-else
-{
-    data["username"] = value;
-    if (value.Length < 3)
-    {
-        result.Errors.Add(new ValidationError
-        {
-            Path = "username",
-            Message = "Username must be at least 3 characters long."
-        });
-        flag = false;
-    }
-    if (value.Length > 20)
-    {
-        result.Errors.Add(new ValidationError
-        {
-            Path = "username",
-            Message = "Username must be at most 20 characters long."
-        });
-        flag = false;
-    }
-}if (flag)
-                {
-                    successData["username"] = data["username"];
+                    successData["id"] = data["id"];
                 }
             }
 

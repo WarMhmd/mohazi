@@ -1,73 +1,24 @@
-login: 
-	username:
-		type: string
-		required: true
-		rules:
-			pattern: 
-				value: '^[a-zA-Z0-9_]+$'
-				error: 'Username can only contain letters, numbers, and underscores.'
-			minLength: 
-				value: 3
-				error: 'Username must be at least 3 characters long.'
-			maxLength: 
-					value: 20
-					error: 'Username must be at most 20 characters long.'
-	password:
-		type: string
-		required: true
-		rules:
-			pattern: 
-				value: '^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$'
-				error: 'Password must contain at least one letter and one number.'
-			minLength: 
-				value: 8
-				error: 'Password must be at least 8 characters long.'
-			maxLength: 
-				value: 100
-				error: 'Password must be at most 100 characters long.'
-	password_hash:
-		type: hash
-		required: true
-		rules:
-			algorithm: 'Argon2id'
-	profile:
-		type: image
-		required: true
-		rules:
-			width: 512
-			height: 512
-register:
-	username:
-		type: string
-		required: true
-		rules:
-			pattern: 
-				value: '^[a-zA-Z0-9_]+$'
-				error: 'Username can only contain letters, numbers, and underscores.'
-			minLength: 
-				value: 3
-				error: 'Username must be at least 3 characters long.'
-			maxLength: 
-					value: 20
-					error: 'Username must be at most 20 characters long.'
-	email:
-		type: string
-		required: true
-		rules:
-			pattern: 
-				value: '^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$'
-				error: 'Please enter a valid email address.'
-	password:
-		type: string
-		required: true
-		rules:
-			pattern: 
-				value: '^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$'
-				error: 'Password must contain at least one letter and one number.'
-			minLength: 
-				value: 8
-				error: 'Password must be at least 8 characters long.'
-			maxLength: 
-				value: 100
-				error: 'Password must be at most 100 characters long.'
-		
+birth:
+    childName:
+        type: string
+        defaultError: "Child name is invalid"
+        required: true
+        rules:
+            minLength: 
+                value: 3
+                error: "Child name cannot be shorter than 3 characters."
+            maxLength:
+                value: 20
+                error: "Child name cannot be longer than 20 characters."
+    dateOfBirth:
+        type: date
+        required: true
+        defaultError: "Invalid date of birth"
+        transform:
+            format: "YYYY-mm-dd"
+    id:
+        type: uuid 
+        required: true 
+        defaultError: "Invalid UUID"
+        rules:
+            version: "v4"
