@@ -1,6 +1,6 @@
 #![allow(unused_assignments)]
 
-use clap::Parser;
+use clap::{CommandFactory, Parser, Subcommand};
 use core_lib::{
     ast::Form,
     vis_parser::{self, ParserError},
@@ -18,75 +18,85 @@ use tracing_subscriber::{fmt, util::SubscriberInitExt, EnvFilter};
 mod config;
 mod templater;
 
-/// Simple program to greet a person
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-    #[arg(short, long, default_value_t = false)]
-    debug: bool,
+#[derive(Parser)]
+#[command(name = "MoHaZi", about = "MoHaZi Verification logic builder")]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
 
-    #[arg(long, default_value_t = false)]
-    check: bool,
+#[derive(Subcommand)]
+enum Commands {
+    Generate {
+        #[arg(short, long, default_value_t = false)]
+        debug: bool,
 
-    #[arg(long, default_value_t = String::from("./vis.config.json"))]
-    config: String,
+        #[arg(long, default_value_t = false)]
+        check: bool,
+
+        #[arg(long, default_value_t = String::from("./vis.config.json"))]
+        config: String,
+    },
 }
 
 fn main() {
-    let args = Args::parse();
+    let cli = Cli::parse();
 
-    let config_contents =
-        std::fs::read_to_string(&args.config).expect("Failed to read config file");
-    let config: config::Config =
-        serde_json::from_str(&config_contents).expect("Failed to parse config file");
+    match cli.command {
+        Commands::Generate {
+            debug,
+            check,
+            config,
+        } => {
+            let config_contents =
+                std::fs::read_to_string(&config).expect("Failed to read config file");
+            let configurations: config::Config =
+                serde_json::from_str(&config_contents).expect("Failed to parse config file");
 
-    if !std::path::Path::new(&args.config).exists() {
-        eprintln!("Config file not found: {}", args.config);
-        std::process::exit(2);
+            if !std::path::Path::new(&config).exists() {
+                eprintln!("Config file not found: {}", config);
+                std::process::exit(2);
+            }
+
+            // Always run the check
+            let result = run_check(&configurations.input);
+            if result.is_err() || check {
+                return;
+            }
+
+            let proj = ProjectDirs::from("com", "verify", "verify").unwrap();
+            let log_dir: &Path = proj
+                .state_dir()
+                .or_else(|| Some(proj.cache_dir()))
+                .or_else(|| Some(proj.data_dir()))
+                .unwrap_or_else(|| Path::new("./logs"));
+
+            std::fs::create_dir_all(log_dir).expect("failed to create log directory");
+
+            // Add date and time to log file name
+            let file = File::create(log_dir.join(format!(
+                "{}-{}.log",
+                chrono::Utc::now().date_naive(),
+                chrono::Utc::now().time().format("%H-%M-%S")
+            )))
+            .expect("Failed to create log file");
+
+            let stdout_layer = fmt::layer().with_writer(std::io::stdout).with_filter(
+                tracing_subscriber::EnvFilter::new(if debug { "debug" } else { "off" }),
+            );
+
+            let file_layer = fmt::layer().with_writer(file).with_ansi(false);
+
+            tracing_subscriber::registry()
+                .with(file_layer)
+                .with(stdout_layer)
+                .init();
+
+            // info!("Starting Mohazi compiler with config: {:?}", config);
+
+            templater(result.unwrap(), configurations);
+        }
     }
-
-    // Always run the check
-    let result = run_check(&config.input);
-    if result.is_err() || args.check {
-        return;
-    }
-
-    let proj = ProjectDirs::from("com", "verify", "verify").unwrap();
-    let log_dir: &Path = proj
-        .state_dir()
-        .or_else(|| Some(proj.cache_dir()))
-        .or_else(|| Some(proj.data_dir()))
-        .unwrap_or_else(|| Path::new("./logs"));
-
-    std::fs::create_dir_all(log_dir).expect("failed to create log directory");
-
-    // Add date and time to log file name
-    let file = File::create(log_dir.join(format!(
-        "{}-{}.log",
-        chrono::Utc::now().date_naive(),
-        chrono::Utc::now().time().format("%H-%M-%S")
-    )))
-    .expect("Failed to create log file");
-
-    let stdout_layer =
-        fmt::layer()
-            .with_writer(std::io::stdout)
-            .with_filter(tracing_subscriber::EnvFilter::new(if args.debug {
-                "debug"
-            } else {
-                "off"
-            }));
-
-    let file_layer = fmt::layer().with_writer(file).with_ansi(false);
-
-    tracing_subscriber::registry()
-        .with(file_layer)
-        .with(stdout_layer)
-        .init();
-
-    // info!("Starting Mohazi compiler with config: {:?}", config);
-
-    templater(result.unwrap(), config);
 }
 
 fn run_check(input: &String) -> Result<IndexMap<String, IndexMap<String, Form>>, ()> {
