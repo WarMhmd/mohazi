@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use core_lib::ast::Transform;
-use core_lib::vis_parser;
+use core_lib::parser;
 use include_dir::{include_dir, Dir};
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
@@ -222,18 +222,33 @@ impl LanguageServer for Backend {
                     }
                     "mail" => {
                         return Ok(Some(CompletionResponse::Array(completion_items![
-                            ("allowedDomains", "Rule: Only allow emails from these domains"),
+                            (
+                                "allowedDomains",
+                                "Rule: Only allow emails from these domains"
+                            ),
                             ("forbiddenDomains", "Rule: Blacklist these email domains"),
                             ("minLength", "Rule: Minimum string length"),
                             ("maxLength", "Rule: Maximum string length"),
                             ("length", "Rule: Set the string length"),
                             ("regex", "Rule: Match custom regex pattern"),
                             ("pattern", "Rule: Match custom regex pattern"),
-                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            (
+                                "startsWith",
+                                "Rule: Check if the string starts with a prefix"
+                            ),
                             ("endsWith", "Rule: Check if the string ends with a suffix"),
-                            ("uppercase", "Rule: Check if the string is written in uppercase"),
-                            ("lowercase", "Rule: Check if the string is written in lowercase"),
-                            ("error", "Rule Error: set custom error message for the previous rule"),
+                            (
+                                "uppercase",
+                                "Rule: Check if the string is written in uppercase"
+                            ),
+                            (
+                                "lowercase",
+                                "Rule: Check if the string is written in lowercase"
+                            ),
+                            (
+                                "error",
+                                "Rule Error: set custom error message for the previous rule"
+                            ),
                         ])));
                     }
                     "username" => {
@@ -243,11 +258,23 @@ impl LanguageServer for Backend {
                             ("length", "Rule: Set the string length"),
                             ("regex", "Rule: Match custom regex pattern"),
                             ("pattern", "Rule: Match custom regex pattern"),
-                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            (
+                                "startsWith",
+                                "Rule: Check if the string starts with a prefix"
+                            ),
                             ("endsWith", "Rule: Check if the string ends with a suffix"),
-                            ("uppercase", "Rule: Check if the string is written in uppercase"),
-                            ("lowercase", "Rule: Check if the string is written in lowercase"),
-                            ("error", "Rule Error: set custom error message for the previous rule"),
+                            (
+                                "uppercase",
+                                "Rule: Check if the string is written in uppercase"
+                            ),
+                            (
+                                "lowercase",
+                                "Rule: Check if the string is written in lowercase"
+                            ),
+                            (
+                                "error",
+                                "Rule Error: set custom error message for the previous rule"
+                            ),
                         ])));
                     }
                     "uuid" => {
@@ -255,7 +282,9 @@ impl LanguageServer for Backend {
                             return Ok(Some(CompletionResponse::Array(vec![
                                 CompletionItem {
                                     label: "v4".to_string(),
-                                    detail: Some("Recommended: Randomly generated UUID".to_string()),
+                                    detail: Some(
+                                        "Recommended: Randomly generated UUID".to_string(),
+                                    ),
                                     ..Default::default()
                                 },
                                 CompletionItem {
@@ -308,11 +337,23 @@ impl LanguageServer for Backend {
                             ("length", "Rule: Set the string length"),
                             ("regex", "Rule: Match custom regex pattern"),
                             ("pattern", "Rule: Match custom regex pattern"),
-                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            (
+                                "startsWith",
+                                "Rule: Check if the string starts with a prefix"
+                            ),
                             ("endsWith", "Rule: Check if the string ends with a suffix"),
-                            ("uppercase", "Rule: Check if the string is written in uppercase"),
-                            ("lowercase", "Rule: Check if the string is written in lowercase"),
-                            ("error", "Rule Error: set custom error message for the previous rule"),
+                            (
+                                "uppercase",
+                                "Rule: Check if the string is written in uppercase"
+                            ),
+                            (
+                                "lowercase",
+                                "Rule: Check if the string is written in lowercase"
+                            ),
+                            (
+                                "error",
+                                "Rule Error: set custom error message for the previous rule"
+                            ),
                         ])));
                     }
                     "cuid2" => {
@@ -322,11 +363,23 @@ impl LanguageServer for Backend {
                             ("length", "Rule: Set the string length"),
                             ("regex", "Rule: Match custom regex pattern"),
                             ("pattern", "Rule: Match custom regex pattern"),
-                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            (
+                                "startsWith",
+                                "Rule: Check if the string starts with a prefix"
+                            ),
                             ("endsWith", "Rule: Check if the string ends with a suffix"),
-                            ("uppercase", "Rule: Check if the string is written in uppercase"),
-                            ("lowercase", "Rule: Check if the string is written in lowercase"),
-                            ("error", "Rule Error: set custom error message for the previous rule"),
+                            (
+                                "uppercase",
+                                "Rule: Check if the string is written in uppercase"
+                            ),
+                            (
+                                "lowercase",
+                                "Rule: Check if the string is written in lowercase"
+                            ),
+                            (
+                                "error",
+                                "Rule Error: set custom error message for the previous rule"
+                            ),
                         ])));
                     }
                     "hash" => {
@@ -354,11 +407,23 @@ impl LanguageServer for Backend {
                             ("length", "Rule: Set the string length"),
                             ("regex", "Rule: Match custom regex pattern"),
                             ("pattern", "Rule: Match custom regex pattern"),
-                            ("startsWith", "Rule: Check if the string starts with a prefix"),
+                            (
+                                "startsWith",
+                                "Rule: Check if the string starts with a prefix"
+                            ),
                             ("endsWith", "Rule: Check if the string ends with a suffix"),
-                            ("uppercase", "Rule: Check if the string is written in uppercase"),
-                            ("lowercase", "Rule: Check if the string is written in lowercase"),
-                            ("error", "Rule Error: set custom error message for the previous rule"),
+                            (
+                                "uppercase",
+                                "Rule: Check if the string is written in uppercase"
+                            ),
+                            (
+                                "lowercase",
+                                "Rule: Check if the string is written in lowercase"
+                            ),
+                            (
+                                "error",
+                                "Rule Error: set custom error message for the previous rule"
+                            ),
                         ])));
                     }
                     "array" => {
@@ -491,9 +556,10 @@ impl LanguageServer for Backend {
                     "uuid" => {
                         // setup the cast completion list
                         if prefix.ends_with("cast: ") {
-                            return Ok(Some(CompletionResponse::Array(completion_items![
-                                ("string", "Cast: uuid to string"),
-                            ])));
+                            return Ok(Some(CompletionResponse::Array(completion_items![(
+                                "string",
+                                "Cast: uuid to string"
+                            ),])));
                         }
 
                         return Ok(Some(CompletionResponse::Array(completion_items![
@@ -506,9 +572,10 @@ impl LanguageServer for Backend {
                     "cuid2" => {
                         // setup the cast completion list
                         if prefix.ends_with("cast: ") {
-                            return Ok(Some(CompletionResponse::Array(completion_items![
-                                ("string", "Cast: cuid2 to string"),
-                            ])));
+                            return Ok(Some(CompletionResponse::Array(completion_items![(
+                                "string",
+                                "Cast: cuid2 to string"
+                            ),])));
                         }
 
                         return Ok(Some(CompletionResponse::Array(completion_items![
@@ -521,9 +588,10 @@ impl LanguageServer for Backend {
                     "hash" => {
                         // setup the cast completion list
                         if prefix.ends_with("cast: ") {
-                            return Ok(Some(CompletionResponse::Array(completion_items![
-                                ("string", "Cast: hash to string"),
-                            ])));
+                            return Ok(Some(CompletionResponse::Array(completion_items![(
+                                "string",
+                                "Cast: hash to string"
+                            ),])));
                         }
 
                         return Ok(Some(CompletionResponse::Array(completion_items![
@@ -536,9 +604,10 @@ impl LanguageServer for Backend {
                     "base64" => {
                         // setup the cast completion list
                         if prefix.ends_with("cast: ") {
-                            return Ok(Some(CompletionResponse::Array(completion_items![
-                                ("string", "Cast: base64 to string"),
-                            ])));
+                            return Ok(Some(CompletionResponse::Array(completion_items![(
+                                "string",
+                                "Cast: base64 to string"
+                            ),])));
                         }
 
                         return Ok(Some(CompletionResponse::Array(completion_items![
@@ -735,7 +804,7 @@ impl LanguageServer for Backend {
 
 impl Backend {
     async fn validate_file(&self, uri: Url, text: String) {
-        let result = vis_parser::parse_vis(&text);
+        let result = parser::parse_vis(&text);
 
         let errors = match result {
             Ok(_) => vec![],

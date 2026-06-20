@@ -3,7 +3,7 @@
 use clap::{CommandFactory, Parser, Subcommand};
 use core_lib::{
     ast::Form,
-    vis_parser::{self, ParserError},
+    parser::{self, ParserError},
 };
 use directories::ProjectDirs;
 use indexmap::IndexMap;
@@ -112,7 +112,7 @@ fn run_check(input: &String) -> Result<IndexMap<String, IndexMap<String, Form>>,
         if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("mhz") {
             println!("Checking file \"{}\"", path.display());
             let contents = std::fs::read_to_string(&path).expect("Failed to read .mhz file");
-            let parse_result = vis_parser::parse_vis(&contents);
+            let parse_result = parser::parse_vis(&contents);
             match parse_result {
                 Ok(file) => {
                     println!("  OK");
