@@ -276,7 +276,7 @@ impl ParserError {
     }
 }
 
-pub fn parse_vis(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>> {
+pub fn parse_mhz(input: &str) -> Result<IndexMap<String, Form>, Vec<ParserError>> {
     let mut forms: IndexMap<String, Form> = IndexMap::new();
     let mut errors: Vec<ParserError> = Vec::new();
 

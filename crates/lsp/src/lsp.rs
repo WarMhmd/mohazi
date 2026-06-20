@@ -804,7 +804,7 @@ impl LanguageServer for Backend {
 
 impl Backend {
     async fn validate_file(&self, uri: Url, text: String) {
-        let result = parser::parse_vis(&text);
+        let result = parser::parse_mhz(&text);
 
         let errors = match result {
             Ok(_) => vec![],
