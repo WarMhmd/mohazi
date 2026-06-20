@@ -38,10 +38,6 @@ namespace Generated.Validation
                     {%- set rules = "" -%}
                 {%- endif -%}
 
-		{%- endfor %}
-	}
-
-}
                 {%- if field.transform is defined -%}
                     {%- set transform = field.transform -%}
                 {%- else -%}
@@ -132,4 +128,3 @@ namespace Generated.Validation
     }
 
 }
->>>>>>> Alhareth-types

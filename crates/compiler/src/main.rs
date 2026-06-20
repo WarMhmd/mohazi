@@ -109,9 +109,9 @@ fn run_check(input: &String) -> Result<IndexMap<String, IndexMap<String, Form>>,
         let entry = entry.expect("Failed to read directory entry");
         let path = entry.path();
 
-        if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("vis") {
+        if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("mhz") {
             println!("Checking file \"{}\"", path.display());
-            let contents = std::fs::read_to_string(&path).expect("Failed to read .vis file");
+            let contents = std::fs::read_to_string(&path).expect("Failed to read .mhz file");
             let parse_result = vis_parser::parse_vis(&contents);
             match parse_result {
                 Ok(file) => {
