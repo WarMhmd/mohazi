@@ -9,7 +9,7 @@ Supported values include:
 - `BLAKE3`
 
 ### Example
-```vis
+```yaml
 Form1:
     password_hash:
         type: hash

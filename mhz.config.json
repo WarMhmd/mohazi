@@ -1,15 +1,15 @@
 {
-  "$schema": "./vis-config.schema.json",
-  "input": "./vis",
+  "$schema": "./mhz-config.schema.json",
+  "input": "./mhz",
   "languages": {
     "javascript": {
       "enabled": true,
-      "output": "./frontend/lib/vis"
+      "output": "./frontend/lib/mhz"
     },
 
     "C#": {
       "enabled": true,
-      "output": "./backend/lib/vis"
+      "output": "./backend/lib/mhz"
     }
   }
 }

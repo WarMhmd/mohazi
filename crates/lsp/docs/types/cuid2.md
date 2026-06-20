@@ -15,7 +15,7 @@ It supports all `String` rules, with the following defaults:
 - `regex`: `^[a-z][a-z0-9]*$`
 
 ## Example
-```vis
+```yaml
 user:
   id:
     type: cuid2

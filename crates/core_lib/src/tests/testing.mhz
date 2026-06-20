@@ -1,0 +1,9 @@
+login: 
+    username: 
+        type: string
+        required: true
+        defaultError: "Invalid username."
+        rules: 
+            pattern: 
+                value: '^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$'
+                error: 'invalid regex"

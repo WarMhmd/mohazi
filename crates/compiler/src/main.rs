@@ -143,7 +143,7 @@ fn run_check(input: &String) -> Result<IndexMap<String, IndexMap<String, Form>>,
 #[error("{message}")]
 #[diagnostic(code(mohazi::parse))]
 #[allow(unused_assignments)]
-struct VisDiagnostic {
+struct MhzDiagnostic {
     message: String,
 
     #[source_code]
@@ -164,7 +164,7 @@ fn render_parse_errors(
             .map(|(offset, len)| SourceSpan::new(offset.into(), len.into()))
             .unwrap_or_else(|| SourceSpan::new(0usize.into(), source.len().into()));
 
-        let diag = VisDiagnostic {
+        let diag = MhzDiagnostic {
             message: error.message.clone(),
             src: NamedSource::new(path.display().to_string(), source.to_string()),
             span,

@@ -4,7 +4,7 @@ Alias for `extension`. Checks if the file has one of the allowed MIME types or e
 
 ## Example
 
-```vis
+```yaml
 photo:
   type: image
   rules:

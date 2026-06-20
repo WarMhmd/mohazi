@@ -2,7 +2,7 @@ mod ast;
 mod parser;
 
 fn main() {
-    let path = "./crates/core_lib/src/tests/testing.vis";
+    let path = "./crates/core_lib/src/tests/testing.mhz";
     let file_content = std::fs::read_to_string(path).unwrap();
 
     match parser::parse_mhz(&file_content) {

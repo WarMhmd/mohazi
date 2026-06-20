@@ -17,7 +17,7 @@ The `image` type is used for validating image files. It inherits all rules from 
 
 ## Example
 
-```vis
+```yaml
 profile_picture:
   type: image
   rules:

@@ -4,7 +4,7 @@ Checks if the image height is exactly the specified number of pixels.
 
 ## Example
 
-```vis
+```yaml
 avatar:
   type: image
   rules:
