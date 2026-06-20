@@ -34,7 +34,7 @@ enum Commands {
         #[arg(long, default_value_t = false)]
         check: bool,
 
-        #[arg(long, default_value_t = String::from("./vis.config.json"))]
+        #[arg(long, default_value_t = String::from("./mhz.config.json"))]
         config: String,
     },
 }
