@@ -48,6 +48,10 @@ fn main() {
             check,
             config,
         } => {
+            let config_path = config
+                .rsplit_once("mhz.config.json")
+                .expect("Invalid config file name");
+
             let config_contents =
                 std::fs::read_to_string(&config).expect("Failed to read config file");
             let configurations: config::Config =
@@ -59,7 +63,9 @@ fn main() {
             }
 
             // Always run the check
-            let result = run_check(&configurations.input);
+            let input_path = format!("{}{}", config_path.0, configurations.input);
+            println!("input path: {}", input_path);
+            let result = run_check(&input_path);
             if result.is_err() || check {
                 return;
             }
