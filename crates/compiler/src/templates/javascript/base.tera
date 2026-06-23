@@ -29,20 +29,11 @@ export const validate{{ actionName | capitalize }} = async (data) => {
 
         {%- set FieldName = fieldName -%}
         {%- set FieldNamePath = '"' ~ fieldName ~ '"' -%}
-        {%- set required = field.required -%}
+        {%- set required = field.required | default(value=false) -%}
         {%- set defaultError = field.defaultError | default(value="Invalid value.") -%}
 
-        {%- if field.rules is defined -%}
-            {%- set rules = field.rules -%}
-        {%- else -%}
-            {%- set rules = "" -%}
-        {%- endif -%}
-
-        {%- if field.transform is defined -%}
-            {%- set transform = field.transform -%}
-        {%- else -%}
-            {%- set transform = "" -%}
-        {%- endif -%}
+        {%- set rules = field.rules | default(value="") -%}
+        {%- set transform = field.transform | default(value="") -%}
 
         {%- set isNested = false -%}
 
